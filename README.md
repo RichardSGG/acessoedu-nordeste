@@ -25,12 +25,6 @@ Projeto desenvolvido para a atividade **A07 - Dashboard HTML/CSS/JS** do curso d
 - **API Externa:** [ViaCEP](https://viacep.com.br/) (Geolocalização por Código Postal).
 - **Hospedagem:** Render / Vercel.
 
-## Equipe de Desenvolvimento
-
-* **Richard** - Liderança Técnica, Front-end (HTML/CSS/JS) e Lógica de Integração de APIs.
-* **Micael** - DevOps, Deploy Contínuo na nuvem e Documentação.
-* **Suedson** - Engenharia de Dados, Estruturação do Back4App e Mapeamento de APIs.
-
 ## Como executar o projeto localmente
 
 1. Faça o clone deste repositório:
