@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AcessoEdu Nordeste | Auditoria Cidadã e Infraestrutura Escolar</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- CSS Variáveis -->
+    <link rel="stylesheet" href="src/css/variaveis.css">
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primaria: '#1A5691',
+                        secundaria: '#3DA35A',
+                        acento: '#F2994A',
+                        mobilidade: '#805AD5',
+                        fundo: '#F7F8FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif']
+                    },
+                    backgroundImage: {
+                        'hero-pattern': "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%231a5691\" fill-opacity=\"0.05\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+            animation: pulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(20px, 20px); }
+        }
+    </style>
+</head>
+<body class="bg-fundo text-[#1A202C] antialiased relative overflow-x-hidden">
+
+    <!-- Efeitos de Fundo (Blobs) -->
+    <div class="blob bg-blue-300 w-96 h-96 rounded-full top-[-10%] left-[-10%]"></div>
+    <div class="blob bg-green-200 w-80 h-80 rounded-full top-[20%] right-[-5%] animation-delay-2000"></div>
+    <div class="blob bg-orange-200 w-96 h-96 rounded-full bottom-[-10%] left-[20%] animation-delay-4000"></div>
+
+    <!-- Header Transparente -->
+    <header class="fixed w-full top-0 z-50 bg-white/60 backdrop-blur-md border-b border-white/20 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="ph-fill ph-student text-4xl text-primaria"></i>
+                <span class="font-display font-black text-2xl text-primaria tracking-tight">AcessoEdu</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8">
+                <a href="#projeto" class="text-sm font-semibold text-slate-600 hover:text-primaria transition-colors">O Projeto</a>
+                <a href="#dados" class="text-sm font-semibold text-slate-600 hover:text-primaria transition-colors">Nossos Dados</a>
+                <a href="#comunidade" class="text-sm font-semibold text-slate-600 hover:text-primaria transition-colors">Comunidade</a>
+            </nav>
+            <div class="flex items-center">
+                <a href="explorar.html" class="px-6 py-2.5 bg-primaria text-white rounded-full text-sm font-bold shadow-lg hover:bg-blue-800 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
+                    <i class="ph-bold ph-map-trifold"></i> Acessar Mapa
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Seção Hero -->
+    <main class="pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-8 min-h-[90vh]">
+        <div class="flex-1 flex flex-col gap-6 text-center lg:text-left z-10">
+            <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-primaria font-semibold text-xs uppercase tracking-widest w-max mx-auto lg:mx-0">
+                <i class="ph-fill ph-star"></i> Plataforma Cidadã Gratuita
+            </div>
+            
+            <h1 class="font-display font-black text-5xl lg:text-7xl leading-tight text-slate-800 tracking-tight">
+                A realidade das <span class="text-transparent bg-clip-text bg-gradient-to-r from-primaria to-secundaria">escolas</span> nas mãos do cidadão.
+            </h1>
+            
+            <p class="text-lg lg:text-xl text-slate-600 font-medium max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                Transformamos os microdados oficiais do Nordeste em uma ferramenta visual, interativa e auditável. Descubra, compare e fiscalize a infraestrutura e acessibilidade de mais de 74 mil instituições de ensino.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row items-center gap-4 mt-4 justify-center lg:justify-start">
+                <a href="explorar.html" class="px-8 py-4 bg-gradient-to-r from-primaria to-blue-700 text-white rounded-full text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-3">
+                    <i class="ph-bold ph-compass"></i> Explorar o Mapa
+                </a>
+                <a href="#como-funciona" class="px-8 py-4 bg-white text-slate-700 rounded-full text-lg font-bold shadow-md hover:bg-slate-50 transition-all duration-300 border border-slate-200">
+                    Entenda como funciona
+                </a>
+            </div>
+            
+            <div class="mt-8 flex items-center gap-4 justify-center lg:justify-start opacity-70">
+                <div class="flex -space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center"><i class="ph-fill ph-user text-white"></i></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-400 border-2 border-white flex items-center justify-center"><i class="ph-fill ph-user text-white"></i></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-500 border-2 border-white flex items-center justify-center"><i class="ph-fill ph-user text-white"></i></div>
+                </div>
+                <p class="text-sm font-semibold text-slate-600">Junte-se a milhares de auditores locais</p>
+            </div>
+        </div>
+        
+        <div class="flex-1 relative w-full max-w-lg lg:max-w-none z-10 floating">
+            <div class="glass-card rounded-3xl p-4 shadow-2xl relative">
+                <!-- Mockup simplificado de interface -->
+                <div class="bg-slate-100 rounded-2xl h-80 lg:h-[450px] w-full overflow-hidden border border-slate-200 relative">
+                    <div class="absolute inset-0 bg-hero-pattern opacity-50"></div>
+                    <div class="absolute top-4 left-4 right-4 flex justify-between">
+                        <div class="bg-white px-4 py-2 rounded-full shadow-sm text-xs font-bold text-slate-600 flex items-center gap-2">
+                            <i class="ph-fill ph-map-pin text-primaria"></i> Ceará, Nordeste
+                        </div>
+                        <div class="bg-secundaria text-white px-4 py-2 rounded-full shadow-sm text-xs font-bold flex items-center gap-2">
+                            <i class="ph-bold ph-check-circle"></i> Dados Atuais
+                        </div>
+                    </div>
+                    
+                    <div class="absolute bottom-4 left-4 right-4 flex gap-4">
+                        <div class="flex-1 bg-white p-4 rounded-2xl shadow-lg border border-slate-100">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                                <i class="ph-fill ph-wheelchair text-primaria"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-sm">Acessibilidade</h4>
+                            <p class="text-xs text-slate-500 mt-1">Comparativo 2024 vs 2025</p>
+                            <div class="w-full bg-slate-100 rounded-full h-2 mt-3">
+                                <div class="bg-primaria h-2 rounded-full" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-white p-4 rounded-2xl shadow-lg border border-slate-100">
+                            <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mb-2">
+                                <i class="ph-fill ph-trend-up text-acento"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-sm">Performance IDEB</h4>
+                            <p class="text-xs text-slate-500 mt-1">Escolas Premiadas OBMEP</p>
+                            <div class="w-full bg-slate-100 rounded-full h-2 mt-3">
+                                <div class="bg-acento h-2 rounded-full" style="width: 82%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Elementos decorativos flutuantes -->
+            <div class="absolute -top-6 -right-6 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3 animate-bounce" style="animation-duration: 4s;">
+                <i class="ph-fill ph-camera text-2xl text-secundaria"></i>
+                <div>
+                    <p class="text-xs font-bold text-slate-800">Nova Evidência</p>
+                    <p class="text-[10px] text-slate-500">Há 2 minutos</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Seção de Dados / Metodologia -->
+    <section id="dados" class="py-24 bg-white relative z-10 border-t border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="font-display font-bold text-4xl text-slate-800 mb-4">A Verdade nos Dados Oficiais</h2>
+                <p class="text-slate-600 text-lg">Nosso sistema compila gigabytes de bases de dados abertas do governo federal e cruza as informações para entregar a você o raio-X completo das escolas.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Card Censo -->
+                <div class="bg-slate-50 border border-slate-200 rounded-3xl p-8 hover:-translate-y-2 transition-transform duration-300 group">
+                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i class="ph-fill ph-file-text text-3xl text-primaria"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-slate-800 mb-3">Censo Escolar 2024/2025</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                        Consolidamos os microdados brutos do INEP para mapear rampas, banheiros adaptados, refeitórios e qualidade da infraestrutura em todos os 9 estados da região.
+                    </p>
+                    <div class="flex items-center gap-2 text-xs font-bold text-primaria bg-blue-50 px-3 py-1.5 rounded-full w-max">
+                        <i class="ph-bold ph-database"></i> +74.000 Registros
+                    </div>
+                </div>
+
+                <!-- Card IDEB -->
+                <div class="bg-slate-50 border border-slate-200 rounded-3xl p-8 hover:-translate-y-2 transition-transform duration-300 group">
+                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i class="ph-fill ph-chart-bar text-3xl text-acento"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-slate-800 mb-3">Métricas do IDEB</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                        Acompanhe o desempenho das escolas nas avaliações nacionais de aprendizagem. Relacionamos a qualidade da infraestrutura física com os resultados educacionais.
+                    </p>
+                    <div class="flex items-center gap-2 text-xs font-bold text-acento bg-orange-50 px-3 py-1.5 rounded-full w-max">
+                        <i class="ph-bold ph-trend-up"></i> Análise de Excelência
+                    </div>
+                </div>
+
+                <!-- Card OBMEP -->
+                <div class="bg-slate-50 border border-slate-200 rounded-3xl p-8 hover:-translate-y-2 transition-transform duration-300 group">
+                    <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i class="ph-fill ph-medal text-3xl text-mobilidade"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-slate-800 mb-3">Destaques OBMEP</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                        Valorizamos as instituições e alunos que se destacam na Olimpíada Brasileira de Matemática, exibindo prêmios e selos de excelência acadêmica.
+                    </p>
+                    <div class="flex items-center gap-2 text-xs font-bold text-mobilidade bg-purple-50 px-3 py-1.5 rounded-full w-max">
+                        <i class="ph-bold ph-star"></i> Mérito Reconhecido
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Gigante -->
+    <section class="py-24 relative overflow-hidden">
+        <div class="absolute inset-0 bg-primaria"></div>
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        
+        <!-- Círculos decorativos -->
+        <div class="absolute -top-40 -right-40 w-96 h-96 bg-white opacity-5 rounded-full blur-2xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-secundaria opacity-20 rounded-full blur-2xl"></div>
+
+        <div class="max-w-4xl mx-auto px-4 relative z-10 text-center">
+            <h2 class="font-display font-black text-4xl lg:text-5xl text-white mb-6">
+                Pronto para auditar as escolas da sua cidade?
+            </h2>
+            <p class="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
+                Utilize o mapa interativo, encontre as escolas mais próximas, avalie a acessibilidade e colabore enviando fotos reais da estrutura.
+            </p>
+            
+            <a href="explorar.html" class="inline-flex items-center gap-3 px-12 py-5 bg-white text-primaria rounded-full text-2xl font-black shadow-2xl hover:scale-105 hover:bg-slate-50 transition-all duration-300">
+                <i class="ph-bold ph-map-trifold text-3xl"></i> EXPLORAR O MAPA
+            </a>
+            <p class="text-blue-200/60 text-xs font-semibold mt-6 uppercase tracking-widest">Acesso 100% Gratuito • Sem necessidade de cadastro inicial</p>
+        </div>
+    </section>
+
+    <!-- Rodapé Minimalista -->
+    <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 py-12 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-2">
+                <i class="ph-fill ph-student text-3xl text-slate-600"></i>
+                <span class="font-display font-bold text-xl text-slate-500">AcessoEdu Nordeste</span>
+            </div>
+            
+            <p class="text-sm font-medium text-center md:text-left">
+                Desenvolvido como projeto acadêmico de software com foco em transparência cidadã.<br>
+                <span class="text-xs opacity-70">Dados sob licença de Dados Abertos do Governo Federal do Brasil.</span>
+            </p>
+
+            <div class="flex gap-4">
+                <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors">
+                    <i class="ph-fill ph-github-logo text-xl"></i>
+                </a>
+                <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors">
+                    <i class="ph-fill ph-envelope-simple text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

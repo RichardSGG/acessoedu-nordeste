@@ -36,24 +36,53 @@ O **AcessoEdu** converte microdados do censo escolar em uma **rede social cívic
 
 ## 🏗️ Arquitetura do Sistema
 
+A aplicação frontend segue um padrão rigoroso baseado em **Event Bus (Pub/Sub)**, garantindo total desacoplamento entre os componentes de interface (`ui/`), a persistência (`api/`) e o estado global (`core/`). Para performance, utilizamos **DocumentFragment** no DOM e **IntersectionObserver** para carregamento assíncrono.
+
+### Estrutura de Diretórios
+```text
+acessoedu-nordeste/
+├── .env.exemplo           # Template de variáveis de ambiente
+├── .gitignore             # Arquivo blindado (proteção de dados ETL e chaves)
+├── index.html             # Dashboard principal (Tailwind + Semantic HTML)
+├── dados/                 # Scripts Python e limpeza do INEP
+└── src/                   # Aplicação Vanilla JS
+    ├── css/
+    │   └── variaveis.css  # Design System e paleta de cores
+    └── js/
+        ├── core/          # Núcleo do sistema
+        │   ├── constantes.js  # Enumerações globais
+        │   ├── estado.js      # Gerenciador de estado (Event Bus)
+        │   ├── inicializador.js # Bootstrap da SPA
+        │   └── utilitarios.js # Helpers (Debounce, Haversine, etc.)
+        ├── api/           # Integração com Back4App e Mapillary
+        │   ├── auth.api.js
+        │   ├── escolas.api.js
+        │   ├── fotos.api.js
+        │   └── mapillary.api.js
+        └── ui/            # Controladores de Interface
+            ├── mapa.ui.js     # Integração Leaflet
+            └── ranking.ui.js  # Renderização otimizada
+```
+
+### Fluxo de Dados
 ```text
 [Microdados INEP (CSV bruto)]
        │
        │ Python / Pandas (ETL — dados/clean_inep.py)
        │ Filtros geográficos, contato e coordenadas tratadas
        ▼
-[escolas_pronto_b4app_v2.csv]
+[escolas_limpo.json]
        │
        │ Node.js (importar_b4app.js)
        │ Upload seguro em lotes (batch) com GeoPoints
        ▼
-[Back4App (BaaS / MongoDB)]
-       │ REST API + WebSockets (Live Queries)
+[Back4App (BaaS / Parse)]
+       │ REST API + WebSockets
        ▼
-[SPA Frontend (Vanilla JS + HTML5 + CSS)]
-       │ Hash Router (Navegação dinâmica)
-       │ Componentes modulares reutilizáveis
-       │ Mapas (Leaflet) & Gráficos (Chart.js)
+[SPA Frontend (Vanilla JS + Tailwind CSS)]
+       │ Event Bus (estado.js)
+       │ Componentes modulares reutilizáveis (ui/*.js)
+       │ Mapas Lazy Loaded (Leaflet)
 ```
 
 ---
