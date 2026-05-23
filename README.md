@@ -67,7 +67,7 @@ O **AcessoEdu** converte microdados do censo escolar em uma **rede social cívic
 | **Frontend SPA** | Vanilla JS, HTML5, CSS | Gratuito |
 | **Gráficos** | Chart.js | Gratuito |
 | **Mapas** | Leaflet.js + OpenStreetMap | Gratuito (Sem chaves pagas) |
-| **Hospedagem** | GitHub Pages / Netlify | Gratuito |
+| **Hospedagem** | Vercel | Gratuito |
 
 ---
 
