@@ -1,0 +1,36 @@
+/* src/css/variaveis.css */
+/* Arquivo responsável pelas variáveis de tema e cores do Nordeste */
+:root {
+  --cor-primaria: #1A5691;
+  --cor-primaria-escura: #134070;
+  --cor-primaria-clara: #E8F0F9;
+
+  --cor-secundaria: #3DA35A;
+  --cor-secundaria-escura: #2D7A43;
+  --cor-secundaria-clara: #E6F4EA;
+
+  --cor-acento: #F2994A;
+  --cor-acento-escura: #D4792A;
+  --cor-acento-clara: #FEF3E7;
+
+  --cor-mobilidade: #805AD5;
+  --cor-mobilidade-escura: #5E3FA3;
+  --cor-mobilidade-clara: #EDE9F8;
+
+  --cor-fundo: #F7F8FA;
+  --cor-superficie: #FFFFFF;
+  --cor-borda: #E2E8F0;
+  --cor-texto-principal: #1A202C;
+  --cor-texto-secundario: #718096;
+
+  --fonte-corpo: 'Inter', system-ui, sans-serif;
+  --fonte-titulo: 'Poppins', 'Inter', sans-serif;
+}
+
+.dark {
+  --cor-fundo: #121212;
+  --cor-superficie: #1E1E1E;
+  --cor-borda: #2D2D2D;
+  --cor-texto-principal: #E0E0E0;
+  --cor-texto-secundario: #A0A0A0;
+}
