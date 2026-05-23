@@ -127,3 +127,8 @@ Desktop.ini
 
 # Data files
 *.csv
+dados/
+
+# Documentação local não versionada
+AI_CONTEXT.md
+ARQUITETURA.md
