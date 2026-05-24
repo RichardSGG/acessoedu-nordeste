@@ -1,0 +1,1 @@
+Projeto pausado em 24/05/2026. Motivo: Diagnóstico forense comprovou corrupção de dados (strings ########) na base oficial do Censo Escolar do INEP. Decisão estratégica de não prosseguir para evitar desinformação geográfica.
