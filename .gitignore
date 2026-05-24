@@ -9,9 +9,11 @@ AI_CONTEXT.md
 ARQUITETURA.md
 PLAN.MD
 
-# Dependências
+# Dependências e Ambientes Virtuais
 node_modules/
 .pnpm-store/
+.venv/
+.venv*/
 
 # Build e cache
 dist/
@@ -23,6 +25,9 @@ etl/dados_brutos/
 etl/*.csv
 etl/*.xlsx
 seeder/escolas_limpo.json
+dados/*.csv
+dados/*.xlsx
+dados/*.json
 
 # Sistema operacional
 .DS_Store
