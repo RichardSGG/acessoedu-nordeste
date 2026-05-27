@@ -54,6 +54,7 @@
                 <i class="ph-bold ph-sign-in"></i> Entrar
             </button>
             <span id="nome-usuario-header" class="hidden text-sm font-semibold text-slate-700"></span>
+            <span id="edu-points-header" class="hidden text-xs font-bold text-acento bg-orange-50 px-2 py-1 rounded-full"></span>
             <div id="avatar-usuario" class="hidden w-10 h-10 rounded-full bg-slate-200 border-2 border-primaria flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden" onclick="window.location.href='config.html'">
                 <i class="ph-fill ph-user text-xl text-slate-500"></i>
             </div>
@@ -75,7 +76,7 @@
     <div class="card mb-8">
         <div class="flex items-center justify-between mb-4">
             <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
-                <i class="ph-fill ph-image text-primaria"></i> Moderacao de Fotos
+                <i class="ph-fill ph-image text-primaria"></i> Moderação de Fotos
             </h2>
             <div class="flex bg-slate-100 p-1 rounded-full shadow-inner">
                 <button id="tab-fotos-pendentes" class="px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300">Pendentes</button>
@@ -95,13 +96,13 @@
                             <th class="py-2 px-3 font-semibold text-slate-600">Miniatura</th>
                             <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
                             <th class="py-2 px-3 font-semibold text-slate-600">Data Envio</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Acoes</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-fotos-body"></tbody>
                 </table>
             </div>
-            <p id="sem-fotos" class="hidden text-center text-sm text-slate-400 py-6">Nenhuma foto pendente de moderacao.</p>
+            <p id="sem-fotos" class="hidden text-center text-sm text-slate-400 py-6">Nenhuma foto pendente de moderação.</p>
         </div>
 
         <!-- Aprovadas -->
@@ -115,8 +116,8 @@
                         <tr class="border-b border-slate-200 text-left">
                             <th class="py-2 px-3 font-semibold text-slate-600">Miniatura</th>
                             <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Data Aprovacao</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Acoes</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600">Data Aprovação</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-fotos-aprovadas-body"></tbody>

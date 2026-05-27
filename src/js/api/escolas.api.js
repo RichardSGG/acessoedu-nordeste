@@ -57,6 +57,7 @@ export async function listar(filtros = {}) {
         agua_potavel: obj.get('agua_potavel') ?? null,
         energia_eletrica: obj.get('energia_eletrica') ?? null,
         dependencia: obj.get('dependencia') || '',
+        telefone: obj.get('telefone') || '',
         cep: obj.get('cep') || '',
       };
     });
@@ -219,6 +220,7 @@ export async function buscarPorBoundingBox(sw, ne) {
         agua_potavel: obj.get('agua_potavel') ?? null,
         energia_eletrica: obj.get('energia_eletrica') ?? null,
         dependencia: obj.get('dependencia') || '',
+        telefone: obj.get('telefone') || '',
         cep: obj.get('cep') || '',
       };
     });
@@ -269,6 +271,7 @@ export async function buscarPorRaio(latitude, longitude, raioKm = 10) {
         agua_potavel: obj.get('agua_potavel') ?? null,
         energia_eletrica: obj.get('energia_eletrica') ?? null,
         dependencia: obj.get('dependencia') || '',
+        telefone: obj.get('telefone') || '',
         cep: obj.get('cep') || '',
       };
     });
@@ -302,6 +305,7 @@ export async function buscarPorNome(termo) {
         lat, lng,
         latitude: lat,
         longitude: lng,
+        telefone: obj.get('telefone') || '',
         cep: obj.get('cep') || '',
       };
     });

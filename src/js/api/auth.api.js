@@ -7,17 +7,17 @@ import estado from '../core/estado.js';
 import { PAPEIS_USUARIO } from '../core/constantes.js';
 
 const ERROS_PT = {
-  'Invalid username/password.': 'Usuario ou senha invalidos.',
-  'Invalid username/password': 'Usuario ou senha invalidos.',
-  'Account already exists for this username.': 'Ja existe uma conta com este e-mail.',
-  'Account already exists for this username': 'Ja existe uma conta com este e-mail.',
-  'The email address is invalid.': 'O endereco de email e invalido.',
-  'The email address is invalid': 'O endereco de email e invalido.',
+  'Invalid username/password.': 'Usuário ou senha inválidos.',
+  'Invalid username/password': 'Usuário ou senha inválidos.',
+  'Account already exists for this username.': 'Já existe uma conta com este e-mail.',
+  'Account already exists for this username': 'Já existe uma conta com este e-mail.',
+  'The email address is invalid.': 'O endereço de email é inválido.',
+  'The email address is invalid': 'O endereço de email é inválido.',
   'Password must be at least 6 characters.': 'A senha deve ter pelo menos 6 caracteres.',
   'Password must be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres.',
-  'Invalid email address.': 'Email invalido.',
-  'Invalid email address': 'Email invalido.',
-  'Network request failed': 'Erro de conexao. Verifique sua internet.',
+  'Invalid email address.': 'Email inválido.',
+  'Invalid email address': 'Email inválido.',
+  'Network request failed': 'Erro de conexão. Verifique sua internet.',
 };
 
 function traduzirErro(erro) {
@@ -25,13 +25,13 @@ function traduzirErro(erro) {
   if (ERROS_PT[mensagem]) {
     erro.message = ERROS_PT[mensagem];
   } else if (erro?.code === 101) {
-    erro.message = 'Usuario ou senha invalidos.';
+    erro.message = 'Usuário ou senha inválidos.';
   } else if (erro?.code === 202) {
-    erro.message = 'Ja existe uma conta com este e-mail.';
+    erro.message = 'Já existe uma conta com este e-mail.';
   } else if (erro?.code === 125) {
-    erro.message = 'O endereco de email e invalido.';
+    erro.message = 'O endereço de email é inválido.';
   } else if (erro?.code === 100) {
-    erro.message = 'Erro de conexao. Verifique sua internet.';
+    erro.message = 'Erro de conexão. Verifique sua internet.';
   }
   return erro;
 }
@@ -97,7 +97,6 @@ export async function registar(email, senha, nomeExibicao) {
     usuario.set('email', email);
     usuario.set('password', senha);
     usuario.set('nomeExibicao', nomeExibicao);
-    usuario.set('karmaPoints', 0);
     usuario.set('role', PAPEIS_USUARIO.USUARIO);
     await usuario.signUp();
     estado.definir('usuarioAtual', usuario);
@@ -154,17 +153,17 @@ export async function verificarAdmin() {
  */
 export async function solicitarRedefinicaoSenha(email) {
   if (!email || !email.includes('@')) {
-    return { sucesso: false, mensagem: 'Informe um endereco de email valido.' };
+    return { sucesso: false, mensagem: 'Informe um endereço de email válido.' };
   }
 
   try {
     await Parse.User.requestPasswordReset(email.trim());
     return {
       sucesso: true,
-      mensagem: 'Email de redefinicao enviado. Verifique sua caixa de entrada e spam.',
+      mensagem: 'Email de redefinição enviado. Verifique sua caixa de entrada e spam.',
     };
   } catch (erro) {
-    console.error('[auth.api] Erro ao solicitar redefinicao de senha:', erro);
+    console.error('[auth.api] Erro ao solicitar redefinição de senha:', erro);
     if (erro.code === 205) {
       return { sucesso: false, mensagem: 'Nenhuma conta encontrada com este email.' };
     }
@@ -177,7 +176,7 @@ export async function solicitarRedefinicaoSenha(email) {
  */
 export async function atualizarAvatar(parseFile) {
   const usuario = estado.obter('usuarioAtual');
-  if (!usuario) throw new Error('Usuario nao autenticado');
+  if (!usuario) throw new Error('Usuário não autenticado');
 
   try {
     usuario.set('profilePhoto', parseFile);
