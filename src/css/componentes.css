@@ -1,0 +1,349 @@
+/* src/css/componentes.css */
+/* Componentes reutilizaveis: cards, botoes, badges, inputs */
+
+/* --- Card Padrao --- */
+.card {
+  background-color: var(--cor-superficie);
+  border-radius: var(--raio-grande);
+  box-shadow: var(--sombra-suave);
+  border: 1px solid var(--cor-borda);
+  padding: 1.5rem;
+  transition: var(--transicao-padrao);
+}
+
+.card:hover {
+  box-shadow: var(--sombra-forte);
+  transform: translateY(-2px);
+}
+
+/* --- Botao Primario --- */
+.botao-primario {
+  background-color: var(--cor-primaria);
+  color: #FFFFFF;
+  border-radius: var(--raio-total);
+  padding: 0.625rem 1.5rem;
+  font-family: var(--fonte-corpo);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: var(--transicao-padrao);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.botao-primario:hover {
+  background-color: var(--cor-primaria-escura);
+  box-shadow: var(--sombra-media);
+}
+
+/* --- Botao Secundario --- */
+.botao-secundario {
+  background-color: transparent;
+  color: var(--cor-primaria);
+  border: 2px solid var(--cor-primaria);
+  border-radius: var(--raio-total);
+  padding: 0.5rem 1.5rem;
+  font-family: var(--fonte-corpo);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: var(--transicao-padrao);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.botao-secundario:hover {
+  background-color: var(--cor-primaria-clara);
+}
+
+/* --- Badge de Excelencia --- */
+.badge-ouro {
+  background-color: var(--cor-acento-clara);
+  color: var(--cor-acento-escura);
+  border: 1px solid var(--cor-acento);
+  border-radius: var(--raio-total);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.badge-prata {
+  background-color: #EDF2F7;
+  color: #4A5568;
+  border: 1px solid #A0AEC0;
+  border-radius: var(--raio-total);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.badge-bronze {
+  background-color: #FFF5F0;
+  color: #C05621;
+  border: 1px solid #ED8936;
+  border-radius: var(--raio-total);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.badge-verificado {
+  background-color: var(--cor-secundaria-clara);
+  color: var(--cor-secundaria-escura);
+  border: 1px solid var(--cor-secundaria);
+  border-radius: var(--raio-total);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* --- Input Padrao --- */
+.input-padrao {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio);
+  font-family: var(--fonte-corpo);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto-principal);
+  transition: var(--transicao-padrao);
+  outline: none;
+}
+
+.input-padrao:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(26, 86, 145, 0.15);
+}
+
+.input-padrao::placeholder {
+  color: var(--cor-texto-secundario);
+}
+
+/* --- Select Padrao --- */
+.select-padrao {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio);
+  font-family: var(--fonte-corpo);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto-principal);
+  transition: var(--transicao-padrao);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23718096'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+
+/* --- Toast / Notificacao --- */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio);
+  box-shadow: var(--sombra-forte);
+  padding: 1rem 1.5rem;
+  font-family: var(--fonte-corpo);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cor-texto-principal);
+  z-index: 9999;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: transform 300ms ease, opacity 300ms ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 400px;
+}
+
+.toast.visivel {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast.sucesso { border-left: 4px solid var(--cor-sucesso); }
+.toast.erro { border-left: 4px solid var(--cor-erro); }
+.toast.aviso { border-left: 4px solid var(--cor-aviso); }
+
+/* --- Loader Spinner --- */
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--cor-borda);
+  border-top-color: var(--cor-primaria);
+  border-radius: 50%;
+  animation: girar 0.6s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Modal Overlay --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 300ms ease, visibility 300ms ease;
+}
+
+.modal-overlay.aberto {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-conteudo {
+  background: var(--cor-superficie);
+  border-radius: var(--raio-grande);
+  box-shadow: var(--sombra-forte);
+  padding: 2rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* --- Toggle Switch --- */
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background-color: var(--cor-borda);
+  border-radius: var(--raio-total);
+  cursor: pointer;
+  transition: var(--transicao-padrao);
+  border: none;
+  outline: none;
+  padding: 0;
+}
+
+.toggle-switch.ativo {
+  background-color: var(--cor-primaria);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 300ms ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.ativo::after {
+  transform: translateX(22px);
+}
+
+/* --- Barra de Progresso --- */
+.barra-progresso {
+  width: 100%;
+  height: 8px;
+  background-color: var(--cor-borda);
+  border-radius: var(--raio-total);
+  overflow: hidden;
+}
+
+.barra-progresso-preenchimento {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+  border-radius: var(--raio-total);
+  transition: width 600ms ease;
+}
+
+/* --- Estrelas de Avaliacao --- */
+.estrelas-container {
+  display: inline-flex;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.estrelas-container i {
+  font-size: 1.5rem;
+  color: var(--cor-borda);
+  transition: color 150ms ease, transform 150ms ease;
+}
+
+.estrelas-container i.preenchida {
+  color: var(--cor-acento);
+}
+
+.estrelas-container i:hover {
+  transform: scale(1.15);
+}
+
+/* --- Impressao (PDF) --- */
+@media print {
+  header, footer, .filtros, .botoes-acao, .modal-overlay, .toast {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+    font-size: 11pt;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+
+  .grafico-container {
+    width: 100%;
+    page-break-inside: avoid;
+  }
+
+  .relatorio-cabecalho {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .relatorio-cabecalho h1 {
+    font-size: 18pt;
+    font-weight: 800;
+  }
+
+  .relatorio-cabecalho p {
+    font-size: 10pt;
+    color: #666;
+  }
+}

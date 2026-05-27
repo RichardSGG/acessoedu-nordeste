@@ -9,6 +9,10 @@ import { EVENTOS } from '../core/constantes.js';
 let instanciaMapa = null;
 let markersCluster = null;
 
+export function obterInstanciaMapa() {
+  return instanciaMapa;
+}
+
 // Inicializa Back4App no navegador
 Parse.initialize("8uIloIhmnqIK0y8P2vghyDGk20EX5wwnbBTxYAhk", "o4wIFtX6xdbhdYX8PRfD57oOzN8ZkoLrA18Jxb93");
 Parse.serverURL = 'https://parseapi.back4app.com/';
@@ -119,13 +123,16 @@ async function enviarAuditoria() {
         const obj = new AvaliacoesClass();
         
         obj.set("id_escola", idEscola);
-        obj.set("autor_avaliacao", "Cidadão Voluntário");
+        obj.set("nome", "Cidadao Voluntario");
         obj.set("categoria_problema", categoria);
-        obj.set("comentario", comentario);
-        obj.set("nota_atribuida", nota);
+        obj.set("mensagem", comentario);
+        obj.set("nota", nota);
         obj.set("status_resolucao", "Aberto");
         obj.set("data_auditoria", new Date());
         obj.set("possui_evidencia", false);
+        obj.set("respostas", []);
+        obj.set("verificado_local", false);
+        obj.set("flags_count", 0);
 
         await obj.save();
         alert("Denúncia / Auditoria salva com sucesso!");

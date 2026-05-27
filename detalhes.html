@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil da Escola | AcessoEdu Nordeste</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="src/css/variaveis.css">
+    <link rel="stylesheet" href="src/css/componentes.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primaria: '#1A5691',
+                        secundaria: '#3DA35A',
+                        acento: '#F2994A',
+                        mobilidade: '#805AD5',
+                        fundo: '#F7F8FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
+
+    <script>
+        (function() {
+            const tema = localStorage.getItem('acessoedu:tema');
+            if (tema === 'escuro') document.documentElement.classList.add('dark');
+        })();
+    </script>
+</head>
+<body class="bg-fundo text-[#1A202C] antialiased min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <i class="ph-fill ph-student text-3xl text-primaria"></i>
+            <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
+        </a>
+        <nav class="flex items-center gap-6">
+            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
+            <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
+            <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors hidden" id="link-admin">Admin</a>
+        </nav>
+        <div class="flex items-center gap-4" id="container-auth">
+            <button id="btn-login" class="px-5 py-2 bg-primaria text-white rounded-full text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2" onclick="window.location.href='config.html'">
+                <i class="ph-bold ph-sign-in"></i> Entrar
+            </button>
+            <span id="nome-usuario-header" class="hidden text-sm font-semibold text-slate-700"></span>
+            <div id="avatar-usuario" class="hidden w-10 h-10 rounded-full bg-slate-200 border-2 border-primaria flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden" onclick="window.location.href='config.html'">
+                <i class="ph-fill ph-user text-xl text-slate-500"></i>
+            </div>
+            <button id="btn-logout-header" class="hidden px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center gap-1">
+                <i class="ph-bold ph-sign-out"></i> Sair
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Loader -->
+    <div id="loader-escola" class="text-center py-12">
+        <div class="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full shadow-md border border-slate-200">
+            <div class="spinner"></div>
+            <span class="text-sm font-semibold text-slate-600">Carregando dados da escola...</span>
+        </div>
+    </div>
+
+    <!-- Erro -->
+    <div id="erro-escola" class="hidden text-center py-12">
+        <div class="inline-flex flex-col items-center gap-3 px-6 py-6 bg-red-50 rounded-2xl border border-red-200">
+            <i class="ph-fill ph-warning-circle text-3xl text-red-500"></i>
+            <p class="text-sm font-semibold text-red-700">Escola nao encontrada.</p>
+            <p class="text-xs text-red-500">Verifique o parametro ?id= na URL.</p>
+            <a href="index.html" class="mt-2 px-4 py-2 bg-primaria text-white rounded-full text-sm font-bold hover:bg-blue-800 transition-colors">Voltar ao Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Conteudo da Escola -->
+    <div id="secao-escola" class="hidden">
+
+        <!-- Cabecalho -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+            <h1 id="escola-nome" class="font-display font-bold text-2xl text-slate-800 mb-2"></h1>
+            <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                <span id="escola-cidade" class="flex items-center gap-1">
+                    <i class="ph-fill ph-map-pin text-primaria"></i>
+                </span>
+                <span id="escola-uf" class="px-2 py-0.5 bg-blue-50 text-primaria rounded-full font-bold text-xs uppercase"></span>
+                <span id="escola-dependencia" class="px-2 py-0.5 rounded-full font-bold text-xs"></span>
+                <span id="escola-id-inep" class="text-xs text-slate-400"></span>
+            </div>
+        </div>
+
+        <!-- Carrossel de Imagens (Cascata) -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-image text-primaria"></i> Fotos da Escola
+            </h2>
+            <div id="container-fotos" class="relative">
+                <div id="carrossel-fotos" class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4" style="scrollbar-width: thin;"></div>
+                <button id="btn-foto-anterior" class="hidden absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors z-10">
+                    <i class="ph-bold ph-caret-left text-lg text-slate-600"></i>
+                </button>
+                <button id="btn-foto-proximo" class="hidden absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors z-10">
+                    <i class="ph-bold ph-caret-right text-lg text-slate-600"></i>
+                </button>
+            </div>
+            <div id="placeholder-foto" class="hidden text-center py-8">
+                <svg class="w-32 h-32 mx-auto mb-4 text-slate-300" fill="none" viewBox="0 0 128 128" stroke="currentColor">
+                    <rect x="16" y="24" width="96" height="80" rx="4" stroke-width="2" fill="none"/>
+                    <circle cx="48" cy="52" r="8" stroke-width="2"/>
+                    <path d="M16 88l20-20 16 16 24-24 36 28" stroke-width="2" fill="none"/>
+                </svg>
+                <p class="text-sm text-slate-500 mb-4">Nenhuma foto disponivel para esta escola.</p>
+                <button id="btn-enviar-primeira-foto" class="botao-primario mx-auto">
+                    <i class="ph-bold ph-camera"></i> Enviar a primeira foto desta escola
+                </button>
+            </div>
+        </div>
+
+        <!-- Contato e Localizacao -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6" id="secao-contato">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-map-pin text-primaria"></i> Contato e Localizacao
+            </h2>
+            <div id="conteudo-contato" class="space-y-3">
+                <div id="contato-endereco" class="hidden text-sm text-slate-600 flex items-start gap-2">
+                    <i class="ph-fill ph-buildings text-slate-400 mt-0.5"></i>
+                    <span id="txt-endereco"></span>
+                </div>
+                <a id="contato-mapa" href="#" target="_blank" rel="noopener" class="hidden botao-primario text-sm">
+                    <i class="ph-bold ph-map-trifold"></i> Ver no Mapa
+                </a>
+                <div id="contato-telefone" class="hidden text-sm text-slate-600 flex items-center gap-2">
+                    <i class="ph-fill ph-phone text-slate-400"></i>
+                    <a id="link-telefone" href="#" class="text-primaria hover:underline font-medium"></a>
+                </div>
+                <div id="contato-email" class="hidden text-sm text-slate-600 flex items-center gap-2">
+                    <i class="ph-fill ph-envelope text-slate-400"></i>
+                    <a id="link-email" href="#" class="text-primaria hover:underline font-medium"></a>
+                </div>
+                <div id="contato-sem-dados" class="hidden text-sm text-slate-400 text-center py-2">
+                    Nenhuma informacao de contato disponivel.
+                </div>
+            </div>
+        </div>
+
+        <!-- Checklist Comparativo 2024 vs 2025 -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-scales text-primaria"></i> Comparativo de Infraestrutura 2024 vs 2025
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200">
+                            <th class="text-left py-3 px-4 font-semibold text-slate-600">Indicador</th>
+                            <th class="text-center py-3 px-4 font-semibold text-slate-600">2024</th>
+                            <th class="text-center py-3 px-4 font-semibold text-slate-600">2025</th>
+                            <th class="text-center py-3 px-4 font-semibold text-slate-600">Evolucao</th>
+                        </tr>
+                    </thead>
+                    <tbody id="checklist-body"></tbody>
+                </table>
+            </div>
+            <div id="checklist-sem-dados" class="hidden text-center py-6 text-sm text-slate-400">
+                Dados comparativos indisponiveis — escola nao encontrada em um dos anos.
+            </div>
+        </div>
+
+        <!-- Grafico Radar (Chart.js Lazy Loaded) -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-radar text-primaria"></i> Escola vs Media do Municipio
+            </h2>
+            <div id="container-radar" class="relative w-full" style="max-height: 400px;">
+                <canvas id="grafico-radar" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Formulario de Avaliacao (bloqueado para deslogados) -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6" id="secao-avaliacao">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-star text-primaria"></i> Avaliar esta Escola
+            </h2>
+
+            <div id="avaliacao-login-msg" class="text-center py-6">
+                <i class="ph-fill ph-lock-key text-3xl text-slate-300 mb-2 block"></i>
+                <p class="text-sm text-slate-500 mb-3">E necessario entrar na sua conta para avaliar esta escola.</p>
+                <a href="config.html" class="botao-primario mx-auto">Fazer Login</a>
+            </div>
+
+            <form id="form-avaliacao" class="hidden space-y-4" novalidate>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Sua Nota</label>
+                    <div id="estrelas-avaliacao" class="estrelas-container" role="radiogroup" aria-label="Nota de 1 a 5">
+                        <i class="ph-fill ph-star" data-nota="1"></i>
+                        <i class="ph-fill ph-star" data-nota="2"></i>
+                        <i class="ph-fill ph-star" data-nota="3"></i>
+                        <i class="ph-fill ph-star" data-nota="4"></i>
+                        <i class="ph-fill ph-star" data-nota="5"></i>
+                    </div>
+                    <input type="hidden" id="avaliacao-nota" value="0">
+                </div>
+                <div>
+                    <label for="avaliacao-comentario" class="block text-sm font-semibold text-slate-700 mb-1">Comentario</label>
+                    <textarea id="avaliacao-comentario" rows="3" maxlength="500" class="input-padrao resize-none" placeholder="Descreva sua experiencia com esta escola..."></textarea>
+                    <p class="text-xs text-slate-400 mt-1 text-right"><span id="contador-avaliacao">0</span>/500</p>
+                </div>
+                <div id="selo-local-container" class="hidden flex items-center gap-2 text-xs font-bold text-secundaria bg-green-50 px-3 py-2 rounded-xl">
+                    <i class="ph-fill ph-map-pin"></i> <span>Voce esta proximo a esta escola — Selo Local Verificado sera aplicado</span>
+                </div>
+                <button type="submit" class="botao-primario" id="btn-enviar-avaliacao">
+                    <i class="ph-bold ph-paper-plane-tilt"></i> Enviar Avaliacao
+                </button>
+                <div id="avaliacao-sucesso" class="hidden px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm font-semibold text-green-700 flex items-center gap-2">
+                    <i class="ph-fill ph-check-circle text-lg"></i> Avaliacao enviada com sucesso!
+                </div>
+                <div id="avaliacao-erro" class="hidden px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700 flex items-center gap-2">
+                    <i class="ph-fill ph-x-circle text-lg"></i> <span id="avaliacao-erro-msg">Erro ao enviar.</span>
+                </div>
+            </form>
+
+            <div id="avaliacao-ja-enviada" class="hidden text-center py-4">
+                <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-secundaria rounded-full text-sm font-bold">
+                    <i class="ph-fill ph-check-circle"></i> Voce ja avaliou esta escola
+                </div>
+            </div>
+        </div>
+
+        <!-- Feed de Comentarios -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-chats text-primaria"></i> Feedbacks da Comunidade
+            </h2>
+            <div id="loader-feedbacks" class="text-center py-6">
+                <div class="spinner mx-auto"></div>
+            </div>
+            <div id="lista-feedbacks" class="space-y-3"></div>
+            <p id="sem-feedbacks" class="hidden text-center text-sm text-slate-400 py-6">
+                Nenhum feedback registrado para esta escola. Seja o primeiro!
+            </p>
+        </div>
+
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-white border-t border-slate-200 mt-auto">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <p class="text-sm font-semibold text-slate-700">Desenvolvido para a Atividade A07 — Desenvolvimento Web — UNICAP</p>
+        <p class="text-xs text-slate-500 mt-1">Dados: Censo Escolar INEP 2024/2025 | Mapa: OpenStreetMap contributors</p>
+    </div>
+</footer>
+
+<script type="module" src="src/js/core/inicializador.js"></script>
+<script type="module" src="src/js/ui/escola.js"></script>
+</body>
+</html>
