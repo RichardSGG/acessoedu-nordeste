@@ -308,6 +308,17 @@ function configurarBotaoCep() {
       }
 
       const dataCep = await respCep.json();
+      
+      const uf = (dataCep?.state || '').toUpperCase();
+      const estadosNordeste = ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'];
+      if (!estadosNordeste.includes(uf)) {
+        exibirToast('O CEP informado não é da Região Nordeste', 'erro');
+        estado.definir('mensagemVazia', 'O AcessoEdu atende apenas a escolas da Região Nordeste.');
+        estado.definir('escolas', []);
+        btnBuscar.disabled = false;
+        return;
+      }
+
       const cidadeCru = dataCep?.city || '';
       const cidadeNormalizada = normalizar(cidadeCru);
 
