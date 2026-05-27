@@ -4,7 +4,7 @@ Plataforma de transparência e auditoria cidadã para infraestrutura escolar do 
 
 ## Missão 📚
 
-Transformar os microdados do Censo Escolar INEP em uma ferramenta visual, interativa e gratuita. Qualquer cidadão pode consultar a infraestrutura de uma escola pública, comparar a evolução entre 2024 e 2025, e contribuir com avaliações e fotos verificadas presencialmente.
+Transformar os microdados do Censo Escolar INEP (extraídos e tratados localmente com scripts em Python/Pandas) em uma ferramenta visual, interativa e gratuita. Qualquer cidadão pode consultar a infraestrutura de uma escola pública, comparar a evolução entre 2024 e 2025, e contribuir com avaliações e fotos da comunidade.
 
 ## Paradigma Comparativo 🏖️
 
@@ -18,12 +18,37 @@ O diferencial do AcessoEdu é a **comparação temporal por escola**. O usuário
 
 Zero **não é** a mesma coisa que `null`. Zero significa ausência confirmada pelo INEP. `null` significa que o dado não foi informado.
 
+## Demonstração Visual 📸
+
+> [!NOTE]
+> Adicione aqui capturas de tela (screenshots) da interface do seu projeto para demonstrar visualmente as funcionalidades implementadas. Substitua os placeholders abaixo pelos caminhos reais das imagens (ex: salvando-as em uma pasta `docs/screenshots/` e referenciando-as).
+
+### 1. Dashboard Principal (Visão Geral)
+<!-- Insira aqui o print do Dashboard com os gráficos comparativos, KPIs de infraestrutura e o mapa interativo. -->
+<!-- ![Dashboard Principal](docs/screenshots/dashboard.png) -->
+
+### 2. Busca por CEP e Filtros de Escolas
+<!-- Insira aqui o print da funcionalidade de busca por CEP (BrasilAPI) e aplicação de filtros por município e estado. -->
+<!-- ![Filtros e Busca por CEP](docs/screenshots/busca_cep.png) -->
+
+### 3. Perfil de Detalhes da Escola
+<!-- Insira aqui o print da tela de detalhes da escola, mostrando o checklist comparativo 2024 vs 2025, o gráfico radar de excelência e o carrossel de fotos. -->
+<!-- ![Detalhes da Escola](docs/screenshots/detalhes_escola.png) -->
+
+### 4. Ranking de Excelência e Badges
+<!-- Insira aqui o print do Ranking de Excelência com o pódio Top 3 e a distribuição das badges (ouro/prata/bronze). -->
+<!-- ![Ranking de Excelência](docs/screenshots/ranking.png) -->
+
+### 5. Painel de Moderação (Admin)
+<!-- Insira aqui o print do painel Admin logado, mostrando a moderação de fotos enviadas pela comunidade e comentários denunciados. -->
+<!-- ![Painel de Moderação](docs/screenshots/admin_dashboard.png) -->
+
 ## Funcionalidades 🌴
 
 - **Dashboard** com KPIs, gráficos de barras comparativos 2024/2025 e gráficos de rosca
 - **Lista de escolas** com filtros por Estado, Município e busca por nome
 - **Perfil completo da escola** com checklist comparativo 2024 vs 2025, gráfico radar (Chart.js) e feed de avaliações
-- **Avaliações com verificação local** — fórmula de Haversine confirma se o usuário está a até 500m da escola
+- **Avaliações da comunidade** — feed de feedbacks cidadãos com nota e comentários sobre a escola
 - **Cascata de imagens** — Back4App (fotos comunitárias) -> placeholder
 - **Ranking de Excelência** com pódio Top 3 e badges ouro/prata/bronze baseados em 7 indicadores
 - **Busca por CEP** — consulta BrasilAPI v1 para obter o município e filtra escolas por cidade no banco
@@ -62,21 +87,22 @@ O sistema implementa as quatro operações fundamentais de persistência distrib
 | **Phosphor Icons** | Iconografia |
 | **Vanilla JS (ES6 Modules)** | Lógica da aplicação (Pub/Sub) |
 
-### Extração de Dados: Scripts em Python (Pandas)
+### Back-end e Processamento de Dados
+
+A extração, filtragem e sanitização dos microdados brutos do Censo Escolar INEP é realizada localmente através de scripts robustos em Python (usando bibliotecas como Pandas). Após o processamento, os dados estruturados são enviados e armazenados no banco de dados Back4App.
 
 | Tecnologia | Propósito |
 |------------|-----------|
 | **Back4App (BaaS)** | Banco de dados, autenticação e storage |
 | **Parse SDK** | Cliente JavaScript para o Back4App |
-| **Python 3.10+** | Scripts de ETL (extração de CSVs do INEP) |
-| **Node.js** | Seeders e scripts de PATCH |
+| **Python 3.10+** | Scripts de ETL (extração, limpeza e cruzamento dos CSVs do INEP) |
+| **Node.js** | Seeders e scripts de patch/atualização complementar |
 
 ### APIs Externas
 
 | API | Propósito | Custo |
 |-----|-----------|-------|
-| **BrasilAPI** | Consulta de endereço e município via CEP — converte CEPs em filtros de busca por município no banco de dados | Gratuito |
-| **ViaCEP** | Busca de endereço por CEP (fallback na página de detalhes da escola) | Gratuito |
+| **BrasilAPI** | Consulta de endereço, município e geocodificação reversa via CEP — converte CEPs em filtros de busca por município no banco de dados e fornece fallback de endereço completo no perfil da escola | Gratuito |
 
 Integração de API: O sistema consome a BrasilAPI V1 para geocodificação reversa de municípios (CEP -> Município), utilizando normalização de strings (UTF-8/NFD) para garantir a consistência entre dados de terceiros e a base local do Censo Escolar.
 
