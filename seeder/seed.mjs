@@ -36,12 +36,14 @@ if (!APP_ID || !JS_KEY || !MASTER_KEY) {
 }
 
 Parse.initialize(APP_ID, JS_KEY, MASTER_KEY);
-Parse.serverURL = 'https://parseapi.back4app.com';
+Parse.serverURL = 'https://parseapi.back4app.com/';
 
 // ---------------------------------------------------------------------------
 // Constantes
 // ---------------------------------------------------------------------------
-const TAMANHO_LOTE = 100;
+const TAMANHO_LOTE = 50;
+const DELAY_ENTRE_LOTES_MS = 250;
+const MAX_TENTATIVAS = 3;
 
 const CONFIG = {
     'escolas_2024.json': 'Escolas2024',
@@ -51,6 +53,10 @@ const CONFIG = {
 // ---------------------------------------------------------------------------
 // Funcoes auxiliares
 // ---------------------------------------------------------------------------
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function carregarJson(caminho) {
     const raw = readFileSync(caminho, 'utf-8');
@@ -69,6 +75,37 @@ function chunkArray(arr, tamanho) {
     return lotes;
 }
 
+function extrairMensagemErro(erro) {
+    if (!erro) return 'erro desconhecido';
+    if (erro.message) return erro.message;
+    if (typeof erro === 'string') return erro;
+    try { return JSON.stringify(erro); } catch (_) { return String(erro); }
+}
+
+// ---------------------------------------------------------------------------
+// Teste de conexao (pre-flight)
+// ---------------------------------------------------------------------------
+
+async function verificarConexao() {
+    console.log('[SEED] Verificando conexao com Back4App...');
+    try {
+        const Teste = Parse.Object.extend('TesteConexao');
+        const obj = new Teste();
+        obj.set('ping', Date.now());
+        await obj.save(null, { useMasterKey: true });
+        await obj.destroy({ useMasterKey: true });
+        console.log('[OK]  Conexao com Back4App estabelecida.');
+        return true;
+    } catch (erro) {
+        console.error(`[FATAL] Sem conexao com Back4App: ${extrairMensagemErro(erro)}`);
+        console.error('[FATAL] Verifique:');
+        console.error('        1. Se a app Back4App esta ativa (nao hibernando)');
+        console.error('        2. Se as credenciais no .env estao corretas');
+        console.error('        3. Se a internet esta funcionando');
+        return false;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Limpar classe existente
 // ---------------------------------------------------------------------------
@@ -85,7 +122,7 @@ async function limparClasse(nomeClasse) {
         try {
             objetos = await query.find({ useMasterKey: true });
         } catch (erro) {
-            console.error(`[ERRO] Falha ao listar '${nomeClasse}': ${erro.message}`);
+            console.error(`[ERRO] Falha ao listar '${nomeClasse}': ${extrairMensagemErro(erro)}`);
             break;
         }
 
@@ -95,15 +132,15 @@ async function limparClasse(nomeClasse) {
             await Parse.Object.destroyAll(objetos, { useMasterKey: true });
             totalRemovidos += objetos.length;
             console.log(`[SEED]     ${totalRemovidos} removidos...`);
+            await sleep(200);
         } catch (erro) {
-            console.error(`[ERRO] Falha ao destruir lote: ${erro.message}`);
-            // Fallback: destruir um a um
+            console.error(`[ERRO] Falha ao destruir lote: ${extrairMensagemErro(erro)}`);
             for (const obj of objetos) {
                 try {
                     await obj.destroy({ useMasterKey: true });
                     totalRemovidos++;
                 } catch (e2) {
-                    console.error(`[ERRO]       obj ${obj.id}: ${e2.message}`);
+                    console.error(`[ERRO]       obj ${obj.id}: ${extrairMensagemErro(e2)}`);
                 }
             }
         }
@@ -114,10 +151,42 @@ async function limparClasse(nomeClasse) {
 }
 
 // ---------------------------------------------------------------------------
-// Criar lote de escolas
+// Criar lote de escolas (com retry)
 // ---------------------------------------------------------------------------
 
-async function criarLote(lote, nomeClasse, indiceLote, totalLotes) {
+async function criarLoteComRetry(lote, nomeClasse, indiceLote, totalLotes) {
+    let ultimaFalha = null;
+
+    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+        const resultado = await _tentarCriarLote(lote, nomeClasse);
+        if (resultado.falhas === 0) {
+            console.log(
+                `[OK] Lote ${indiceLote + 1}/${totalLotes} - ` +
+                `${resultado.criadas} criadas` +
+                (tentativa > 1 ? ` (tentativa ${tentativa})` : '')
+            );
+            return resultado;
+        }
+        ultimaFalha = resultado.erro;
+
+        if (tentativa < MAX_TENTATIVAS) {
+            const espera = DELAY_ENTRE_LOTES_MS * tentativa * 2;
+            console.log(
+                `[RETRY] Lote ${indiceLote + 1}: ${resultado.falhas} falhas, ` +
+                `tentativa ${tentativa + 1}/${MAX_TENTATIVAS} em ${espera}ms...`
+            );
+            await sleep(espera);
+        }
+    }
+
+    console.error(
+        `[ERRO] Lote ${indiceLote + 1}/${totalLotes} - ` +
+        `FALHA APOS ${MAX_TENTATIVAS} TENTATIVAS: ${extrairMensagemErro(ultimaFalha)}`
+    );
+    return { criadas: 0, falhas: lote.length };
+}
+
+async function _tentarCriarLote(lote, nomeClasse) {
     const objetos = [];
 
     for (const [idEscola, dados] of lote) {
@@ -179,38 +248,38 @@ async function criarLote(lote, nomeClasse, indiceLote, totalLotes) {
     }
 
     let falhasSalvar = 0;
+    let ultimoErro = null;
+
     try {
         await Parse.Object.saveAll(objetos, { useMasterKey: true });
     } catch (erro) {
-        console.error(
-            `[ERRO] Falha ao salvar lote ${indiceLote + 1}: ${erro.message}`
-        );
+        ultimoErro = erro;
         // Fallback: salvar individualmente
         for (const obj of objetos) {
             try {
                 await obj.save(null, { useMasterKey: true });
             } catch (errInd) {
                 falhasSalvar++;
-                console.error(
-                    `[ERRO]   id=${obj.get('id_escola')}: ${errInd.message}`
-                );
+                ultimoErro = errInd;
+                // So loga os 3 primeiros erros para nao poluir o console
+                if (falhasSalvar <= 3) {
+                    console.error(
+                        `[ERRO]   id=${obj.get('id_escola')}: ${extrairMensagemErro(errInd)}`
+                    );
+                }
             }
+        }
+        if (falhasSalvar > 3) {
+            console.error(`[ERRO]   ... e mais ${falhasSalvar - 3} falhas`);
         }
     }
 
     const criadas = objetos.length - falhasSalvar;
-
-    console.log(
-        `[OK] Lote ${indiceLote + 1}/${totalLotes} - ` +
-        `${criadas} criadas` +
-        (falhasSalvar > 0 ? `, ${falhasSalvar} falhas` : '')
-    );
-
-    return { criadas, falhas: falhasSalvar };
+    return { criadas, falhas: falhasSalvar, erro: ultimoErro };
 }
 
 // ---------------------------------------------------------------------------
-// Processar um arquivo JSON → classe
+// Processar um arquivo JSON -> classe
 // ---------------------------------------------------------------------------
 
 async function processarArquivo(arquivoJson, nomeClasse) {
@@ -235,20 +304,30 @@ async function processarArquivo(arquivoJson, nomeClasse) {
     // Dividir em lotes
     const lotes = chunkArray(entradas, TAMANHO_LOTE);
     console.log(`[SEED] Inserindo ${lotes.length} lotes de ate ${TAMANHO_LOTE}...`);
+    console.log(`[SEED] Delay entre lotes: ${DELAY_ENTRE_LOTES_MS}ms | Max tentativas: ${MAX_TENTATIVAS}`);
     console.log('');
 
     let totalCriadas = 0;
     let totalFalhas = 0;
+    const inicio = Date.now();
 
     for (let i = 0; i < lotes.length; i++) {
-        const { criadas, falhas } = await criarLote(lotes[i], nomeClasse, i, lotes.length);
+        const { criadas, falhas } = await criarLoteComRetry(lotes[i], nomeClasse, i, lotes.length);
         totalCriadas += criadas;
         totalFalhas += falhas;
+
+        // Delay entre lotes para respeitar rate limit (30 req/s no free tier)
+        if (i < lotes.length - 1) {
+            await sleep(DELAY_ENTRE_LOTES_MS);
+        }
     }
+
+    const duracao = ((Date.now() - inicio) / 1000).toFixed(1);
 
     console.log('');
     console.log(`[SEED]   Criadas : ${totalCriadas.toLocaleString()}`);
     console.log(`[SEED]   Falhas  : ${totalFalhas.toLocaleString()}`);
+    console.log(`[SEED]   Duracao : ${duracao}s`);
     console.log('');
     return { criadas: totalCriadas, falhas: totalFalhas };
 }
@@ -262,6 +341,13 @@ async function executarSeed() {
     console.log('[SEED] FULL IMPORT — Escolas2024 + Escolas2025');
     console.log(`[SEED] App ID : ${APP_ID}`);
     console.log('='.repeat(60));
+    console.log('');
+
+    // Pre-flight check
+    const conectado = await verificarConexao();
+    if (!conectado) {
+        process.exit(1);
+    }
     console.log('');
 
     for (const [arquivo, classe] of Object.entries(CONFIG)) {
