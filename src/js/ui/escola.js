@@ -455,9 +455,22 @@ async function renderizarRadar(ano) {
   const municipio = dadosEscola.cidade || dadosAno.cidade || '';
   const estatisticas = await EscolasAPI.obterEstatisticas(uf, municipio);
 
-  const mapearIndicadores = (fonte) => fonte
-    ? INDICADORES.map(ind => fonte[ind.chave] ?? 0)
-    : INDICADORES.map(() => 0);
+  const mapearIndicadores = (fonte) => {
+    if (!fonte) return INDICADORES.map(() => 0);
+    const mapaChaves = {
+      internet: 'internet',
+      laboratorio: 'lab_informatica',
+      banheiro_pne: 'banheiro_acessivel',
+      quadra: 'quadra_esportes',
+      rampa_acessibilidade: 'rampas',
+      agua_potavel: 'agua_potavel',
+      energia_eletrica: 'energia_eletrica'
+    };
+    return INDICADORES.map(ind => {
+      const chaveFonte = mapaChaves[ind.chave];
+      return fonte[chaveFonte] ?? 0;
+    });
+  };
 
   const dadosMunicipio = mapearIndicadores(estatisticas?.municipio);
   const dadosEstado = mapearIndicadores(estatisticas?.estado);
