@@ -10,7 +10,7 @@ import * as EscolasAPI from '../api/escolas.api.js';
 import * as FotosAPI from '../api/fotos.api.js';
 import * as MapillaryAPI from '../api/mapillary.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
-import * as ViaCEP from '../api/viacep.api.js';
+import * as BrasilAPI from '../api/brasilapi.api.js';
 import { mostrarAlerta, mostrarConfirmacao, mostrarPrompt } from './modal.ui.js';
 
 Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
@@ -170,9 +170,9 @@ function renderizarContato() {
     const cepFormatado = cepLimpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
     document.getElementById('txt-cep').textContent = cepFormatado;
 
-    /* Fallback: se nao tem endereco mas tem CEP, busca no ViaCEP */
+    /* Fallback: se nao tem endereco mas tem CEP, busca no BrasilAPI */
     if (!endereco) {
-      ViaCEP.buscarCep(cepLimpo).then(resultado => {
+      BrasilAPI.buscarCep(cepLimpo).then(resultado => {
         if (resultado.ok) {
           const { logradouro, bairro, cidade, uf } = resultado.dados;
           const partes = [logradouro, bairro, cidade].filter(Boolean);

@@ -362,13 +362,6 @@ body {
   transform: scale(1.15);
 }
 
-/* --- Botão de Raio (Modal Perto de Mim) --- */
-.btn-raio.raio-ativo {
-  border-color: var(--cor-primaria) !important;
-  background-color: var(--cor-primaria) !important;
-  color: #FFFFFF !important;
-}
-
 /* --- Impressao --- */
 @media print {
   header, footer, #filtro-analise-uf, .modal-overlay, .toast {

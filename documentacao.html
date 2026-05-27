@@ -108,7 +108,7 @@
                     <i class="ph-fill ph-cloud text-primaria"></i> Back4App (Parse Server)
                 </h3>
                 <p class="text-sm text-slate-600 leading-relaxed">
-                    BaaS (Backend as a Service) que armazena e serve os dados escolares, avaliações e fotos. Utiliza o SDK Parse para consultas geoespaciais com GeoPoint (<code>withinKilometers</code>), buscas por raio de proximidade via CEP, e controle de acesso baseado em Roles (admin/user). As tabelas Escolas2024 e Escolas2025 contêm ~74 mil registros cada, com 7 indicadores binários de infraestrutura mais metadados.
+                    BaaS (Backend as a Service) que armazena e serve os dados escolares, avaliações e fotos. Utiliza o SDK Parse para consultas com GeoPoint e controle de acesso baseado em Roles (admin/user). As tabelas Escolas2024 e Escolas2025 contêm ~74 mil registros cada, com 7 indicadores binários de infraestrutura mais metadados.
                 </p>
             </div>
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
@@ -129,10 +129,10 @@
         </h2>
         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
             <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                <i class="ph-fill ph-compass text-secundaria"></i> BrasilAPI (Geocodificação por CEP)
+                <i class="ph-fill ph-compass text-secundaria"></i> BrasilAPI (Busca de CEP e Logradouro)
             </h3>
             <p class="text-sm text-slate-600 leading-relaxed">
-                API pública brasileira que fornece geocodificação de CEP (coordenadas geográficas). Utilizada no botão "Perto de Mim": o usuário informa um CEP via modal, a BrasilAPI converte em latitude/longitude, e o Parse SDK consulta escolas em um raio configurável via <code>withinKilometers()</code>. Gratuita e sem autenticação.
+                API pública brasileira que fornece dados cadastrais do CEP. Utilizada para a busca integrada de escolas por município a partir do CEP informado e como fallback de endereço completo (logradouro, bairro, cidade e estado) na página de detalhes da escola. Gratuita e sem autenticação.
             </p>
         </div>
     </section>

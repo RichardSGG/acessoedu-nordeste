@@ -182,10 +182,10 @@ async function _carregarMunicipios(uf) {
     const query = new Parse.Query('Escolas2025');
     query.equalTo('uf', uf);
     query.limit(2000);
-    query.exists('cidade');
-    query.select('cidade');
+    query.exists('municipio');
+    query.select('municipio');
     const resultados = await query.find();
-    const cidades = [...new Set(resultados.map(r => r.get('cidade')).filter(Boolean))].sort();
+    const cidades = [...new Set(resultados.map(r => r.get('municipio')).filter(Boolean))].sort();
 
     selMunicipio.innerHTML = '<option value="">Todos os Municípios</option>' +
       cidades.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -240,39 +240,68 @@ function configurarBusca() {
 /* ------------------------------------------------------------------ */
 /* BUSCA POR CEP (BrasilAPI v1 → cidade → query textual)               */
 /* ------------------------------------------------------------------ */
+function exibirToast(mensagem, tipo = 'sucesso') {
+  let toastEl = document.getElementById('toast-app');
+  if (!toastEl) {
+    toastEl = document.createElement('div');
+    toastEl.id = 'toast-app';
+    toastEl.className = 'toast';
+    document.body.appendChild(toastEl);
+  }
+  toastEl.className = `toast ${tipo}`;
+  toastEl.innerHTML = `<span>${mensagem}</span>`;
+
+  // Forçar reflow para animar
+  toastEl.classList.remove('visivel');
+  void toastEl.offsetWidth;
+
+  setTimeout(() => {
+    toastEl.classList.add('visivel');
+  }, 50);
+
+  setTimeout(() => {
+    toastEl.classList.remove('visivel');
+  }, 3000);
+}
+
+function normalizar(texto) {
+  if (!texto) return '';
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
+
 function configurarBotaoCep() {
   const inputCep = document.getElementById('inputBuscaCep');
   const btnBuscar = document.getElementById('btn-buscar-cep');
   if (!inputCep || !btnBuscar) return;
-
-  function _normalizarCidade(nome) {
-    if (!nome) return '';
-    return nome
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase();
-  }
 
   btnBuscar.addEventListener('click', async () => {
     const cepLimpo = (inputCep.value || '').trim().replace(/\D/g, '');
     if (!/^\d{8}$/.test(cepLimpo)) {
       inputCep.style.borderColor = '#EF4444';
       setTimeout(() => { inputCep.style.borderColor = ''; }, 2000);
+      exibirToast('Formato de CEP inválido', 'erro');
       return;
     }
     inputCep.style.borderColor = '';
     btnBuscar.disabled = true;
 
     try {
-      const respCep = await fetch(`https://brasilapi.com.br/api/cep/v1/${cepLimpo}`);
+      const respCep = await fetch('https://brasilapi.com.br/api/cep/v1/' + cepLimpo);
 
       if (respCep.status === 404) {
+        exibirToast('CEP não encontrado', 'erro');
+        estado.definir('mensagemVazia', 'O CEP informado não foi encontrado.');
         estado.definir('escolas', []);
         btnBuscar.disabled = false;
         return;
       }
 
       if (!respCep.ok) {
+        exibirToast('Erro ao buscar CEP', 'erro');
+        estado.definir('mensagemVazia', 'Erro ao consultar o serviço de CEP. Tente novamente mais tarde.');
         estado.definir('escolas', []);
         btnBuscar.disabled = false;
         return;
@@ -280,27 +309,43 @@ function configurarBotaoCep() {
 
       const dataCep = await respCep.json();
       const cidadeCru = dataCep?.city || '';
-      const cidade = _normalizarCidade(cidadeCru);
+      const cidadeNormalizada = normalizar(cidadeCru);
 
-      if (!cidade) {
+      if (!cidadeNormalizada) {
+        exibirToast('Cidade não identificada', 'erro');
+        estado.definir('mensagemVazia', 'Não foi possível identificar o município para este CEP.');
         estado.definir('escolas', []);
         btnBuscar.disabled = false;
         return;
       }
 
+      exibirToast(`Município: ${cidadeCru}`, 'sucesso');
+
       const query = new Parse.Query('Escolas2025');
-      query.equalTo('cidade', cidade);
+      query.matches('municipio', new RegExp('^' + cidadeNormalizada + '$', 'i'));
       query.limit(200);
       const resultados = await query.find();
 
       if (resultados.length > 0) {
-        const escolas = resultados.map(r => ({ ...r.toJSON(), id_parse: r.id, classe: 'Escolas2025' }));
+        const escolas = resultados.map(r => {
+          const dados = r.toJSON();
+          return {
+            ...dados,
+            id_parse: r.id,
+            classe: 'Escolas2025',
+            cidade: dados.municipio || dados.cidade || '',
+          };
+        });
         estado.definir('escolas', escolas);
       } else {
+        exibirToast('Nenhuma escola encontrada', 'aviso');
+        estado.definir('mensagemVazia', `Nenhuma escola encontrada no município de ${cidadeCru}`);
         estado.definir('escolas', []);
       }
     } catch (erro) {
       console.error('[DASHBOARD] Erro na busca por CEP:', erro);
+      exibirToast('Erro de conexão ao buscar CEP', 'erro');
+      estado.definir('mensagemVazia', 'Erro de conexão ao realizar a busca por CEP.');
       estado.definir('escolas', []);
     }
 
@@ -333,6 +378,9 @@ function renderizarLista(escolas) {
   if (!escolas || escolas.length === 0) {
     container.innerHTML = '';
     vazia.classList.remove('hidden');
+    const msg = estado.obter('mensagemVazia') || 'Nenhuma escola encontrada com esses filtros.';
+    const p = vazia.querySelector('p');
+    if (p) p.textContent = msg;
     return;
   }
 

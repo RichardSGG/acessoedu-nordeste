@@ -1,7 +1,7 @@
 /**
  * src/js/ui/config.js
  * Responsabilidade: Configurações do usuário — login/registo, avatar (Pica.js),
- *                   barra de karma, toggle modo escuro sem FOUC
+ *                   toggle modo escuro sem FOUC
  */
 
 import estado from '../core/estado.js';
