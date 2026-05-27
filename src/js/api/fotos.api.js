@@ -1,35 +1,81 @@
 /**
  * src/js/api/fotos.api.js
- * Responsabilidade: Gestão de upload e consulta de fotos comunitárias (Back4App)
+ * Responsabilidade: Gestao de upload e consulta de fotos comunitarias no Back4App
  */
 
+const CLASSE_FOTO = 'SchoolPhoto';
+
 /**
- * Retorna as fotos comunitárias com estado aprovado para uma dada escola
- * @param {string} idEscola - Pointer da escola
- * @returns {Promise<Array>} Lista de objetos SchoolPhoto
+ * Lista fotos aprovadas para uma escola
+ * @param {string} idEscola - id_escola (codigo INEP)
+ * @returns {Promise<Array>}
  */
 export async function listarAprovadas(idEscola) {
-    try {
-        // TODO: Implementar Parse.Query('SchoolPhoto').equalTo('status', 'approved')
-        console.log('Stub: Listar fotos aprovadas da escola', idEscola);
-        return [];
-    } catch (erro) {
-        console.error('Erro ao listar fotos:', erro);
-        return [];
-    }
+  try {
+    const query = new Parse.Query(CLASSE_FOTO);
+    query.equalTo('id_escola', String(idEscola));
+    query.equalTo('status', 'approved');
+    query.descending('createdAt');
+    query.limit(30);
+    return await query.find();
+  } catch (erro) {
+    console.error('[fotos.api] Erro ao listar aprovadas:', erro);
+    return [];
+  }
 }
 
 /**
- * Submete uma nova foto para moderação
- * @param {string} idEscola - Pointer da escola alvo
- * @param {File} arquivoImagem - Ficheiro processado pelo Pica.js
+ * Submete nova foto para moderacao
+ * @param {string} idEscola
+ * @param {File} arquivoImagem
  */
 export async function enviarFoto(idEscola, arquivoImagem) {
-    try {
-        // TODO: Implementar upload Parse.File e salvar na classe SchoolPhoto
-        console.log('Stub: Foto enviada para aprovação', idEscola, arquivoImagem);
-    } catch (erro) {
-        console.error('Erro ao submeter foto:', erro);
-        throw erro;
-    }
+  try {
+    const parseFile = new Parse.File(arquivoImagem.name, arquivoImagem);
+    await parseFile.save();
+
+    const foto = new Parse.Object(CLASSE_FOTO);
+    foto.set('id_escola', String(idEscola));
+    foto.set('arquivo', parseFile);
+    foto.set('status', 'pending');
+    await foto.save();
+
+    return foto;
+  } catch (erro) {
+    console.error('[fotos.api] Erro ao enviar foto:', erro);
+    throw erro;
+  }
+}
+
+/**
+ * Lista fotos pendentes de aprovacao (admin)
+ */
+export async function listarPendentes(limite = 50) {
+  try {
+    const query = new Parse.Query(CLASSE_FOTO);
+    query.equalTo('status', 'pending');
+    query.include('id_escola');
+    query.descending('createdAt');
+    query.limit(limite);
+    return await query.find();
+  } catch (erro) {
+    console.error('[fotos.api] Erro ao listar pendentes:', erro);
+    return [];
+  }
+}
+
+/**
+ * Aprova ou rejeita uma foto (admin)
+ */
+export async function moderarFoto(fotoId, status) {
+  try {
+    const query = new Parse.Query(CLASSE_FOTO);
+    const foto = await query.get(fotoId);
+    foto.set('status', status);
+    await foto.save();
+    return foto;
+  } catch (erro) {
+    console.error('[fotos.api] Erro ao moderar foto:', erro);
+    throw erro;
+  }
 }
