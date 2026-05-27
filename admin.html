@@ -66,9 +66,14 @@
 
 <main class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
 
-    <div class="mb-8">
-        <h1 class="font-display font-black text-3xl text-slate-800 mb-2">Painel do Gestor</h1>
-        <p class="text-slate-500">Moderação de conteúdo enviado pela comunidade</p>
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="font-display font-black text-3xl text-slate-800 mb-2">Painel do Gestor</h1>
+            <p class="text-slate-500">Moderação de conteúdo enviado pela comunidade</p>
+        </div>
+        <button id="btn-recarregar-admin" class="bg-white rounded-full shadow-sm text-sm font-bold text-slate-600 border border-slate-200 hover:border-primaria hover:text-primaria transition-all flex items-center justify-center w-10 h-10" title="Recarregar Painel">
+            <i class="ph-bold ph-arrows-counter-clockwise"></i>
+        </button>
     </div>
 
     <!-- Seção Fotos -->
@@ -92,7 +97,7 @@
                 <table class="w-full text-sm hidden" id="tabela-fotos">
                     <thead>
                         <tr class="border-b border-slate-200 text-left">
-                            <th class="py-2 px-3 font-semibold text-slate-600">Miniatura</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600">Olhar foto</th>
                             <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
                             <th class="py-2 px-3 font-semibold text-slate-600">Data Envio</th>
                             <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
@@ -113,7 +118,7 @@
                 <table class="w-full text-sm hidden" id="tabela-fotos-aprovadas">
                     <thead>
                         <tr class="border-b border-slate-200 text-left">
-                            <th class="py-2 px-3 font-semibold text-slate-600">Miniatura</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600">Olhar foto</th>
                             <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
                             <th class="py-2 px-3 font-semibold text-slate-600">Data Aprovação</th>
                             <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>

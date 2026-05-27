@@ -293,6 +293,12 @@ function renderizarFotos(fotos) {
 }
 
 function dispararUploadFoto() {
+  const usuario = Parse.User.current();
+  if (!usuario) {
+    window.location.href = 'config.html';
+    return;
+  }
+
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
@@ -300,17 +306,42 @@ function dispararUploadFoto() {
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    let enviadas = 0;
-    for (const file of files) {
-      try {
-        await FotosAPI.enviarFoto(dadosEscola.id_escola, file);
-        enviadas++;
-      } catch (erro) {
-        console.error('[ESCOLA] Erro ao enviar foto:', erro);
+
+    try {
+      // Conta fotos que o usuario ja enviou para esta escola
+      const query = new Parse.Query('SchoolPhoto');
+      query.equalTo('id_escola', String(dadosEscola.id_escola));
+      query.equalTo('autor', usuario);
+      const contagem = await query.count();
+
+      if (contagem >= 10) {
+        await mostrarAlerta('Você atingiu o limite máximo de 10 fotos enviadas para esta escola.', 'Limite Atingido');
+        return;
       }
-    }
-    if (enviadas > 0) {
-      await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderação. Obrigado pela contribuição!`, 'Sucesso');
+
+      const restante = 10 - contagem;
+      const arquivosParaEnviar = files.slice(0, restante);
+
+      if (files.length > restante) {
+        await mostrarAlerta(`Apenas ${restante} fotos serão enviadas. Você já possui ${contagem} foto(s) cadastrada(s) para esta escola, e o limite é de 10 fotos.`, 'Limite Parcial');
+      }
+
+      let enviadas = 0;
+      for (const file of arquivosParaEnviar) {
+        try {
+          await FotosAPI.enviarFoto(dadosEscola.id_escola, file);
+          enviadas++;
+        } catch (erro) {
+          console.error('[ESCOLA] Erro ao enviar foto:', erro);
+        }
+      }
+
+      if (enviadas > 0) {
+        await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderação. Obrigado pela contribuição!`, 'Sucesso');
+      }
+    } catch (erro) {
+      console.error('[ESCOLA] Erro ao validar limite de fotos:', erro);
+      await mostrarAlerta('Erro ao validar limite de fotos. Tente novamente.', 'Erro');
     }
   };
   input.click();
@@ -723,6 +754,14 @@ async function _inicializarFormAvaliacao() {
       return;
     }
 
+    if (contemTermosOfensivos(comentario)) {
+      await mostrarAlerta(
+        'Sua avaliação contém palavras ofensivas, preconceituosas ou impróprias que violam as regras da nossa comunidade. Por favor, reescreva com respeito e cooperação.',
+        'Comportamento Inadequado'
+      );
+      return;
+    }
+
     try {
       await FeedbackAPI.enviarAvaliacao({
         idEscola: dadosEscola.id_escola,
@@ -911,6 +950,20 @@ function esc(texto) {
 }
 
 /* --- Modal de Foto Ampliada --- */
+function contemTermosOfensivos(texto) {
+  const textoMinusculo = texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const termos = [
+    'porra', 'caralho', 'puta', 'merda', 'bosta', 'viado', 'fdp', 'arrombado', 
+    'filho da puta', 'babaca', 'otario', 'imbecil', 'vagabundo', 'nazista', 
+    'fascista', 'racista', 'putaria', 'cacete', 'buceta', 'retardado', 'retardada',
+    'macaco', 'bicha', 'corno', 'pqp'
+  ];
+  return termos.some(termo => {
+    const regex = new RegExp('\\b' + termo + '\\b', 'i');
+    return regex.test(textoMinusculo);
+  });
+}
+
 window.abrirModalFoto = function (url) {
   let modal = document.getElementById('modal-foto');
   if (!modal) {

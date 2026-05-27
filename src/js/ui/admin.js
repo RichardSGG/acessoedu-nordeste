@@ -23,6 +23,7 @@ async function iniciar() {
   console.log('[ADMIN] Acesso autorizado:', usuario.get('username'));
 
   configurarAbasFotos();
+  configurarBotaoRecarregar();
   await carregarFotosPendentes();
   await carregarDenuncias();
 }
@@ -84,7 +85,7 @@ async function carregarFotosPendentes() {
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
           <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
-            <i class="ph-bold ph-arrow-square-out"></i> Olhar comentários
+            <i class="ph-bold ph-arrow-square-out"></i> Olhar perfil
           </a>
         </td>
         <td class="py-3 px-3 text-sm text-slate-500">${_formatarData(foto.createdAt)}</td>
@@ -160,7 +161,7 @@ async function carregarFotosAprovadas() {
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
           <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
-            <i class="ph-bold ph-arrow-square-out"></i> Olhar comentários
+            <i class="ph-bold ph-arrow-square-out"></i> Olhar perfil
           </a>
         </td>
         <td class="py-3 px-3 text-sm text-slate-500">${_formatarData(foto.updatedAt)}</td>
@@ -286,5 +287,14 @@ window.abrirModalFoto = function (url) {
     <img src="${url}" alt="Foto ampliada" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);" onclick="event.stopPropagation()">
   `;
 };
+
+function configurarBotaoRecarregar() {
+  const btnRecarregar = document.getElementById('btn-recarregar-admin');
+  if (btnRecarregar) {
+    btnRecarregar.addEventListener('click', () => {
+      window.location.reload();
+    });
+  }
+}
 
 document.addEventListener('DOMContentLoaded', iniciar);
