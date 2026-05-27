@@ -20,28 +20,20 @@ Zero **não é** a mesma coisa que `null`. Zero significa ausência confirmada p
 
 ## Demonstração Visual 📸
 
-> [!NOTE]
-> Adicione aqui capturas de tela (screenshots) da interface do seu projeto para demonstrar visualmente as funcionalidades implementadas. Substitua os placeholders abaixo pelos caminhos reais das imagens (ex: salvando-as em uma pasta `docs/screenshots/` e referenciando-as).
+> [!TIP]
+> Substitua os placeholders abaixo pelos prints reais das telas do projeto (recomenda-se salvar os arquivos no diretório `docs/screenshots/` e nomeá-los conforme indicado abaixo).
 
-### 1. Dashboard Principal (Visão Geral)
-<!-- Insira aqui o print do Dashboard com os gráficos comparativos, KPIs de infraestrutura e o mapa interativo. -->
-<!-- ![Dashboard Principal](docs/screenshots/dashboard.png) -->
+### 1. Dashboard Principal
+<!-- Espaço para o print da tela do Dashboard principal contendo filtros, KPIs e gráficos. -->
+![Dashboard Principal](docs/screenshots/dashboard.png)
 
-### 2. Busca por CEP e Filtros de Escolas
-<!-- Insira aqui o print da funcionalidade de busca por CEP (BrasilAPI) e aplicação de filtros por município e estado. -->
-<!-- ![Filtros e Busca por CEP](docs/screenshots/busca_cep.png) -->
+### 2. Perfil da Escola (Comparativo 2024 vs 2025)
+<!-- Espaço para o print da seção de comparação temporal (indicadores de 2024 e 2025 lado a lado) no perfil detalhado de uma escola. -->
+![Comparativo de Infraestrutura](docs/screenshots/comparativo_escola.png)
 
-### 3. Perfil de Detalhes da Escola
-<!-- Insira aqui o print da tela de detalhes da escola, mostrando o checklist comparativo 2024 vs 2025, o gráfico radar de excelência e o carrossel de fotos. -->
-<!-- ![Detalhes da Escola](docs/screenshots/detalhes_escola.png) -->
-
-### 4. Ranking de Excelência e Badges
-<!-- Insira aqui o print do Ranking de Excelência com o pódio Top 3 e a distribuição das badges (ouro/prata/bronze). -->
-<!-- ![Ranking de Excelência](docs/screenshots/ranking.png) -->
-
-### 5. Painel de Moderação (Admin)
-<!-- Insira aqui o print do painel Admin logado, mostrando a moderação de fotos enviadas pela comunidade e comentários denunciados. -->
-<!-- ![Painel de Moderação](docs/screenshots/admin_dashboard.png) -->
+### 3. Painel Admin
+<!-- Espaço para o print do Painel Admin mostrando as tabelas de moderação de fotos e moderação de comentários denunciados. -->
+![Painel Admin](docs/screenshots/painel_admin.png)
 
 ## Funcionalidades 🌴
 
