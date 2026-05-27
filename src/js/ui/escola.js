@@ -903,13 +903,16 @@ window.abrirModalFoto = function (url) {
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'modal-foto';
-    modal.className = 'modal-overlay';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
     modal.addEventListener('click', () => modal.remove());
     document.body.appendChild(modal);
   }
-  modal.innerHTML = `<img src="${url}" alt="Foto ampliada" style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px;" onclick="event.stopPropagation()">`;
-  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <button style="position:absolute;top:16px;right:16px;color:#fff;background:none;border:none;font-size:32px;cursor:pointer;opacity:0.8;" onclick="this.parentElement.remove()">
+      <i class="ph-bold ph-x"></i>
+    </button>
+    <img src="${url}" alt="Foto ampliada" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);" onclick="event.stopPropagation()">
+  `;
 }
 
 document.addEventListener('DOMContentLoaded', iniciar);

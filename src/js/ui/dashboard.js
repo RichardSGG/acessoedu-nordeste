@@ -62,6 +62,7 @@ async function iniciar() {
   configurarToggleAno();
   configurarBusca();
   configurarBotaoCep();
+  configurarBotaoRecarregar();
 
   estado.assinar('mudanca:escolas', renderizarLista);
   estado.assinar('mudanca:filtros', async (filtros) => {
@@ -365,6 +366,14 @@ function configurarBotaoCep() {
 
   inputCep.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') btnBuscar.click();
+  });
+}
+
+function configurarBotaoRecarregar() {
+  const btnRecarregar = document.getElementById('btn-recarregar');
+  if (!btnRecarregar) return;
+  btnRecarregar.addEventListener('click', () => {
+    window.location.reload();
   });
 }
 

@@ -79,12 +79,12 @@ async function carregarFotosPendentes() {
 
       tr.innerHTML = `
         <td class="py-3 px-3">
-          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="window.open('${esc(url)}', '_blank')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
+          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="abrirModalFoto('${esc(url)}')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
           <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
-            <i class="ph-bold ph-arrow-square-out"></i> Ver Perfil
+            <i class="ph-bold ph-arrow-square-out"></i> Olhar comentários
           </a>
         </td>
         <td class="py-3 px-3 text-sm text-slate-500">${_formatarData(foto.createdAt)}</td>
@@ -155,12 +155,12 @@ async function carregarFotosAprovadas() {
 
       tr.innerHTML = `
         <td class="py-3 px-3">
-          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="window.open('${esc(url)}', '_blank')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
+          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="abrirModalFoto('${esc(url)}')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
           <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
-            <i class="ph-bold ph-arrow-square-out"></i> Ver Perfil
+            <i class="ph-bold ph-arrow-square-out"></i> Olhar comentários
           </a>
         </td>
         <td class="py-3 px-3 text-sm text-slate-500">${_formatarData(foto.updatedAt)}</td>
@@ -219,7 +219,7 @@ async function carregarDenuncias() {
           <span class="px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-xs font-bold">${d.get('flags_count') || 0}</span>
         </td>
         <td class="py-3 px-3 text-center">
-          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center justify-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> Ver Perfil</a>` : '<span class="text-xs text-slate-400">--</span>'}
+          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center justify-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> Olhar comentários</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <div class="flex items-center justify-center gap-2">
@@ -268,5 +268,23 @@ function esc(texto) {
   div.appendChild(document.createTextNode(texto));
   return div.innerHTML;
 }
+
+/* --- Modal de Foto Ampliada com Desfoque --- */
+window.abrirModalFoto = function (url) {
+  let modal = document.getElementById('modal-foto-admin');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-foto-admin';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+    modal.addEventListener('click', () => modal.remove());
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <button style="position:absolute;top:16px;right:16px;color:#fff;background:none;border:none;font-size:32px;cursor:pointer;opacity:0.8;" onclick="this.parentElement.remove()">
+      <i class="ph-bold ph-x"></i>
+    </button>
+    <img src="${url}" alt="Foto ampliada" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);" onclick="event.stopPropagation()">
+  `;
+};
 
 document.addEventListener('DOMContentLoaded', iniciar);
