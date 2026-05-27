@@ -35,14 +35,19 @@ escolas_saeb_historico.json
 .DS_Store
 Thumbs.db
 
-# IDEs
+# IDEs e Ferramentas AI
 .vscode/settings.json
 .idea/
 *.swp
+.claude/
+.gemini/
 
 # JSONs de saida pesados do pipeline (28MB+ cada)
 pipeline_dados/saida/complementos_*.json
 
-# Documentos markdown (apenas README.md vai ao repo)
+# Documentos markdown (README.md e ARQUITETURA.md vao ao repo)
 *.md
 !README.md
+!ARQUITETURA.md
+PLAN.MD
+PLAN.md
