@@ -31,7 +31,7 @@ export async function listar(filtros = {}) {
       query.equalTo('uf', filtros.uf);
     }
     if (filtros.municipio) {
-      query.equalTo('cidade', filtros.municipio);
+      query.equalTo('municipio', filtros.municipio);
     }
 
     const resultados = await query.find();
@@ -44,7 +44,7 @@ export async function listar(filtros = {}) {
         id_parse: obj.id,
         id_escola: obj.get('id_escola'),
         nome: obj.get('nome') || '',
-        cidade: obj.get('cidade') || '',
+        cidade: obj.get('municipio') || obj.get('cidade') || '',
         uf: obj.get('uf') || '',
         lat, lng,
         latitude: lat,
@@ -94,7 +94,7 @@ export async function buscarPorIdEscola(idEscola) {
       classe: obj.className,
       id_escola: obj.get('id_escola'),
       nome: obj.get('nome') || '',
-      cidade: obj.get('cidade') || '',
+      cidade: obj.get('municipio') || obj.get('cidade') || '',
       uf: obj.get('uf') || '',
       lat, lng,
       latitude: lat,
@@ -207,7 +207,7 @@ export async function buscarPorBoundingBox(sw, ne) {
         id_parse: obj.id,
         id_escola: obj.get('id_escola'),
         nome: obj.get('nome') || '',
-        cidade: obj.get('cidade') || '',
+        cidade: obj.get('municipio') || obj.get('cidade') || '',
         uf: obj.get('uf') || '',
         lat, lng,
         latitude: lat,
@@ -258,7 +258,7 @@ export async function buscarPorRaio(latitude, longitude, raioKm = 10) {
         id_parse: obj.id,
         id_escola: obj.get('id_escola'),
         nome: obj.get('nome') || '',
-        cidade: obj.get('cidade') || '',
+        cidade: obj.get('municipio') || obj.get('cidade') || '',
         uf: obj.get('uf') || '',
         lat, lng,
         latitude: lat,
@@ -300,7 +300,7 @@ export async function buscarPorNome(termo) {
         id_parse: obj.id,
         id_escola: obj.get('id_escola'),
         nome: obj.get('nome') || '',
-        cidade: obj.get('cidade') || '',
+        cidade: obj.get('municipio') || obj.get('cidade') || '',
         uf: obj.get('uf') || '',
         lat, lng,
         latitude: lat,
@@ -372,7 +372,7 @@ async function _contarIndicadores(classe, uf = null) {
 export async function obterMediaMunicipio(municipio) {
   try {
     const query = new Parse.Query(CLASSE_2025);
-    query.equalTo('cidade', municipio);
+    query.equalTo('municipio', municipio);
     query.limit(CONFIGURACOES.LIMITE_CARREGAMENTO_ESCOLAS || 500);
     query.exists('internet');
 

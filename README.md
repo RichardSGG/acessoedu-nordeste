@@ -78,6 +78,8 @@ O sistema implementa as quatro operações fundamentais de persistência distrib
 | **BrasilAPI** | Consulta de endereço e município via CEP — converte CEPs em filtros de busca por município no banco de dados | Gratuito |
 | **ViaCEP** | Busca de endereço por CEP (fallback na página de detalhes da escola) | Gratuito |
 
+Integração de API: O sistema consome a BrasilAPI V1 para geocodificação reversa de municípios (CEP -> Município), utilizando normalização de strings (UTF-8/NFD) para garantir a consistência entre dados de terceiros e a base local do Censo Escolar.
+
 ## Arquitetura
 
 ```
