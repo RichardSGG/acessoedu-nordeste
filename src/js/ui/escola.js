@@ -364,10 +364,11 @@ function renderizarChecklist() {
 }
 
 function _iconeIndicador(valor) {
-  if (valor === 1) {
+  const v = (valor !== null && valor !== undefined) ? Number(valor) : null;
+  if (v === 1) {
     return '<i class="ph-fill ph-check-circle text-secundaria text-lg" title="Possui"></i>';
   }
-  if (valor === 0) {
+  if (v === 0) {
     return '<i class="ph-fill ph-x-circle text-red-400 text-lg" title="Não possui"></i>';
   }
   return '<span class="inline-flex items-center gap-1 text-slate-400 text-xs"><i class="ph-fill ph-minus-circle text-slate-300 text-lg"></i> Sem Informação</span>';
