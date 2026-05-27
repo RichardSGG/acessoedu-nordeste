@@ -55,6 +55,7 @@
                 <i class="ph-bold ph-sign-in"></i> Entrar
             </button>
             <span id="nome-usuario-header" class="hidden text-sm font-semibold text-slate-700"></span>
+            <span id="edu-points-header" class="hidden text-xs font-bold text-acento bg-orange-50 px-2 py-1 rounded-full"></span>
             <div id="avatar-usuario" class="hidden w-10 h-10 rounded-full bg-slate-200 border-2 border-primaria flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden" onclick="window.location.href='config.html'">
                 <i class="ph-fill ph-user text-xl text-slate-500"></i>
             </div>
@@ -69,16 +70,16 @@
 
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-            <h1 class="font-display font-black text-3xl text-slate-800">Analise Comparativa</h1>
+            <h1 class="font-display font-black text-3xl text-slate-800">Análise Comparativa</h1>
             <p class="text-slate-500">Infraestrutura escolar — 2024 vs 2025</p>
         </div>
         <div class="flex items-center gap-3">
             <select id="filtro-analise-uf" class="select-padrao max-w-[200px]">
                 <option value="">Todos os Estados</option>
                 <option value="AL">Alagoas</option><option value="BA">Bahia</option>
-                <option value="CE">Ceara</option><option value="MA">Maranhao</option>
-                <option value="PB">Paraiba</option><option value="PE">Pernambuco</option>
-                <option value="PI">Piaui</option><option value="RN">Rio Grande do Norte</option>
+                <option value="CE">Ceará</option><option value="MA">Maranhão</option>
+                <option value="PB">Paraíba</option><option value="PE">Pernambuco</option>
+                <option value="PI">Piauí</option><option value="RN">Rio Grande do Norte</option>
                 <option value="SE">Sergipe</option>
             </select>
         </div>
@@ -128,7 +129,7 @@
     <div id="loader-analise" class="text-center py-12">
         <div class="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full shadow-md border border-slate-200">
             <div class="spinner"></div>
-            <span class="text-sm font-semibold text-slate-600">Carregando dados e graficos...</span>
+            <span class="text-sm font-semibold text-slate-600">Carregando dados e gráficos...</span>
         </div>
     </div>
 

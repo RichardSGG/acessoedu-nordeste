@@ -10,7 +10,6 @@ import * as EscolasAPI from '../api/escolas.api.js';
 import * as FotosAPI from '../api/fotos.api.js';
 import * as MapillaryAPI from '../api/mapillary.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
-import * as ViaCEP from '../api/viacep.api.js';
 import { mostrarAlerta, mostrarConfirmacao, mostrarPrompt } from './modal.ui.js';
 
 Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
@@ -28,12 +27,12 @@ let anoRadar = 2025;
 
 const INDICADORES = [
   { chave: 'internet', rotulo: 'Internet', icone: 'ph-wifi-high' },
-  { chave: 'laboratorio', rotulo: 'Laboratorio', icone: 'ph-desktop' },
+  { chave: 'laboratorio', rotulo: 'Laboratório', icone: 'ph-desktop' },
   { chave: 'banheiro_pne', rotulo: 'Banheiro PNE', icone: 'ph-wheelchair' },
   { chave: 'quadra', rotulo: 'Quadra', icone: 'ph-soccer-ball' },
   { chave: 'rampa_acessibilidade', rotulo: 'Acessibilidade', icone: 'ph-stairs' },
-  { chave: 'agua_potavel', rotulo: 'Agua Potavel', icone: 'ph-drop' },
-  { chave: 'energia_eletrica', rotulo: 'Energia Eletrica', icone: 'ph-lightning' },
+  { chave: 'agua_potavel', rotulo: 'Água Potável', icone: 'ph-drop' },
+  { chave: 'energia_eletrica', rotulo: 'Energia Elétrica', icone: 'ph-lightning' },
 ];
 
 async function iniciar() {
@@ -87,7 +86,7 @@ function renderizarCabecalho() {
   document.getElementById('escola-nome').textContent = dadosEscola.nome || 'Sem nome';
   document.getElementById('escola-cidade').innerHTML =
     `<i class="ph-fill ph-map-pin text-primaria"></i> ${esc(dadosEscola.cidade)} - ${esc(dadosEscola.uf)}`;
-  document.getElementById('escola-uf').textContent = dadosEscola.uf || '--';
+  document.getElementById('escola-uf').style.display = 'none';
   document.getElementById('escola-id-inep').textContent = `INEP: ${dadosEscola.id_escola}`;
 
   const depEl = document.getElementById('escola-dependencia');
@@ -170,22 +169,6 @@ function renderizarContato() {
     const cepFormatado = cepLimpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
     document.getElementById('txt-cep').textContent = cepFormatado;
 
-    /* Fallback: se nao tem endereco mas tem CEP, busca no ViaCEP */
-    if (!endereco) {
-      ViaCEP.buscarCep(cepLimpo).then(resultado => {
-        if (resultado.ok) {
-          const { logradouro, bairro, cidade, uf } = resultado.dados;
-          const partes = [logradouro, bairro, cidade].filter(Boolean);
-          const endViaCep = partes.length > 0
-            ? partes.join(', ') + (uf ? ` - ${uf}` : '')
-            : null;
-          if (endViaCep) {
-            elEndereco.classList.remove('hidden');
-            document.getElementById('txt-endereco').textContent = endViaCep;
-          }
-        }
-      }).catch(() => { /* Silencia */ });
-    }
   } else {
     elCep.classList.add('hidden');
   }
@@ -246,7 +229,7 @@ async function carregarImagens() {
 
   const placeholderMsg = document.getElementById('placeholder-foto')?.querySelector('p');
   if (placeholderMsg) {
-    placeholderMsg.textContent = 'Nenhuma foto disponivel para esta localizacao.';
+    placeholderMsg.textContent = 'Nenhuma foto disponível para esta localização.';
   }
 
   document.getElementById('btn-enviar-primeira-foto').addEventListener('click', () => {
@@ -310,7 +293,7 @@ function dispararUploadFoto() {
       }
     }
     if (enviadas > 0) {
-      await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderacao. Obrigado pela contribuicao!`, 'Sucesso');
+      await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderação. Obrigado pela contribuição!`, 'Sucesso');
     }
   };
   input.click();
@@ -339,7 +322,7 @@ function renderizarChecklist() {
     if (v24 !== undefined && v24 !== null && v25 !== undefined && v25 !== null) {
       if (v25 > v24) { evolucao = 'Melhorou'; corEvolucao = 'text-secundaria'; }
       else if (v25 < v24) { evolucao = 'Piorou'; corEvolucao = 'text-red-500'; }
-      else { evolucao = 'Estavel'; corEvolucao = 'text-slate-400'; }
+      else { evolucao = 'Estável'; corEvolucao = 'text-slate-400'; }
     }
 
     const icone2024 = _iconeIndicador(v24);
@@ -477,7 +460,7 @@ async function renderizarRadar(ano) {
           pointRadius: 4,
         },
         {
-          label: 'Media do Municipio',
+          label: 'Média do Município',
           data: dadosMunicipio,
           backgroundColor: 'rgba(61, 163, 90, 0.1)',
           borderColor: '#3DA35A',
@@ -486,7 +469,7 @@ async function renderizarRadar(ano) {
           borderDash: [4, 4],
         },
         {
-          label: 'Media do Estado',
+          label: 'Média do Estado',
           data: dadosEstado,
           backgroundColor: 'rgba(242, 153, 74, 0.1)',
           borderColor: '#F2994A',
@@ -495,7 +478,7 @@ async function renderizarRadar(ano) {
           borderDash: [6, 3],
         },
         {
-          label: 'Media da Regiao (Nordeste)',
+          label: 'Média da Região (Nordeste)',
           data: dadosRegiao,
           backgroundColor: 'rgba(128, 90, 213, 0.08)',
           borderColor: '#805AD5',
@@ -704,7 +687,7 @@ async function _inicializarFormAvaliacao() {
 
     const comentario = textarea.value.trim();
     if (!comentario) {
-      document.getElementById('avaliacao-erro-msg').textContent = 'Escreva um comentario.';
+      document.getElementById('avaliacao-erro-msg').textContent = 'Escreva um comentário.';
       document.getElementById('avaliacao-erro').classList.remove('hidden');
       return;
     }
@@ -788,7 +771,7 @@ async function carregarFeedbacks() {
         ? respostas.map(r => `
             <div class="mt-2 p-3 bg-primaria/5 border border-primaria/20 rounded-lg">
               <p class="text-xs font-bold text-primaria mb-1 flex items-center gap-1">
-                <i class="ph-fill ph-chat-circle-text"></i> Resposta da Gestao
+                <i class="ph-fill ph-chat-circle-text"></i> Resposta da Gestão
               </p>
               <p class="text-sm text-slate-700">${esc(r.texto || '')}</p>
             </div>`).join('')
@@ -799,7 +782,7 @@ async function carregarFeedbacks() {
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <i class="ph-fill ph-user-circle text-xl text-slate-400"></i>
-              <span class="font-bold text-sm text-slate-800">${esc(nomeAutor || 'Anonimo')}</span>
+              <span class="font-bold text-sm text-slate-800">${esc(nomeAutor || 'Anônimo')}</span>
               ${verificado}
               <span class="text-xs text-slate-400">${esc(data)}</span>
             </div>
@@ -844,7 +827,7 @@ async function carregarFeedbacks() {
 
         const chaveDenuncia = 'denunciou_' + btn.dataset.reviewId;
         if (localStorage.getItem(chaveDenuncia)) {
-          await mostrarAlerta('Voce ja enviou uma denuncia para este comentario.', 'Aviso');
+          await mostrarAlerta('Você já enviou uma denúncia para este comentário.', 'Aviso');
           return;
         }
 

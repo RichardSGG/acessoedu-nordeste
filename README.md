@@ -1,61 +1,82 @@
-# AcessoEdu Nordeste
+# AcessoEdu Nordeste 🌵
 
-Plataforma de transparencia e auditoria cidada para infraestrutura escolar do Nordeste brasileiro.
+Plataforma de transparência e auditoria cidadã para infraestrutura escolar do Nordeste brasileiro. ☀️
 
-## Missao
+## Missão 📚
 
-Transformar os microdados do Censo Escolar INEP em uma ferramenta visual, interativa e gratuita. Qualquer cidadao pode consultar a infraestrutura de uma escola publica, comparar a evolucao entre 2024 e 2025, e contribuir com avaliacoes e fotos verificadas presencialmente.
+Transformar os microdados do Censo Escolar INEP em uma ferramenta visual, interativa e gratuita. Qualquer cidadão pode consultar a infraestrutura de uma escola pública, comparar a evolução entre 2024 e 2025, e contribuir com avaliações e fotos verificadas presencialmente.
 
-## Paradigma Comparativo
+## Paradigma Comparativo 🏖️
 
-O diferencial do AcessoEdu e a **comparacao temporal por escola**. O usuario ve lado a lado o que a escola possuia em 2024 e o que possui em 2025. O **delta de infraestrutura** mostra exatamente quais indicadores melhoraram, pioraram ou permaneceram estaveis.
+O diferencial do AcessoEdu é a **comparação temporal por escola**. O usuário vê lado a lado o que a escola possuía em 2024 e o que possui em 2025. O **delta de infraestrutura** mostra exatamente quais indicadores melhoraram, pioraram ou permaneceram estáveis.
 
-| Icone | Significado |
+| Ícone | Significado |
 |-------|-------------|
 | Check verde | A escola **possui** o indicador |
-| X vermelho | A escola **nao possui** o indicador |
-| Traco cinza "Sem Informacao" | Dado ausente no Censo INEP |
+| X vermelho | A escola **não possui** o indicador |
+| Traço cinza "Sem Informação" | Dado ausente no Censo INEP |
 
-Zero **nao e** a mesma coisa que `null`. Zero significa ausencia confirmada pelo INEP. `null` significa que o dado nao foi informado.
+Zero **não é** a mesma coisa que `null`. Zero significa ausência confirmada pelo INEP. `null` significa que o dado não foi informado.
 
-## Funcionalidades
+## Funcionalidades 🌴
 
-- **Dashboard** com KPIs, graficos de barras comparativos 2024/2025 e graficos de rosca
-- **Lista de escolas** com filtros por Estado, Municipio e busca por nome
-- **Perfil completo da escola** com checklist comparativo 2024 vs 2025, grafico radar (Chart.js) e feed de avaliacoes
-- **Avaliacoes com verificacao local** — formula de Haversine confirma se o usuario esta a ate 500m da escola
-- **Cascata de imagens** — Back4App (fotos comunitarias) -> placeholder
-- **Ranking de Excelencia** com podio Top 3 e badges ouro/prata/bronze baseados em 7 indicadores
-- **Busca por CEP** — preenche automaticamente os filtros de Estado e Municipio via ViaCEP
-- **Busca por raio** — geocodificacao de CEP via BrasilAPI + `query.withinKilometers()` do Parse
-- **Painel admin** com moderacao de fotos e denuncias, validado via `Parse.Role`
+- **Dashboard** com KPIs, gráficos de barras comparativos 2024/2025 e gráficos de rosca
+- **Lista de escolas** com filtros por Estado, Município e busca por nome
+- **Perfil completo da escola** com checklist comparativo 2024 vs 2025, gráfico radar (Chart.js) e feed de avaliações
+- **Avaliações com verificação local** — fórmula de Haversine confirma se o usuário está a até 500m da escola
+- **Cascata de imagens** — Back4App (fotos comunitárias) -> placeholder
+- **Ranking de Excelência** com pódio Top 3 e badges ouro/prata/bronze baseados em 7 indicadores
+- **Busca por CEP** — preenche automaticamente os filtros de Estado e Município via BrasilAPI
+- **Busca por raio** — geocodificação de CEP via BrasilAPI + `query.withinKilometers()` do Parse
+- **Painel admin** com moderação de fotos e denúncias, validado via `Parse.Role`
 
-## Stack Tecnologica
+## Arquitetura e Fluxo de Dados (CRUD)
 
-### Bibliotecas / Front-end
+O sistema implementa as quatro operações fundamentais de persistência distribuídas entre o front-end Vanilla JS e o Back4App (Parse Server):
 
-| Tecnologia | Proposito |
+### Create
+- **Cadastro de usuários**: Registro com email/senha via `Parse.User.signUp()`, inicializando `eduPoints` em 0 e role padrão `usuario`.
+- **Envio de fotos**: Upload de imagens para a classe `SchoolPhoto` via `Parse.File`, associadas ao `id_escola`. Fotos entram com status pendente de aprovação.
+- **Envio de denúncias**: Usuários logados podem denunciar avaliações impróprias, registradas na classe `Avaliacoes` com contador de flags.
+
+### Read
+- **Dados consolidados do dashboard**: KPIs e gráficos consomem a classe `EstatisticasAgregadas`, que armazena percentuais pré-calculados por município, estado e região — evitando consultas pesadas em tempo real sobre ~74 mil registros.
+- **Busca geoespacial de escolas**: O botão "Perto de Mim" utiliza a BrasilAPI para geocodificar um CEP em coordenadas geográficas, e em seguida o Parse SDK executa `query.withinKilometers()` sobre a classe `Escolas2025` para retornar escolas em um raio configurável.
+- **Listagem com filtros**: Consultas paginadas com `Parse.Query` aplicando filtros de UF, município e busca textual por nome.
+
+### Update
+- **Moderação de imagens**: O painel Admin lista fotos pendentes (`aprovada === false`) e permite aprovar ou rejeitar, atualizando o campo `aprovada` no registro.
+- **Cache de foto_url**: Ao carregar imagens externas (Mapillary), a URL da primeira foto é salva no campo `foto_url` do registro da escola para consultas futuras.
+
+### Delete
+- **Remoção de imagens**: O Admin pode excluir permanentemente registros de `SchoolPhoto` via `Parse.Object.destroy()`, removendo tanto o registro no banco quanto o arquivo no storage.
+- **Exclusão de avaliações**: Usuários podem excluir as próprias avaliações; administradores podem excluir qualquer avaliação.
+
+## Stack Tecnológica
+
+### Front-end: Vanilla JS (ES6) + TailwindCSS
+
+| Tecnologia | Propósito |
 |------------|-----------|
-| **Chart.js** | Graficos interativos (barras, rosca, radar, linha) |
-| **TailwindCSS** | Estilizacao utilitaria |
+| **Chart.js** | Gráficos interativos (barras, rosca, radar, linha) |
+| **TailwindCSS** | Estilização utilitária |
 | **Phosphor Icons** | Iconografia |
-| **Vanilla JS (ES6 Modules)** | Logica da aplicacao (Pub/Sub) |
+| **Vanilla JS (ES6 Modules)** | Lógica da aplicação (Pub/Sub) |
 
-### Back-end / Dados
+### Extração de Dados: Scripts em Python (Pandas)
 
-| Tecnologia | Proposito |
+| Tecnologia | Propósito |
 |------------|-----------|
-| **Back4App (BaaS)** | Banco de dados, autenticacao e storage |
+| **Back4App (BaaS)** | Banco de dados, autenticação e storage |
 | **Parse SDK** | Cliente JavaScript para o Back4App |
-| **Python 3.10+** | Scripts de ETL (extracao de CSVs do INEP) |
+| **Python 3.10+** | Scripts de ETL (extração de CSVs do INEP) |
 | **Node.js** | Seeders e scripts de PATCH |
 
 ### APIs Externas
 
-| API | Proposito | Custo |
+| API | Propósito | Custo |
 |-----|-----------|-------|
-| **BrasilAPI** | Geocodificacao de CEP (coordenadas geograficas) | Gratuito |
-| **ViaCEP** | Busca de endereco por CEP | Gratuito |
+| **BrasilAPI** | Geocodificação de CEP (coordenadas geográficas) | Gratuito |
 
 ## Arquitetura
 
@@ -63,29 +84,28 @@ Zero **nao e** a mesma coisa que `null`. Zero significa ausencia confirmada pelo
 src/js/
   core/
     estado.js          — Pub/Sub Event Bus (estado global centralizado)
-    constantes.js      — Enumeracoes e configuracoes
-    utilitarios.js     — Haversine, debounce, formatacao
+    constantes.js      — Enumerações e configurações
+    utilitarios.js     — Haversine, debounce, formatação
     inicializador.js   — Bootstrap e auth UI global
   api/
     auth.api.js        — Login, logout, verificarAdmin() via Parse.Role
     escolas.api.js     — CRUD Escolas2024/2025, busca por raio, ranking
-    feedback.api.js    — CRUD Avaliacoes + interacoes (like/flag)
+    feedback.api.js    — CRUD Avaliações + interações (like/flag)
     fotos.api.js       — Upload e listagem de SchoolPhoto
-    viacep.api.js      — Consulta de endereco por CEP
   ui/
     dashboard.js       — KPIs, filtros, lista, busca geo
     escola.js          — Perfil completo da escola
-    ranking.js         — Ranking de Excelencia
-    analise.js         — Graficos Chart.js comparativos
-    admin.js           — Moderacao (admin)
+    ranking.js         — Ranking de Excelência
+    analise.js         — Gráficos Chart.js comparativos
+    admin.js           — Moderação (admin)
     config.js          — Login/registro/avatar
-    modal.ui.js        — Alertas, confirmacoes e prompts
+    modal.ui.js        — Alertas, confirmações e prompts
 
 pipeline_dados/
-  extrair_complementos.py — Le CSVs do INEP, extrai dependencia, numero e telefone
+  extrair_complementos.py — Lê CSVs do INEP, extrai dependência, número e telefone
   patch_back4app.js       — Atualiza campos complementares no Back4App (PATCH)
-  gerar_estaticos.js      — Gera estatisticas agregadas a partir dos JSONs
-  enviar_estaticos.js     — Envia estatisticas para EstatisticasAgregadas
+  gerar_estaticos.js      — Gera estatísticas agregadas a partir dos JSONs
+  enviar_estaticos.js     — Envia estatísticas para EstatisticasAgregadas
 ```
 
 Fluxo de dados: `CSV INEP` -> `Python ETL` -> `JSON` -> `Node seeder` -> `Back4App` -> `SPA Frontend (Pub/Sub via estado.js)`
@@ -97,35 +117,35 @@ Fluxo de dados: `CSV INEP` -> `Python ETL` -> `JSON` -> `Node seeder` -> `Back4A
 - **Escolas2024** — Dados do Censo Escolar 2024 (~74 mil registros no Nordeste)
 - **Escolas2025** — Dados do Censo Escolar 2025 (~74 mil registros)
 
-Cada registro contem 7 indicadores binarios + metadados:
+Cada registro contém 7 indicadores binários + metadados:
 
-| Campo | Tipo | Descricao |
+| Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `id_escola` | String | Codigo INEP da escola |
+| `id_escola` | String | Código INEP da escola |
 | `nome` | String | Nome da escola |
-| `cidade` | String | Municipio |
+| `cidade` | String | Município |
 | `uf` | String | Sigla do estado |
-| `internet` | Number | 1=Possui, 0=Nao possui |
-| `laboratorio` | Number | Laboratorio de informatica |
+| `internet` | Number | 1=Possui, 0=Não possui |
+| `laboratorio` | Number | Laboratório de informática |
 | `quadra` | Number | Quadra de esportes |
 | `rampa_acessibilidade` | Number | Acessibilidade (rampas) |
-| `banheiro_pne` | Number | Banheiro acessivel PNE |
-| `agua_potavel` | Number | Abastecimento de agua potavel |
-| `energia_eletrica` | Number | Acesso a energia eletrica |
+| `banheiro_pne` | Number | Banheiro acessível PNE |
+| `agua_potavel` | Number | Abastecimento de água potável |
+| `energia_eletrica` | Number | Acesso à energia elétrica |
 | `dependencia` | String | Federal/Estadual/Municipal/Privada |
 | `telefone` | String | Telefone da escola |
-| `numero` | String | Numero do endereco |
-| `posicao_geografica` | GeoPoint | Coordenadas geograficas |
+| `numero` | String | Número do endereço |
+| `posicao_geografica` | GeoPoint | Coordenadas geográficas |
 
 ### Classes Auxiliares
 
-- **EstatisticasAgregadas** — Medias percentuais por municipio, estado e regiao (2024/2025)
-- **Avaliacoes** — Feedbacks de cidadaos com nota, comentario e verificacao local
-- **SchoolPhoto** — Fotos enviadas pela comunidade (aprovacao via admin)
+- **EstatisticasAgregadas** — Médias percentuais por município, estado e região (2024/2025)
+- **Avaliacoes** — Feedbacks de cidadãos com nota, comentário e verificação local
+- **SchoolPhoto** — Fotos enviadas pela comunidade (aprovação via admin)
 
-## Instalacao
+## Instalação
 
-### Pre-requisitos
+### Pré-requisitos
 
 - Node.js 18+
 - Python 3.10+
@@ -145,7 +165,7 @@ cp .env.exemplo .env
 Coloque os CSVs do Censo Escolar na raiz do projeto com `2024` e `2025` no nome do arquivo.
 
 ```bash
-# Extrai complementos (dependencia, numero, telefone)
+# Extrai complementos (dependência, número, telefone)
 python pipeline_dados/extrair_complementos.py
 
 # Aplica PATCH no Back4App (atualiza sem apagar dados existentes)
@@ -161,13 +181,13 @@ npx serve .
 
 ## Commits
 
-Conventional Commits em Portugues Brasileiro:
+Conventional Commits em Português Brasileiro:
 
 ```text
-<tipo>(escopo): <descricao curta no imperativo>
+<tipo>(escopo): <descrição curta no imperativo>
 ```
 
-Exemplos: `feat(dashboard): adicionar grafico de barras comparativo`, `fix(api): corrigir campos dos indicadores`, `docs(readme): atualizar arquitetura`
+Exemplos: `feat(dashboard): adicionar gráfico de barras comparativo`, `fix(api): corrigir campos dos indicadores`, `docs(readme): atualizar arquitetura`
 
 ## Desenvolvedor
 
@@ -177,12 +197,12 @@ Exemplos: `feat(dashboard): adicionar grafico de barras comparativo`, `fix(api):
 
 ### Equipe
 
-Projeto academico — **Sistemas para Internet, UNICAP**.
+Projeto acadêmico — **Sistemas para Internet, UNICAP**.
 
 - Micael Barros
-- Richard Silva
+- Richard da Silva Souza
 - Suedson Fernando
 
-## Licenca
+## Licença
 
 MIT.

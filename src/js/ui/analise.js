@@ -14,7 +14,7 @@ let chartDonut = null;
 let chartDeltaLinha = null;
 let chartDeltaRadar = null;
 
-const LABELS = ['Internet', 'Laboratorio', 'Banheiro PNE', 'Quadra', 'Acessibilidade', 'Agua', 'Energia'];
+const LABELS = ['Internet', 'Laboratório', 'Banheiro PNE', 'Quadra', 'Acessibilidade', 'Água', 'Energia'];
 const CAMPOS = ['internet', 'laboratorio', 'banheiro_pne', 'quadra', 'rampa_acessibilidade', 'agua_potavel', 'energia_eletrica'];
 
 async function iniciar() {
@@ -37,7 +37,7 @@ async function iniciar() {
     } catch (erro) {
       console.error('[ANALISE] Erro ao carregar Chart.js:', erro);
       document.getElementById('loader-analise').innerHTML =
-        '<p class="text-red-500 text-sm font-semibold">Erro ao carregar biblioteca de graficos.</p>';
+        '<p class="text-red-500 text-sm font-semibold">Erro ao carregar biblioteca de gráficos.</p>';
     }
   }, { threshold: 0.1 });
 
@@ -212,7 +212,7 @@ function renderizarDeltaRadar(d24, d25) {
       labels: LABELS,
       datasets: [
         {
-          label: 'Evolucao da Infraestrutura (Delta %)',
+          label: 'Evolução da Infraestrutura (Delta %)',
           data: deltas,
           backgroundColor: 'rgba(128, 90, 213, 0.2)',
           borderColor: '#805AD5',

@@ -44,6 +44,7 @@ async function atualizarHeaderAuth(usuario) {
   const linkAdmin = document.getElementById('nav-admin-link') || document.getElementById('link-admin');
   const btnLogout = document.getElementById('btn-logout-header');
   const nomeUsuario = document.getElementById('nome-usuario-header');
+  const eduPoints = document.getElementById('edu-points-header');
 
   if (usuario) {
     if (btnLogin) btnLogin.classList.add('hidden');
@@ -59,6 +60,11 @@ async function atualizarHeaderAuth(usuario) {
       nomeUsuario.textContent = usuario.get('nomeExibicao') || usuario.get('username') || '';
       nomeUsuario.classList.remove('hidden');
     }
+    if (eduPoints) {
+      const pontos = usuario.get('pontos') || 0;
+      eduPoints.textContent = `${pontos} Edu Points`;
+      eduPoints.classList.remove('hidden');
+    }
     if (linkAdmin) {
       try {
         const isAdmin = await verificarAdmin();
@@ -72,6 +78,7 @@ async function atualizarHeaderAuth(usuario) {
     if (btnLogin) btnLogin.classList.remove('hidden');
     if (avatarContainer) avatarContainer.classList.add('hidden');
     if (nomeUsuario) nomeUsuario.classList.add('hidden');
+    if (eduPoints) eduPoints.classList.add('hidden');
     if (linkAdmin) linkAdmin.style.display = 'none';
     if (btnLogout) btnLogout.classList.add('hidden');
   }
