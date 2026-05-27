@@ -238,114 +238,47 @@ function configurarBusca() {
 }
 
 /* ------------------------------------------------------------------ */
-/* BOTAO CEP (Perto de Mim — BrasilAPI → GeoPoint dentro de X km)     */
+/* BUSCA POR CEP (string exata com e sem hífen)                        */
 /* ------------------------------------------------------------------ */
 function configurarBotaoCep() {
-  const btn = document.getElementById('btn-perto-de-mim');
-  const modal = document.getElementById('modalPertoDeMim');
-  const inputCep = document.getElementById('inputModalCep');
-  const inputRaio = document.getElementById('inputModalRaio');
-  const btnBuscar = document.getElementById('btnBuscarModal');
-  const btnFechar = document.getElementById('btnFecharModal');
-  const modalErro = document.getElementById('modal-erro');
-  const statusGeo = document.getElementById('status-geo');
-  if (!btn || !modal) return;
-
-  function abrirModal() {
-    inputCep.value = '';
-    inputRaio.value = '';
-    modalErro.classList.add('hidden');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    inputCep.focus();
-  }
-
-  function fecharModal() {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-  }
-
-  btn.addEventListener('click', abrirModal);
-  btnFechar.addEventListener('click', fecharModal);
-  modal.addEventListener('click', (e) => { if (e.target === modal) fecharModal(); });
+  const inputCep = document.getElementById('inputBuscaCep');
+  const btnBuscar = document.getElementById('btn-buscar-cep');
+  if (!inputCep || !btnBuscar) return;
 
   btnBuscar.addEventListener('click', async () => {
-    const cepLimpo = (inputCep?.value || '').trim().replace(/\D/g, '');
+    const cepLimpo = (inputCep.value || '').trim().replace(/\D/g, '');
     if (!/^\d{8}$/.test(cepLimpo)) {
-      modalErro.textContent = 'Informe um CEP válido com 8 dígitos.';
-      modalErro.classList.remove('hidden');
+      inputCep.style.borderColor = '#EF4444';
+      setTimeout(() => { inputCep.style.borderColor = ''; }, 2000);
       return;
     }
+    inputCep.style.borderColor = '';
 
-    const raio = Number(inputRaio?.value) || 10;
-    if (raio < 1 || raio > 100) {
-      modalErro.textContent = 'Raio inválido. Informe um valor entre 1 e 100 km.';
-      modalErro.classList.remove('hidden');
-      return;
-    }
+    const cepComHifen = cepLimpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+    btnBuscar.disabled = true;
 
-    modalErro.classList.add('hidden');
-    fecharModal();
-    btn.disabled = true;
-    if (statusGeo) { statusGeo.classList.remove('hidden'); statusGeo.textContent = 'Geocodificando CEP e buscando escolas...'; statusGeo.className = 'text-xs text-slate-500 mt-1'; }
-
-    let usouRaio = false;
-
-    /* Plano A: BrasilAPI → GeoPoint dentro de X km */
     try {
-      const respCep = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
-      if (respCep.ok) {
-        const dataCep = await respCep.json();
-        const hasCoords = dataCep.location
-          && dataCep.location.coordinates
-          && dataCep.location.coordinates.latitude
-          && dataCep.location.coordinates.longitude;
+      const querySemHifen = new Parse.Query('Escolas2025').equalTo('cep', cepLimpo);
+      const queryComHifen = new Parse.Query('Escolas2025').equalTo('cep', cepComHifen);
+      const queryCep = Parse.Query.or(querySemHifen, queryComHifen);
+      queryCep.limit(200);
+      const resultados = await queryCep.find();
 
-        if (hasCoords) {
-          const lat = dataCep.location.coordinates.latitude;
-          const lng = dataCep.location.coordinates.longitude;
-          const geoPoint = new Parse.GeoPoint(lat, lng);
-          const query = new Parse.Query('Escolas2025');
-          query.withinKilometers('posicao_geografica', geoPoint, raio);
-          query.limit(200);
-          const resultados = await query.find();
-
-          if (resultados.length > 0) {
-            const escolas = resultados.map(r => ({ ...r.toJSON(), id_parse: r.id, classe: 'Escolas2025' }));
-            estado.definir('escolas', escolas);
-            if (statusGeo) { statusGeo.textContent = `Escolas encontradas em um raio de ${raio}km.`; statusGeo.className = 'text-xs text-secundaria mt-1'; }
-          } else {
-            if (statusGeo) { statusGeo.textContent = `Nenhuma escola encontrada em ${raio}km do CEP ${cepLimpo}.`; statusGeo.className = 'text-xs text-amber-600 mt-1'; }
-          }
-          usouRaio = true;
-        }
+      if (resultados.length > 0) {
+        const escolas = resultados.map(r => ({ ...r.toJSON(), id_parse: r.id, classe: 'Escolas2025' }));
+        estado.definir('escolas', escolas);
+      } else {
+        estado.definir('escolas', []);
       }
     } catch (erro) {
-      console.warn('[DASHBOARD] BrasilAPI indisponivel, usando fallback por CEP exato:', erro);
+      console.error('[DASHBOARD] Erro na busca por CEP:', erro);
     }
 
-    /* Plano B: Fallback — busca por CEP exato na classe Escolas2025 */
-    if (!usouRaio) {
-      try {
-        const query = new Parse.Query('Escolas2025');
-        query.equalTo('cep', cepLimpo);
-        query.limit(200);
-        const resultados = await query.find();
+    btnBuscar.disabled = false;
+  });
 
-        if (resultados.length > 0) {
-          const escolas = resultados.map(r => ({ ...r.toJSON(), id_parse: r.id, classe: 'Escolas2025' }));
-          estado.definir('escolas', escolas);
-          if (statusGeo) { statusGeo.textContent = 'Coordenadas indisponíveis. Exibindo escolas cadastradas exatamente neste CEP.'; statusGeo.className = 'text-xs text-secundaria mt-1'; }
-        } else {
-          if (statusGeo) { statusGeo.textContent = `Nenhuma escola encontrada para o CEP ${cepLimpo}.`; statusGeo.className = 'text-xs text-amber-600 mt-1'; }
-        }
-      } catch (erro) {
-        console.error('[DASHBOARD] Erro na busca por CEP exato:', erro);
-        if (statusGeo) { statusGeo.textContent = 'Erro de rede ao buscar escolas.'; statusGeo.className = 'text-xs text-red-500 mt-1'; }
-      }
-    }
-
-    btn.disabled = false;
+  inputCep.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') btnBuscar.click();
   });
 }
 
@@ -395,15 +328,15 @@ function renderizarLista(escolas) {
       <p class="text-xs text-slate-400 mt-1"><i class="ph ph-phone"></i> ${_esc(escola.telefone || 'Não informado')}</p>
       <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100">
         <div class="text-center">
-          <i class="ph-fill ${escola.internet ? 'ph-wifi-high text-secundaria' : 'ph-wifi-x text-slate-300'} text-lg"></i>
+          ${_iconeCard(escola.internet, 'ph-wifi-high', 'ph-wifi-x')}
           <p class="text-[10px] text-slate-400">Internet</p>
         </div>
         <div class="text-center">
-          <i class="ph-fill ${escola.banheiro_pne ? 'ph-wheelchair text-mobilidade' : 'ph-wheelchair text-slate-300'} text-lg"></i>
+          ${_iconeCard(escola.banheiro_pne, 'ph-wheelchair', 'ph-wheelchair')}
           <p class="text-[10px] text-slate-400">Acessível</p>
         </div>
         <div class="text-center">
-          <i class="ph-fill ${escola.agua_potavel ? 'ph-drop text-primaria' : 'ph-drop text-slate-300'} text-lg"></i>
+          ${_iconeCard(escola.agua_potavel, 'ph-drop', 'ph-drop')}
           <p class="text-[10px] text-slate-400">Água</p>
         </div>
       </div>
@@ -437,6 +370,16 @@ function _esc(texto) {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(texto));
   return div.innerHTML;
+}
+
+function _iconeCard(valor, iconeSim, iconeNao) {
+  if (valor === 1) {
+    return `<i class="ph-fill ${iconeSim} text-secundaria text-lg" title="Disponível"></i>`;
+  }
+  if (valor === 0) {
+    return `<i class="ph-fill ${iconeNao} text-red-400 text-lg" title="Não Disponível"></i>`;
+  }
+  return `<i class="ph-fill ${iconeNao} text-slate-300 text-lg" title="Sem Informação"></i>`;
 }
 
 function _renderizarDelta(elId, valAnt, valAtu) {
