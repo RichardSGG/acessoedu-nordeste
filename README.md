@@ -1,167 +1,188 @@
-# 🏫 AcessoEdu
+# AcessoEdu Nordeste
 
-> 🌍 **AcessoEdu** é uma plataforma de auditoria cidadã sobre acessibilidade nas escolas públicas do Nordeste brasileiro. Nosso objetivo é transformar dados oficiais em ação social de forma transparente, moderna e gratuita.
+Plataforma de transparencia e auditoria cidada para infraestrutura escolar do Nordeste brasileiro.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/Leaflet-199900?style=flat-square&logo=leaflet&logoColor=white" alt="Leaflet" />
-  <img src="https://img.shields.io/badge/Back4App-04365e?style=flat-square&logo=parse&logoColor=white" alt="Back4App" />
-</p>
+## Missao
 
----
+Transformar os microdados do Censo Escolar INEP em uma ferramenta visual, interativa e gratuita. Qualquer cidadao pode consultar a infraestrutura de uma escola publica, comparar a evolucao entre 2024 e 2025, e contribuir com avaliacoes e fotos verificadas presencialmente.
 
-## 🔍 O Problema
+## Paradigma Comparativo
 
-Mais de **74.000 escolas públicas** no Nordeste possuem dados de acessibilidade registrados pelo INEP (rampas, banheiros adaptados, pisos táteis, etc.). Porém, esses dados residem em planilhas gigantescas e de difícil acesso ao cidadão. Além disso, a realidade física nem sempre bate com os dados oficiais.
+O diferencial do AcessoEdu e a **comparacao temporal por escola**. O usuario ve lado a lado o que a escola possuia em 2024 e o que possui em 2025. O **delta de infraestrutura** mostra exatamente quais indicadores melhoraram, pioraram ou permaneceram estaveis.
 
-## 💡 A Solução
+| Icone | Significado |
+|-------|-------------|
+| Check verde | A escola **possui** o indicador |
+| X vermelho | A escola **nao possui** o indicador |
+| Traco cinza "Sem Informacao" | Dado ausente no Censo INEP |
 
-O **AcessoEdu** converte microdados do censo escolar em uma **rede social cívica**. Qualquer pessoa pode consultar a acessibilidade de uma escola, entrar em contato, visualizar gráficos estatísticos e auditar as informações publicando avaliações com evidências reais (fotos).
+Zero **nao e** a mesma coisa que `null`. Zero significa ausencia confirmada pelo INEP. `null` significa que o dado nao foi informado.
 
----
+## Funcionalidades
 
-## ✨ Funcionalidades Principais
+- **Dashboard** com KPIs, graficos de barras comparativos 2024/2025 e graficos de rosca
+- **Lista de escolas** com filtros por Estado, Municipio e busca por nome
+- **Perfil completo da escola** com checklist comparativo 2024 vs 2025, grafico radar (Chart.js) e feed de avaliacoes
+- **Avaliacoes com verificacao local** — formula de Haversine confirma se o usuario esta a ate 500m da escola
+- **Cascata de imagens** — Back4App (fotos comunitarias) -> placeholder
+- **Ranking de Excelencia** com podio Top 3 e badges ouro/prata/bronze baseados em 7 indicadores
+- **Busca por CEP** — preenche automaticamente os filtros de Estado e Municipio via ViaCEP
+- **Busca por raio** — geocodificacao de CEP via BrasilAPI + `query.withinKilometers()` do Parse
+- **Painel admin** com moderacao de fotos e denuncias, validado via `Parse.Role`
 
-*   💬 **Fórum de Avaliações por Escola:** Cada escola possui um mural para relatos da comunidade, comentários, respostas e curtidas.
-*   📞 **Contato Direto:** Exibição do telefone (com link `tel:`) e e-mail oficiais da escola extraídos diretamente do INEP.
-*   🗺️ **Mapa Interativo Gratuito:** Renderização da localização exata usando **Leaflet.js** e **OpenStreetMap** (100% livre de chaves pagas).
-*   📍 **Escolas Próximas:** Listagem dinâmica das escolas mais próximas da região do usuário através de geolocalização por **GeoPoint** no Back4App.
-*   📊 **Gráficos de Acessibilidade:** Visualização rápida do status da escola usando gráficos dinâmicos com **Chart.js**.
-*   🏆 **Gamificação Cívica:** Conquista de selos (*badges*) conforme o usuário interage e audita as escolas (ex: *Auditor Cidadão*, *Voz da Comunidade*).
-*   📸 **Upload de Evidências:** Envio de imagens reais das condições físicas das escolas armazenadas na nuvem.
+## Stack Tecnologica
 
----
+### Bibliotecas / Front-end
 
-## 🏗️ Arquitetura do Sistema
+| Tecnologia | Proposito |
+|------------|-----------|
+| **Chart.js** | Graficos interativos (barras, rosca, radar, linha) |
+| **TailwindCSS** | Estilizacao utilitaria |
+| **Phosphor Icons** | Iconografia |
+| **Vanilla JS (ES6 Modules)** | Logica da aplicacao (Pub/Sub) |
 
-A aplicação frontend segue um padrão rigoroso baseado em **Event Bus (Pub/Sub)**, garantindo total desacoplamento entre os componentes de interface (`ui/`), a persistência (`api/`) e o estado global (`core/`). Para performance, utilizamos **DocumentFragment** no DOM e **IntersectionObserver** para carregamento assíncrono.
+### Back-end / Dados
 
-### Estrutura de Diretórios
-```text
-acessoedu-nordeste/
-├── .env.exemplo           # Template de variáveis de ambiente
-├── .gitignore             # Arquivo blindado (proteção de dados ETL e chaves)
-├── index.html             # Dashboard principal (Tailwind + Semantic HTML)
-├── dados/                 # Scripts Python e limpeza do INEP
-└── src/                   # Aplicação Vanilla JS
-    ├── css/
-    │   └── variaveis.css  # Design System e paleta de cores
-    └── js/
-        ├── core/          # Núcleo do sistema
-        │   ├── constantes.js  # Enumerações globais
-        │   ├── estado.js      # Gerenciador de estado (Event Bus)
-        │   ├── inicializador.js # Bootstrap da SPA
-        │   └── utilitarios.js # Helpers (Debounce, Haversine, etc.)
-        ├── api/           # Integração com Back4App e Mapillary
-        │   ├── auth.api.js
-        │   ├── escolas.api.js
-        │   ├── fotos.api.js
-        │   └── mapillary.api.js
-        └── ui/            # Controladores de Interface
-            ├── mapa.ui.js     # Integração Leaflet
-            └── ranking.ui.js  # Renderização otimizada
+| Tecnologia | Proposito |
+|------------|-----------|
+| **Back4App (BaaS)** | Banco de dados, autenticacao e storage |
+| **Parse SDK** | Cliente JavaScript para o Back4App |
+| **Python 3.10+** | Scripts de ETL (extracao de CSVs do INEP) |
+| **Node.js** | Seeders e scripts de PATCH |
+
+### APIs Externas
+
+| API | Proposito | Custo |
+|-----|-----------|-------|
+| **BrasilAPI** | Geocodificacao de CEP (coordenadas geograficas) | Gratuito |
+| **ViaCEP** | Busca de endereco por CEP | Gratuito |
+
+## Arquitetura
+
+```
+src/js/
+  core/
+    estado.js          — Pub/Sub Event Bus (estado global centralizado)
+    constantes.js      — Enumeracoes e configuracoes
+    utilitarios.js     — Haversine, debounce, formatacao
+    inicializador.js   — Bootstrap e auth UI global
+  api/
+    auth.api.js        — Login, logout, verificarAdmin() via Parse.Role
+    escolas.api.js     — CRUD Escolas2024/2025, busca por raio, ranking
+    feedback.api.js    — CRUD Avaliacoes + interacoes (like/flag)
+    fotos.api.js       — Upload e listagem de SchoolPhoto
+    viacep.api.js      — Consulta de endereco por CEP
+  ui/
+    dashboard.js       — KPIs, filtros, lista, busca geo
+    escola.js          — Perfil completo da escola
+    ranking.js         — Ranking de Excelencia
+    analise.js         — Graficos Chart.js comparativos
+    admin.js           — Moderacao (admin)
+    config.js          — Login/registro/avatar
+    modal.ui.js        — Alertas, confirmacoes e prompts
+
+pipeline_dados/
+  extrair_complementos.py — Le CSVs do INEP, extrai dependencia, numero e telefone
+  patch_back4app.js       — Atualiza campos complementares no Back4App (PATCH)
+  gerar_estaticos.js      — Gera estatisticas agregadas a partir dos JSONs
+  enviar_estaticos.js     — Envia estatisticas para EstatisticasAgregadas
 ```
 
-### Fluxo de Dados
-```text
-[Microdados INEP (CSV bruto)]
-       │
-       │ Python / Pandas (ETL — dados/clean_inep.py)
-       │ Filtros geográficos, contato e coordenadas tratadas
-       ▼
-[escolas_limpo.json]
-       │
-       │ Node.js (importar_b4app.js)
-       │ Upload seguro em lotes (batch) com GeoPoints
-       ▼
-[Back4App (BaaS / Parse)]
-       │ REST API + WebSockets
-       ▼
-[SPA Frontend (Vanilla JS + Tailwind CSS)]
-       │ Event Bus (estado.js)
-       │ Componentes modulares reutilizáveis (ui/*.js)
-       │ Mapas Lazy Loaded (Leaflet)
-```
+Fluxo de dados: `CSV INEP` -> `Python ETL` -> `JSON` -> `Node seeder` -> `Back4App` -> `SPA Frontend (Pub/Sub via estado.js)`
 
----
+## Banco de Dados (Back4App)
 
-## 🛠️ Stack Tecnológica
+### Tabelas por Ano
 
-| Camada | Tecnologia | Licença / Custo |
-| :--- | :--- | :--- |
-| **Processamento (ETL)** | Python 3.10+, Pandas | Gratuito |
-| **Banco de Dados / BaaS** | Back4App (Parse Server) | Gratuito (Plano Free) |
-| **Frontend SPA** | Vanilla JS, HTML5, CSS | Gratuito |
-| **Gráficos** | Chart.js | Gratuito |
-| **Mapas** | Leaflet.js + OpenStreetMap | Gratuito (Sem chaves pagas) |
-| **Hospedagem** | Vercel | Gratuito |
+- **Escolas2024** — Dados do Censo Escolar 2024 (~74 mil registros no Nordeste)
+- **Escolas2025** — Dados do Censo Escolar 2025 (~74 mil registros)
 
----
+Cada registro contem 7 indicadores binarios + metadados:
 
-## 🚀 Como Executar Localmente
+| Campo | Tipo | Descricao |
+|-------|------|-----------|
+| `id_escola` | String | Codigo INEP da escola |
+| `nome` | String | Nome da escola |
+| `cidade` | String | Municipio |
+| `uf` | String | Sigla do estado |
+| `internet` | Number | 1=Possui, 0=Nao possui |
+| `laboratorio` | Number | Laboratorio de informatica |
+| `quadra` | Number | Quadra de esportes |
+| `rampa_acessibilidade` | Number | Acessibilidade (rampas) |
+| `banheiro_pne` | Number | Banheiro acessivel PNE |
+| `agua_potavel` | Number | Abastecimento de agua potavel |
+| `energia_eletrica` | Number | Acesso a energia eletrica |
+| `dependencia` | String | Federal/Estadual/Municipal/Privada |
+| `telefone` | String | Telefone da escola |
+| `numero` | String | Numero do endereco |
+| `posicao_geografica` | GeoPoint | Coordenadas geograficas |
 
-### Pré-requisitos
-*   **Node.js 18+**
-*   **Python 3.10+** (com gerenciador `py` no Windows)
-*   **Conta no Back4App** com app configurado
+### Classes Auxiliares
 
-### 1. Clonar o Repositório
+- **EstatisticasAgregadas** — Medias percentuais por municipio, estado e regiao (2024/2025)
+- **Avaliacoes** — Feedbacks de cidadaos com nota, comentario e verificacao local
+- **SchoolPhoto** — Fotos enviadas pela comunidade (aprovacao via admin)
+
+## Instalacao
+
+### Pre-requisitos
+
+- Node.js 18+
+- Python 3.10+
+- Conta no [Back4App](https://www.back4app.com/) com app criado
+
+### 1. Clonar e configurar
+
 ```bash
-git clone https://github.com/seu-usuario/acessoedu.git
-cd acessoedu
+git clone https://github.com/Richdssz/acessoedu-nordeste.git
+cd acessoedu-nordeste
+cp .env.exemplo .env
+# Preencha BACK4APP_APP_ID e BACK4APP_REST_API_KEY no .env
 ```
 
-### 2. Configurar Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto:
-```env
-APP_ID=seu_application_id_do_back4app
-MASTER_KEY=sua_master_key_do_back4app
-```
+### 2. Extrair dados do INEP (ETL)
 
-### 3. Rodar o Pipeline de Extração (ETL)
+Coloque os CSVs do Censo Escolar na raiz do projeto com `2024` e `2025` no nome do arquivo.
+
 ```bash
-cd dados
-py clean_inep.py
-```
-> O script irá gerar o arquivo filtrado e pronto `escolas_pronto_b4app_v2.csv`.
+# Extrai complementos (dependencia, numero, telefone)
+python pipeline_dados/extrair_complementos.py
 
-### 4. Importar os Dados para o Back4App
-Na raiz do projeto, envie os dados usando a flag nativa de variáveis de ambiente do Node:
-```bash
-node --env-file=.env importar_b4app.js
+# Aplica PATCH no Back4App (atualiza sem apagar dados existentes)
+node pipeline_dados/patch_back4app.js
 ```
 
-### 5. Iniciar a Aplicação Frontend
-Você pode rodar a SPA usando qualquer servidor estático local:
+### 3. Servir o frontend
+
 ```bash
 npx serve .
+# Acesse http://localhost:3000
 ```
 
----
+## Commits
 
-## 🤝 Regras de Commits (Conventional Commits)
+Conventional Commits em Portugues Brasileiro:
 
-Adotamos a padronização de commits em **Português do Brasil (PT-BR)** seguindo a convenção:
 ```text
-<tipo>(escopo): <descrição curta no imperativo>
+<tipo>(escopo): <descricao curta no imperativo>
 ```
-*   `feat(contato): adicionar telefone e email na pagina da escola`
-*   `fix(mapa): corrigir centralizacao de marcador do leaflet`
-*   `docs(readme): atualizar escopo de funcionalidades no readme`
 
----
+Exemplos: `feat(dashboard): adicionar grafico de barras comparativo`, `fix(api): corrigir campos dos indicadores`, `docs(readme): atualizar arquitetura`
 
-## 👥 Equipe
+## Desenvolvedor
 
-Projeto acadêmico desenvolvido para o curso de **Sistemas para Internet** na **UNICAP** por:
-*   **Micael Barros**
-*   **Richard Silva**
-*   **Suedson Fernando**
+**Richard da Silva Souza**
 
----
+- [github.com/Richdssz](https://github.com/Richdssz)
 
-## 📄 Licença
+### Equipe
 
-Este projeto é distribuído sob a licença **MIT**. Veja o arquivo `LICENSE` para mais detalhes.
+Projeto academico — **Sistemas para Internet, UNICAP**.
+
+- Micael Barros
+- Richard Silva
+- Suedson Fernando
+
+## Licenca
+
+MIT.

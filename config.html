@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso ao Sistema | AcessoEdu Nordeste</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="src/css/variaveis.css">
+    <link rel="stylesheet" href="src/css/componentes.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            
+            theme: {
+                extend: {
+                    colors: {
+                        primaria: '#1A5691',
+                        secundaria: '#3DA35A',
+                        acento: '#F2994A',
+                        mobilidade: '#805AD5',
+                        fundo: '#F7F8FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
+    <script src="https://unpkg.com/pica@9.0.0/dist/pica.min.js"></script>
+</head>
+<body class="bg-fundo text-[#1A202C] antialiased min-h-screen flex flex-col">
+
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <i class="ph-fill ph-student text-3xl text-primaria"></i>
+            <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
+        </a>
+        <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
+    </div>
+</header>
+
+<main class="flex-grow max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <h1 class="font-display font-black text-3xl text-slate-800">Acesso ao Sistema</h1>
+
+    <!-- Estado: Nao Logado -->
+    <div id="secao-deslogado">
+        <div class="card">
+
+            <!-- Tabs -->
+            <div class="flex bg-slate-100 p-1 rounded-full shadow-inner mb-6">
+                <button id="tab-criar-conta" class="flex-1 px-4 py-2.5 bg-white rounded-full shadow-sm text-sm font-bold text-primaria transition-all duration-300">
+                    <i class="ph-bold ph-user-plus mr-1"></i> Criar Conta
+                </button>
+                <button id="tab-entrar" class="flex-1 px-4 py-2.5 rounded-full text-sm font-bold text-slate-500 hover:text-slate-700 transition-all duration-300">
+                    <i class="ph-bold ph-sign-in mr-1"></i> Entrar
+                </button>
+            </div>
+
+            <!-- Formulario: Criar Conta (padrao visivel) -->
+            <div id="painel-criar-conta">
+                <h2 class="font-display font-bold text-lg text-slate-800 mb-4">Criar Nova Conta</h2>
+                <form id="form-registo" class="space-y-4" novalidate>
+                    <div>
+                        <label for="registo-nome" class="block text-sm font-semibold text-slate-700 mb-1">Nome de Exibição</label>
+                        <input type="text" id="registo-nome" required class="input-padrao" placeholder="Seu nome público">
+                    </div>
+                    <div>
+                        <label for="registo-email" class="block text-sm font-semibold text-slate-700 mb-1">Email</label>
+                        <input type="email" id="registo-email" required class="input-padrao" placeholder="seu@email.com">
+                    </div>
+                    <div>
+                        <label for="registo-senha" class="block text-sm font-semibold text-slate-700 mb-1">Senha</label>
+                        <div class="input-senha-wrapper">
+                            <input type="password" id="registo-senha" required class="input-padrao" placeholder="Mínimo 6 caracteres" minlength="6">
+                            <button type="button" class="toggle-senha" data-alvo="registo-senha" aria-label="Mostrar senha">
+                                <i class="ph-bold ph-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="botao-primario w-full justify-center">
+                        <i class="ph-bold ph-user-plus"></i> Criar Conta
+                    </button>
+                    <div id="registo-erro" class="hidden px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700"></div>
+                    <div id="registo-sucesso" class="hidden px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm font-semibold text-green-700 flex items-center gap-2">
+                        <i class="ph-fill ph-check-circle"></i> Conta criada com sucesso!
+                    </div>
+                </form>
+            </div>
+
+            <!-- Formulario: Entrar (oculto por padrao) -->
+            <div id="painel-entrar" class="hidden">
+                <h2 class="font-display font-bold text-lg text-slate-800 mb-4">Entrar na sua Conta</h2>
+                <form id="form-login" class="space-y-4" novalidate>
+                    <div>
+                        <label for="login-email" class="block text-sm font-semibold text-slate-700 mb-1">Email</label>
+                        <input type="email" id="login-email" required class="input-padrao" placeholder="seu@email.com">
+                    </div>
+                    <div>
+                        <label for="login-senha" class="block text-sm font-semibold text-slate-700 mb-1">Senha</label>
+                        <div class="input-senha-wrapper">
+                            <input type="password" id="login-senha" required class="input-padrao" placeholder="Sua senha">
+                            <button type="button" class="toggle-senha" data-alvo="login-senha" aria-label="Mostrar senha">
+                                <i class="ph-bold ph-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end">
+                        <a href="#" id="link-esqueci-senha" class="text-xs font-semibold text-primaria hover:underline">Esqueci minha senha</a>
+                    </div>
+                    <button type="submit" class="botao-primario w-full justify-center">
+                        <i class="ph-bold ph-sign-in"></i> Entrar
+                    </button>
+                    <div id="login-erro" class="hidden px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700"></div>
+                </form>
+
+                <!-- Status redefinicao de senha -->
+                <div id="reset-status" class="hidden mt-4 px-4 py-3 rounded-xl text-sm font-semibold"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Estado: Logado -->
+    <div id="secao-logado" class="hidden space-y-8">
+
+        <!-- Avatar -->
+        <div class="card">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-camera text-primaria"></i> Foto de Perfil
+            </h2>
+            <div class="flex items-center gap-6">
+                <div id="container-avatar" class="w-24 h-24 rounded-full bg-slate-200 border-4 border-primaria flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <i class="ph-fill ph-user text-4xl text-slate-400"></i>
+                </div>
+                <div>
+                    <p id="info-usuario-nome" class="font-bold text-slate-800"></p>
+                    <p id="info-usuario-email" class="text-sm text-slate-500"></p>
+                    <button id="btn-upload-avatar" class="botao-secundario mt-3">
+                        <i class="ph-bold ph-upload"></i> Alterar Foto
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Karma Points -->
+        <div class="card">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-star text-acento"></i> Karma Points
+            </h2>
+            <div class="flex items-end justify-between mb-2">
+                <span id="karma-nivel" class="font-bold text-sm text-slate-600"></span>
+                <span id="karma-pontos" class="font-display font-black text-2xl text-acento">0</span>
+            </div>
+            <div class="barra-progresso h-3">
+                <div id="barra-karma" class="barra-progresso-preenchimento h-full" style="width: 0%;"></div>
+            </div>
+            <p id="karma-proximo" class="text-xs text-slate-400 mt-2"></p>
+        </div>
+
+        <!-- Toggle Modo Escuro -->
+        <div class="card">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-moon text-mobilidade"></i> Aparência
+            </h2>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-semibold text-sm text-slate-700">Modo Escuro</p>
+                    <p class="text-xs text-slate-500">Use o botão com ícone de sol/lua no cabeçalho para alternar o tema a qualquer momento</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logout -->
+        <button id="btn-logout" class="botao-primario w-full justify-center" style="background-color: var(--cor-erro);">
+            <i class="ph-bold ph-sign-out"></i> Sair da Conta
+        </button>
+
+        <!-- Secao Ajuda -->
+        <div class="card">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-fill ph-question text-primaria"></i> Ajuda
+            </h2>
+
+            <div class="space-y-6 text-sm text-slate-600 leading-relaxed">
+
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                        <i class="ph-fill ph-faders text-primaria"></i> Como usar os filtros
+                    </h3>
+                    <p>Use os filtros de <strong>Estado</strong> e <strong>Municipio</strong> no dashboard para restringir a visualizacao a uma regiao especifica. O filtro de <strong>Ano</strong> alterna entre os dados de 2024 e 2025. O campo de <strong>Busca</strong> permite localizar escolas pelo nome.</p>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                        <i class="ph-fill ph-calculator text-primaria"></i> O que e o Indicador Geral
+                    </h3>
+                    <p>O <strong>Indicador Geral</strong> e uma nota de 0 a 10 calculada a partir de 7 indicadores binarios de infraestrutura: Internet, Biblioteca, Laboratorio de Informatica, Banheiro Acessivel, Quadra Esportiva, Rampas e Agua Potavel. Cada indicador contribui igualmente para a media final.</p>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                        <i class="ph-fill ph-database text-primaria"></i> De onde vem os dados
+                    </h3>
+                    <p>Os dados de infraestrutura escolar sao provenientes do <strong>Censo Escolar</strong>, realizado anualmente pelo <strong>INEP</strong> (Instituto Nacional de Estudos e Pesquisas Educacionais Anisio Teixeira). Sao utilizados os microdados oficiais dos anos de 2024 e 2025, com foco nos estados da regiao Nordeste.</p>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                        <i class="ph-fill ph-chat-circle-text text-primaria"></i> Como contribuir com avaliacoes
+                    </h3>
+                    <p>Ao entrar na pagina de detalhes de uma escola, voce pode <strong>avaliar</strong> a instituicao com uma nota de 1 a 5 estrelas e deixar um comentario. Se estiver fisicamente proximo a escola (ate 500m), um selo de <strong>Local Verificado</strong> sera aplicado automaticamente a sua avaliacao. Avaliacoes tambem geram <strong>Karma Points</strong> que elevam seu nivel de colaborador.</p>
+                </div>
+
+                <!-- Link INEP -->
+                <a href="https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="link-inep block w-full text-center px-4 py-3 bg-primaria text-white rounded-full text-sm font-bold hover:bg-blue-800 transition-colors shadow-sm">
+                    <i class="ph-bold ph-arrow-square-out mr-1"></i> Acessar microdados oficiais do INEP
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<footer class="bg-white border-t border-slate-200 mt-auto">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <p class="text-sm font-semibold text-slate-700">Desenvolvido para a Atividade A07 — Desenvolvimento Web — UNICAP</p>
+        <p class="text-xs text-slate-500 mt-1">Dados: Censo Escolar INEP 2024/2025</p>
+    </div>
+</footer>
+
+<script type="module" src="src/js/core/inicializador.js"></script>
+<script type="module" src="src/js/ui/config.js"></script>
+</body>
+</html>

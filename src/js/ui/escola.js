@@ -10,9 +10,11 @@ import * as EscolasAPI from '../api/escolas.api.js';
 import * as FotosAPI from '../api/fotos.api.js';
 import * as MapillaryAPI from '../api/mapillary.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
+import * as ViaCEP from '../api/viacep.api.js';
+import { mostrarAlerta, mostrarConfirmacao, mostrarPrompt } from './modal.ui.js';
 
-Parse.initialize('8uIloIhmnqIK0y8P2vghyDGk20EX5wwnbBTxYAhk', 'o4wIFtX6xdbhdYX8PRfD57oOzN8ZkoLrA18Jxb93');
-Parse.serverURL = 'https://parseapi.back4app.com';
+Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
+Parse.serverURL = 'https://parseapi.back4app.com/parse/';
 
 /* Estado local */
 let dadosEscola = null;
@@ -20,15 +22,18 @@ let dadosComparativo = null;
 let notaSelecionada = 0;
 let verificadoLocal = false;
 let coordsEnvio = null;
+let instanciaRadar = null;
+let instanciaBarras = null;
+let anoRadar = 2025;
 
 const INDICADORES = [
   { chave: 'internet', rotulo: 'Internet', icone: 'ph-wifi-high' },
-  { chave: 'biblioteca', rotulo: 'Biblioteca', icone: 'ph-books' },
-  { chave: 'lab_informatica', rotulo: 'Lab. Informatica', icone: 'ph-desktop' },
-  { chave: 'banheiro_acessivel', rotulo: 'Banheiro Acessivel', icone: 'ph-wheelchair' },
-  { chave: 'quadra_esportes', rotulo: 'Quadra Esportes', icone: 'ph-soccer-ball' },
-  { chave: 'rampas', rotulo: 'Rampas', icone: 'ph-stairs' },
+  { chave: 'laboratorio', rotulo: 'Laboratorio', icone: 'ph-desktop' },
+  { chave: 'banheiro_pne', rotulo: 'Banheiro PNE', icone: 'ph-wheelchair' },
+  { chave: 'quadra', rotulo: 'Quadra', icone: 'ph-soccer-ball' },
+  { chave: 'rampa_acessibilidade', rotulo: 'Acessibilidade', icone: 'ph-stairs' },
   { chave: 'agua_potavel', rotulo: 'Agua Potavel', icone: 'ph-drop' },
+  { chave: 'energia_eletrica', rotulo: 'Energia Eletrica', icone: 'ph-lightning' },
 ];
 
 async function iniciar() {
@@ -95,6 +100,24 @@ function renderizarCabecalho() {
     'Privada': 'bg-purple-100 text-purple-700',
   };
   depEl.className = `px-2 py-0.5 rounded-full font-bold text-xs ${mapaCores[dep] || 'bg-slate-100 text-slate-600'}`;
+
+  /* Contatos no header */
+  const containerContatos = document.getElementById('contatos-header');
+  const elTelHeader = document.getElementById('escola-telefone-header');
+  let temContato = false;
+
+  if (dadosEscola.telefone) {
+    temContato = true;
+    elTelHeader.classList.remove('hidden');
+    elTelHeader.href = `tel:${dadosEscola.telefone.replace(/[^\d+]/g, '')}`;
+    elTelHeader.querySelector('span').textContent = dadosEscola.telefone;
+  } else {
+    elTelHeader.classList.add('hidden');
+  }
+
+  if (temContato) {
+    containerContatos.classList.remove('hidden');
+  }
 }
 
 /* --- Contato e Localizacao --- */
@@ -102,12 +125,12 @@ function renderizarContato() {
   const elEndereco = document.getElementById('contato-endereco');
   const elMapa = document.getElementById('contato-mapa');
   const elTelefone = document.getElementById('contato-telefone');
-  const elEmail = document.getElementById('contato-email');
+  const elCep = document.getElementById('contato-cep');
   const elSemDados = document.getElementById('contato-sem-dados');
 
   const endereco = dadosEscola.endereco;
   const telefone = dadosEscola.telefone;
-  const email = dadosEscola.email;
+  const cep = dadosEscola.cep;
   const lat = dadosEscola.latitude;
   const lng = dadosEscola.longitude;
 
@@ -139,19 +162,36 @@ function renderizarContato() {
     elTelefone.classList.add('hidden');
   }
 
-  if (email) {
+  const cepLimpo = cep ? cep.replace(/\D/g, '') : '';
+
+  if (cepLimpo && cepLimpo.length === 8) {
     temDados = true;
-    elEmail.classList.remove('hidden');
-    const linkEmail = document.getElementById('link-email');
-    linkEmail.href = `mailto:${email}`;
-    linkEmail.textContent = email;
+    elCep.classList.remove('hidden');
+    const cepFormatado = cepLimpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+    document.getElementById('txt-cep').textContent = cepFormatado;
+
+    /* Fallback: se nao tem endereco mas tem CEP, busca no ViaCEP */
+    if (!endereco) {
+      ViaCEP.buscarCep(cepLimpo).then(resultado => {
+        if (resultado.ok) {
+          const { logradouro, bairro, cidade, uf } = resultado.dados;
+          const partes = [logradouro, bairro, cidade].filter(Boolean);
+          const endViaCep = partes.length > 0
+            ? partes.join(', ') + (uf ? ` - ${uf}` : '')
+            : null;
+          if (endViaCep) {
+            elEndereco.classList.remove('hidden');
+            document.getElementById('txt-endereco').textContent = endViaCep;
+          }
+        }
+      }).catch(() => { /* Silencia */ });
+    }
   } else {
-    elEmail.classList.add('hidden');
+    elCep.classList.add('hidden');
   }
 
   if (!temDados) {
     elSemDados.classList.remove('hidden');
-    document.getElementById('secao-contato').classList.add('hidden');
   }
 }
 
@@ -172,10 +212,29 @@ async function carregarImagens() {
     return;
   }
 
+  /* Cache de Foto: Verifica se já existe uma URL salva no banco de dados */
+  if (dadosEscola.foto_url) {
+    renderizarFotos([{
+      url: dadosEscola.foto_url,
+      fonte: 'Mapillary (Cache)',
+    }]);
+    return;
+  }
+
   /* Etapa 2: Mapillary */
-  const fotosMapillary = await MapillaryAPI.buscarPorCoordenadas(dadosEscola.latitude, dadosEscola.longitude);
-  if (fotosMapillary.length > 0) {
-    renderizarFotos(fotosMapillary);
+  const resultadoMapillary = await MapillaryAPI.buscarFotosDaEscola(dadosEscola.latitude, dadosEscola.longitude);
+  if (resultadoMapillary.ok) {
+    const fotos = resultadoMapillary.fotos.map(img => ({
+      url: img.thumb_1024_url || img.thumb_512_url || '',
+      fonte: 'Mapillary',
+    }));
+    renderizarFotos(fotos);
+
+    const primeiraFotoUrl = fotos[0]?.url;
+    if (primeiraFotoUrl && dadosEscola.id_parse && dadosEscola.classe) {
+      EscolasAPI.atualizarFotoUrl(dadosEscola.id_parse, dadosEscola.classe, primeiraFotoUrl)
+        .catch(err => console.error('[ESCOLA] Falha ao atualizar cache de foto_url:', err));
+    }
     return;
   }
 
@@ -184,6 +243,11 @@ async function carregarImagens() {
   btnAnterior.classList.add('hidden');
   btnProximo.classList.add('hidden');
   placeholder.classList.remove('hidden');
+
+  const placeholderMsg = document.getElementById('placeholder-foto')?.querySelector('p');
+  if (placeholderMsg) {
+    placeholderMsg.textContent = 'Nenhuma foto disponivel para esta localizacao.';
+  }
 
   document.getElementById('btn-enviar-primeira-foto').addEventListener('click', () => {
     const usuario = estado.obter('usuarioAtual');
@@ -197,8 +261,10 @@ async function carregarImagens() {
 
 function renderizarFotos(fotos) {
   const container = document.getElementById('carrossel-fotos');
+  const placeholder = document.getElementById('placeholder-foto');
   const btnAnterior = document.getElementById('btn-foto-anterior');
   const btnProximo = document.getElementById('btn-foto-proximo');
+  if (placeholder) placeholder.classList.add('hidden');
   const fragmento = document.createDocumentFragment();
 
   fotos.forEach((foto, idx) => {
@@ -206,7 +272,8 @@ function renderizarFotos(fotos) {
     slide.className = 'flex-shrink-0 w-full sm:w-96 snap-center';
     slide.innerHTML = `
       <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3]">
-        <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover" loading="lazy"
+        <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover cursor-pointer" loading="lazy"
+             onclick="abrirModalFoto('${esc(foto.url)}')"
              onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'ph-fill ph-image text-4xl text-slate-300\\'></i></div>'">
         ${foto.fonte ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">${esc(foto.fonte)}</span>` : ''}
       </div>`;
@@ -229,14 +296,21 @@ function dispararUploadFoto() {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
+  input.multiple = true;
   input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      await FotosAPI.enviarFoto(dadosEscola.id_escola, file);
-      alert('Foto enviada para moderacao. Obrigado pela contribuicao!');
-    } catch (erro) {
-      alert('Erro ao enviar foto: ' + erro.message);
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    let enviadas = 0;
+    for (const file of files) {
+      try {
+        await FotosAPI.enviarFoto(dadosEscola.id_escola, file);
+        enviadas++;
+      } catch (erro) {
+        console.error('[ESCOLA] Erro ao enviar foto:', erro);
+      }
+    }
+    if (enviadas > 0) {
+      await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderacao. Obrigado pela contribuicao!`, 'Sucesso');
     }
   };
   input.click();
@@ -294,9 +368,9 @@ function _iconeIndicador(valor) {
     return '<i class="ph-fill ph-check-circle text-secundaria text-lg" title="Possui"></i>';
   }
   if (valor === 0) {
-    return '<i class="ph-fill ph-x-circle text-red-400 text-lg" title="Nao possui"></i>';
+    return '<i class="ph-fill ph-x-circle text-red-400 text-lg" title="Não possui"></i>';
   }
-  return '<span class="inline-flex items-center gap-1 text-slate-400 text-xs"><i class="ph-fill ph-minus-circle text-slate-300 text-lg"></i> Sem Informacao</span>';
+  return '<span class="inline-flex items-center gap-1 text-slate-400 text-xs"><i class="ph-fill ph-minus-circle text-slate-300 text-lg"></i> Sem Informação</span>';
 }
 
 /* --- Grafico Radar (Lazy Loading Chart.js) --- */
@@ -304,13 +378,49 @@ function configurarRadar() {
   const container = document.getElementById('container-radar');
   if (!container) return;
 
+  const btn2024 = document.getElementById('toggle-radar-2024');
+  const btn2025 = document.getElementById('toggle-radar-2025');
+
+  const aplicarEstiloToggle = (ano) => {
+    const ativo = 'bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300';
+    const inativo = 'rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    if (ano === 2025) {
+      btn2025.className = `px-4 py-1.5 ${ativo}`;
+      btn2024.className = `px-4 py-1.5 ${inativo}`;
+    } else {
+      btn2024.className = `px-4 py-1.5 ${ativo}`;
+      btn2025.className = `px-4 py-1.5 ${inativo}`;
+    }
+  };
+
+  if (btn2024) {
+    btn2024.addEventListener('click', async () => {
+      if (anoRadar === 2024) return;
+      anoRadar = 2024;
+      aplicarEstiloToggle(2024);
+      await renderizarRadar(2024);
+      await renderizarBarrasEscola(2024);
+    });
+  }
+
+  if (btn2025) {
+    btn2025.addEventListener('click', async () => {
+      if (anoRadar === 2025) return;
+      anoRadar = 2025;
+      aplicarEstiloToggle(2025);
+      await renderizarRadar(2025);
+      await renderizarBarrasEscola(2025);
+    });
+  }
+
   const observador = new IntersectionObserver(async (entradas) => {
     if (!entradas[0].isIntersecting) return;
     observador.disconnect();
 
     try {
       await import('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js');
-      await renderizarRadar();
+      await renderizarRadar(anoRadar);
+      await renderizarBarrasEscola(anoRadar);
     } catch (erro) {
       console.error('[ESCOLA] Erro ao carregar Chart.js:', erro);
     }
@@ -319,16 +429,40 @@ function configurarRadar() {
   observador.observe(container);
 }
 
-async function renderizarRadar() {
+async function renderizarRadar(ano) {
   const ctx = document.getElementById('grafico-radar')?.getContext('2d');
-  if (!ctx || !dadosEscola) return;
+  if (!ctx) return;
 
-  const media = await EscolasAPI.obterMediaMunicipio(dadosEscola.cidade);
+  /* Destroi instancia anterior */
+  if (instanciaRadar) {
+    instanciaRadar.destroy();
+    instanciaRadar = null;
+  }
 
-  const dadosEscolaArr = INDICADORES.map(ind => dadosEscola[ind.chave] ? 100 : 0);
-  const dadosMedia = media ? INDICADORES.map(ind => (media[ind.chave] || 0) * 100) : INDICADORES.map(() => 0);
+  if (!dadosEscola) return;
 
-  new Chart(ctx, {
+  /* Dados da escola para o ano selecionado */
+  let dadosAno = dadosEscola;
+  if (ano === 2024 && dadosComparativo?.dados2024) {
+    dadosAno = dadosComparativo.dados2024;
+  }
+
+  const dadosEscolaArr = INDICADORES.map(ind => dadosAno[ind.chave] === 1 ? 100 : 0);
+
+  /* Estatisticas agregadas (municipio, estado, regiao) */
+  const uf = dadosEscola.uf || dadosAno.uf || '';
+  const municipio = dadosEscola.cidade || dadosAno.cidade || '';
+  const estatisticas = await EscolasAPI.obterEstatisticas(uf, municipio);
+
+  const mapearIndicadores = (fonte) => fonte
+    ? INDICADORES.map(ind => fonte[ind.chave] ?? 0)
+    : INDICADORES.map(() => 0);
+
+  const dadosMunicipio = mapearIndicadores(estatisticas?.municipio);
+  const dadosEstado = mapearIndicadores(estatisticas?.estado);
+  const dadosRegiao = mapearIndicadores(estatisticas?.regiao);
+
+  instanciaRadar = new Chart(ctx, {
     type: 'radar',
     data: {
       labels: INDICADORES.map(i => i.rotulo),
@@ -340,15 +474,34 @@ async function renderizarRadar() {
           borderColor: '#1A5691',
           borderWidth: 2,
           pointBackgroundColor: '#1A5691',
+          pointRadius: 4,
         },
         {
           label: 'Media do Municipio',
-          data: dadosMedia,
+          data: dadosMunicipio,
           backgroundColor: 'rgba(61, 163, 90, 0.1)',
           borderColor: '#3DA35A',
           borderWidth: 2,
           pointBackgroundColor: '#3DA35A',
           borderDash: [4, 4],
+        },
+        {
+          label: 'Media do Estado',
+          data: dadosEstado,
+          backgroundColor: 'rgba(242, 153, 74, 0.1)',
+          borderColor: '#F2994A',
+          borderWidth: 2,
+          pointBackgroundColor: '#F2994A',
+          borderDash: [6, 3],
+        },
+        {
+          label: 'Media da Regiao (Nordeste)',
+          data: dadosRegiao,
+          backgroundColor: 'rgba(128, 90, 213, 0.08)',
+          borderColor: '#805AD5',
+          borderWidth: 2,
+          pointBackgroundColor: '#805AD5',
+          borderDash: [2, 2],
         },
       ],
     },
@@ -358,7 +511,11 @@ async function renderizarRadar() {
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { font: { family: 'Inter', size: 13 }, usePointStyle: true },
+          labels: {
+            font: { family: 'Inter', size: 11 },
+            usePointStyle: true,
+            padding: 16,
+          },
         },
       },
       scales: {
@@ -370,30 +527,111 @@ async function renderizarRadar() {
             font: { family: 'Inter', size: 10 },
             callback: (v) => v + '%',
           },
+          pointLabels: {
+            font: { family: 'Inter', size: 11, weight: '600' },
+          },
         },
       },
     },
   });
 }
 
-/* --- Avaliacao com Haversine --- */
+async function renderizarBarrasEscola(ano) {
+  const ctx = document.getElementById('grafico-barras-escola')?.getContext('2d');
+  if (!ctx) return;
+
+  /* Destroi instancia anterior */
+  if (instanciaBarras) {
+    instanciaBarras.destroy();
+    instanciaBarras = null;
+  }
+
+  if (!dadosEscola) return;
+
+  /* Dados da escola para o ano selecionado */
+  let dadosAno = dadosEscola;
+  if (ano === 2024 && dadosComparativo?.dados2024) {
+    dadosAno = dadosComparativo.dados2024;
+  }
+
+  const dadosEscolaArr = INDICADORES.map(ind => dadosAno[ind.chave] === 1 ? 100 : 0);
+
+  instanciaBarras = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: INDICADORES.map(i => i.rotulo),
+      datasets: [
+        {
+          label: 'Percentual Atendido (%)',
+          data: dadosEscolaArr,
+          backgroundColor: 'rgba(26, 86, 145, 0.7)',
+          borderColor: '#1A5691',
+          borderWidth: 1,
+          borderRadius: 8,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + ctx.raw + '%' } }
+      },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: (v) => v + '%', font: { family: 'Inter' } } },
+        x: { ticks: { font: { family: 'Inter', size: 10, weight: 'bold' } } }
+      }
+    }
+  });
+}
+
+/* --- Avaliacao com Haversine ---
+   Fluxo Pub/Sub:
+   1. Verifica Parse.User.current() (sessao nativa do Back4App)
+   2. Se logado, sincroniza com estado global e exibe o form
+   3. Se deslogado, exibe mensagem "Faca login"
+   4. Assina mudanca:usuarioAtual para reagir a login/logout em tempo real */
 function configurarAvaliacao() {
-  const usuario = estado.obter('usuarioAtual') || Parse.User.current();
+  _resolverEstadoAuth();
+  estado.assinar('mudanca:usuarioAtual', (user) => {
+    if (user) {
+      document.getElementById('avaliacao-login-msg').classList.add('hidden');
+      _inicializarFormAvaliacao();
+    } else {
+      document.getElementById('avaliacao-login-msg').classList.remove('hidden');
+      document.getElementById('form-avaliacao').classList.add('hidden');
+      document.getElementById('avaliacao-ja-enviada').classList.add('hidden');
+    }
+  });
+}
+
+async function _resolverEstadoAuth() {
+  let usuario = estado.obter('usuarioAtual');
+
+  /* Tenta recuperar sessao nativa do Parse caso o estado ainda nao tenha */
+  if (!usuario) {
+    try {
+      const sessao = Parse.User.current();
+      if (sessao) {
+        await sessao.fetch(); /* Valida token contra o Back4App */
+        estado.definir('usuarioAtual', sessao);
+        usuario = sessao;
+      }
+    } catch (_) {
+      /* Sessão expirada ou inválida — trata como deslogado */
+      estado.definir('usuarioAtual', null);
+      usuario = null;
+    }
+  }
 
   if (usuario) {
-    estado.definir('usuarioAtual', usuario);
+    document.getElementById('avaliacao-login-msg').classList.add('hidden');
     _inicializarFormAvaliacao();
   } else {
     document.getElementById('avaliacao-login-msg').classList.remove('hidden');
     document.getElementById('form-avaliacao').classList.add('hidden');
   }
-
-  estado.assinar('mudanca:usuarioAtual', (user) => {
-    if (user) {
-      document.getElementById('avaliacao-login-msg').classList.add('hidden');
-      _inicializarFormAvaliacao();
-    }
-  });
 }
 
 async function _inicializarFormAvaliacao() {
@@ -590,7 +828,7 @@ async function carregarFeedbacks() {
     listaEl.querySelectorAll('.btn-curtir').forEach(btn => {
       btn.addEventListener('click', async () => {
         const usuario = estado.obter('usuarioAtual');
-        if (!usuario) { alert('E necessario fazer login.'); return; }
+        if (!usuario) { await mostrarAlerta('É necessário fazer login.', 'Aviso'); return; }
         try {
           await FeedbackAPI.curtirAvaliacao(btn.dataset.reviewId);
           btn.classList.add('text-secundaria');
@@ -602,10 +840,18 @@ async function carregarFeedbacks() {
     listaEl.querySelectorAll('.btn-denunciar').forEach(btn => {
       btn.addEventListener('click', async () => {
         const usuario = estado.obter('usuarioAtual');
-        if (!usuario) { alert('E necessario fazer login.'); return; }
-        if (!confirm('Denunciar este comentario?')) return;
+        if (!usuario) { await mostrarAlerta('É necessário fazer login.', 'Aviso'); return; }
+
+        const chaveDenuncia = 'denunciou_' + btn.dataset.reviewId;
+        if (localStorage.getItem(chaveDenuncia)) {
+          await mostrarAlerta('Voce ja enviou uma denuncia para este comentario.', 'Aviso');
+          return;
+        }
+
+        if (!await mostrarConfirmacao('Denunciar este comentário?')) return;
         try {
           await FeedbackAPI.denunciarAvaliacao(btn.dataset.reviewId);
+          localStorage.setItem(chaveDenuncia, 'true');
           btn.classList.add('text-red-500');
         } catch (_) { /* Silencia */ }
       });
@@ -613,26 +859,26 @@ async function carregarFeedbacks() {
 
     listaEl.querySelectorAll('.btn-excluir-feedback').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm('Excluir este comentario permanentemente?')) return;
+        if (!await mostrarConfirmacao('Excluir este comentário permanentemente?')) return;
         try {
           await FeedbackAPI.excluirAvaliacao(btn.dataset.reviewId);
           btn.closest('.bg-slate-50').remove();
           if (listaEl.querySelectorAll('.bg-slate-50').length === 0) {
             if (semFb) semFb.classList.remove('hidden');
           }
-        } catch (_) { alert('Erro ao excluir comentario.'); }
+        } catch (_) { await mostrarAlerta('Erro ao excluir comentário.', 'Erro'); }
       });
     });
 
     listaEl.querySelectorAll('.btn-responder-feedback').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const resposta = prompt('Digite a resposta da gestao:');
+      btn.addEventListener('click', async () => {
+        const resposta = await mostrarPrompt('Digite a resposta da gestão:', 'Resposta da Gestão');
         if (!resposta || !resposta.trim()) return;
         (async () => {
           try {
             await FeedbackAPI.responderAvaliacao(btn.dataset.reviewId, resposta.trim());
             await carregarFeedbacks();
-          } catch (_) { alert('Erro ao enviar resposta.'); }
+          } catch (_) { await mostrarAlerta('Erro ao enviar resposta.', 'Erro'); }
         })();
       });
     });
@@ -648,6 +894,21 @@ function esc(texto) {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(texto));
   return div.innerHTML;
+}
+
+/* --- Modal de Foto Ampliada --- */
+window.abrirModalFoto = function (url) {
+  let modal = document.getElementById('modal-foto');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-foto';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    modal.addEventListener('click', () => modal.remove());
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<img src="${url}" alt="Foto ampliada" style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px;" onclick="event.stopPropagation()">`;
+  modal.style.display = 'flex';
 }
 
 document.addEventListener('DOMContentLoaded', iniciar);

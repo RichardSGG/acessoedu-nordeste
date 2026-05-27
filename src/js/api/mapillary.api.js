@@ -1,51 +1,60 @@
 /**
  * src/js/api/mapillary.api.js
- * Responsabilidade: Fallback de imagens de fachada via Mapillary API
+ * Responsabilidade: Busca de imagens de rua via Mapillary API por coordenadas
+ *
+ * Obter token gratuito:
+ *   1. Acessar https://www.mapillary.com/dashboard/developers
+ *   2. Criar um aplicativo gratuito
+ *   3. Copiar o Client Token e colar na constante MAPILLARY_TOKEN abaixo
  */
 
-const MAPILLARY_TOKEN = 'MLY|dXNlckB0ZXN0LmNvbXx0ZXN0X3Rva2Vu'; /* Token placeholder — substituir pelo token real */
-const MAPILLARY_BASE = 'https://graph.mapillary.com/images';
+const MAPILLARY_TOKEN = 'MLY|dXNlckB0ZXN0LmNvbXx0ZXN0X3Rva2Vu';
 
 /**
- * Busca imagens de rua proximas a coordenada
- * @param {number} latitude
- * @param {number} longitude
- * @param {number} raio - Raio da bounding box em graus (default ~110m)
- * @returns {Promise<Array>}
+ * Busca fotos de rua proximas a uma coordenada geografica.
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @param {number} [limite=3] - Numero maximo de fotos
+ * @returns {Promise<{ok: boolean, fotos?: Array, mensagem?: string}>}
  */
-export async function buscarPorCoordenadas(latitude, longitude, raio = 0.001) {
-  if (latitude == null || longitude == null ||
-      latitude === 0 || longitude === 0) {
-    return [];
+export async function buscarFotosDaEscola(lat, lng, limite = 3) {
+  if (lat == null || lng == null || lat === 0 || lng === 0) {
+    return { ok: false, mensagem: 'Coordenadas invalidas.' };
   }
 
-  const d = raio;
-  const bbox = `${longitude - d},${latitude - d},${longitude + d},${latitude + d}`;
+  const campos = 'id,thumb_512_url,thumb_1024_url,captured_at,is_pano';
+  const url = `https://graph.mapillary.com/images`
+    + `?access_token=${MAPILLARY_TOKEN}`
+    + `&fields=${campos}`
+    + `&lat=${lat}&lng=${lng}`
+    + `&radius=50&limit=${limite}`;
 
   try {
-    const url = `${MAPILLARY_BASE}?fields=id,thumb_1024_url&bbox=${bbox}&limit=5`;
-    const resposta = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${MAPILLARY_TOKEN}` }
-    });
-
-    if (!resposta.ok) {
-      if (resposta.status === 401) {
-        console.warn('[mapillary.api] Token invalido ou expirado. Configure MAPILLARY_TOKEN.');
-      }
-      return [];
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Erro ${response.status}`);
+    const json = await response.json();
+    if (!json.data || json.data.length === 0) {
+      return { ok: false, mensagem: 'Nenhuma foto disponivel para esta localizacao.' };
     }
-
-    const dados = await resposta.json();
-
-    if (!dados.data || dados.data.length === 0) return [];
-
-    return dados.data.map(img => ({
-      id: img.id,
-      url: img.thumb_1024_url || `https://images.mapillary.com/${img.id}/thumb-1024.jpg`,
-      fonte: 'Mapillary',
-    }));
-  } catch (erro) {
-    console.error('[mapillary.api] Erro:', erro);
-    return [];
+    return { ok: true, fotos: json.data };
+  } catch (err) {
+    return { ok: false, mensagem: err.message };
   }
+}
+
+/**
+ * Adaptador para compatibilidade com codigo legado.
+ * Retorna array de fotos no formato {id, url, fonte}.
+ * @deprecated Use buscarFotosDaEscola diretamente.
+ */
+export async function buscarPorCoordenadas(latitude, longitude) {
+  const resultado = await buscarFotosDaEscola(latitude, longitude, 5);
+  if (!resultado.ok) return [];
+  return resultado.fotos.map(img => ({
+    id: img.id,
+    url: img.thumb_1024_url || img.thumb_512_url || '',
+    fonte: 'Mapillary',
+    captured_at: img.captured_at,
+    is_pano: img.is_pano,
+  }));
 }

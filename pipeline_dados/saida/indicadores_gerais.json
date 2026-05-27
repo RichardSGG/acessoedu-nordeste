@@ -1,0 +1,24 @@
+{
+  "2024": {
+    "total": 75054,
+    "com_internet": 55207,
+    "com_banheiro_pne": 29274,
+    "com_quadra": 16031,
+    "com_rampa": 37448,
+    "com_laboratorio": 11595,
+    "com_agua_potavel": 57926,
+    "com_energia": 0,
+    "media_indicador": 4.6
+  },
+  "2025": {
+    "total": 74335,
+    "com_internet": 56800,
+    "com_banheiro_pne": 30445,
+    "com_quadra": 17032,
+    "com_rampa": 39373,
+    "com_laboratorio": 11195,
+    "com_agua_potavel": 57949,
+    "com_energia": 0,
+    "media_indicador": 4.8
+  }
+}

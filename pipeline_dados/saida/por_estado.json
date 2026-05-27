@@ -1,0 +1,200 @@
+{
+  "AL_2024": {
+    "total": 3465,
+    "com_internet": 2777,
+    "com_banheiro_pne": 1604,
+    "com_quadra": 746,
+    "com_rampa": 1888,
+    "com_laboratorio": 635,
+    "com_agua_potavel": 2897,
+    "com_energia": 0,
+    "media_indicador": 5.1
+  },
+  "AL_2025": {
+    "total": 3322,
+    "com_internet": 2805,
+    "com_banheiro_pne": 1663,
+    "com_quadra": 806,
+    "com_rampa": 1979,
+    "com_laboratorio": 631,
+    "com_agua_potavel": 2859,
+    "com_energia": 0,
+    "media_indicador": 5.4
+  },
+  "BA_2024": {
+    "total": 19621,
+    "com_internet": 14816,
+    "com_banheiro_pne": 7020,
+    "com_quadra": 4535,
+    "com_rampa": 8475,
+    "com_laboratorio": 2344,
+    "com_agua_potavel": 15339,
+    "com_energia": 0,
+    "media_indicador": 4.5
+  },
+  "BA_2025": {
+    "total": 19604,
+    "com_internet": 15330,
+    "com_banheiro_pne": 7190,
+    "com_quadra": 4864,
+    "com_rampa": 9118,
+    "com_laboratorio": 2248,
+    "com_agua_potavel": 15587,
+    "com_energia": 0,
+    "media_indicador": 4.6
+  },
+  "CE_2024": {
+    "total": 10149,
+    "com_internet": 7593,
+    "com_banheiro_pne": 4330,
+    "com_quadra": 3185,
+    "com_rampa": 5782,
+    "com_laboratorio": 2456,
+    "com_agua_potavel": 7635,
+    "com_energia": 0,
+    "media_indicador": 5.1
+  },
+  "CE_2025": {
+    "total": 10122,
+    "com_internet": 7658,
+    "com_banheiro_pne": 4578,
+    "com_quadra": 3314,
+    "com_rampa": 6022,
+    "com_laboratorio": 2356,
+    "com_agua_potavel": 7637,
+    "com_energia": 0,
+    "media_indicador": 5.2
+  },
+  "MA_2024": {
+    "total": 13499,
+    "com_internet": 8924,
+    "com_banheiro_pne": 3873,
+    "com_quadra": 1415,
+    "com_rampa": 5462,
+    "com_laboratorio": 1119,
+    "com_agua_potavel": 10249,
+    "com_energia": 0,
+    "media_indicador": 3.8
+  },
+  "MA_2025": {
+    "total": 13226,
+    "com_internet": 9661,
+    "com_banheiro_pne": 4093,
+    "com_quadra": 1528,
+    "com_rampa": 5972,
+    "com_laboratorio": 1096,
+    "com_agua_potavel": 10234,
+    "com_energia": 0,
+    "media_indicador": 4.1
+  },
+  "PB_2024": {
+    "total": 5325,
+    "com_internet": 4357,
+    "com_banheiro_pne": 2541,
+    "com_quadra": 1148,
+    "com_rampa": 3370,
+    "com_laboratorio": 1056,
+    "com_agua_potavel": 4608,
+    "com_energia": 0,
+    "media_indicador": 5.3
+  },
+  "PB_2025": {
+    "total": 5641,
+    "com_internet": 4390,
+    "com_banheiro_pne": 2597,
+    "com_quadra": 1166,
+    "com_rampa": 3397,
+    "com_laboratorio": 869,
+    "com_agua_potavel": 4607,
+    "com_energia": 0,
+    "media_indicador": 5
+  },
+  "PE_2024": {
+    "total": 9936,
+    "com_internet": 7509,
+    "com_banheiro_pne": 4485,
+    "com_quadra": 2400,
+    "com_rampa": 5444,
+    "com_laboratorio": 1826,
+    "com_agua_potavel": 7813,
+    "com_energia": 0,
+    "media_indicador": 4.9
+  },
+  "PE_2025": {
+    "total": 9957,
+    "com_internet": 7722,
+    "com_banheiro_pne": 4729,
+    "com_quadra": 2513,
+    "com_rampa": 5667,
+    "com_laboratorio": 1797,
+    "com_agua_potavel": 7829,
+    "com_energia": 0,
+    "media_indicador": 5.1
+  },
+  "PI_2024": {
+    "total": 5632,
+    "com_internet": 3908,
+    "com_banheiro_pne": 1872,
+    "com_quadra": 1172,
+    "com_rampa": 2969,
+    "com_laboratorio": 759,
+    "com_agua_potavel": 3957,
+    "com_energia": 0,
+    "media_indicador": 4.3
+  },
+  "PI_2025": {
+    "total": 5325,
+    "com_internet": 3899,
+    "com_banheiro_pne": 1946,
+    "com_quadra": 1322,
+    "com_rampa": 3079,
+    "com_laboratorio": 889,
+    "com_agua_potavel": 3813,
+    "com_energia": 0,
+    "media_indicador": 4.7
+  },
+  "RN_2024": {
+    "total": 4938,
+    "com_internet": 3323,
+    "com_banheiro_pne": 2090,
+    "com_quadra": 854,
+    "com_rampa": 2496,
+    "com_laboratorio": 938,
+    "com_agua_potavel": 3413,
+    "com_energia": 0,
+    "media_indicador": 4.4
+  },
+  "RN_2025": {
+    "total": 4708,
+    "com_internet": 3349,
+    "com_banheiro_pne": 2151,
+    "com_quadra": 901,
+    "com_rampa": 2563,
+    "com_laboratorio": 867,
+    "com_agua_potavel": 3407,
+    "com_energia": 0,
+    "media_indicador": 4.7
+  },
+  "SE_2024": {
+    "total": 2489,
+    "com_internet": 2000,
+    "com_banheiro_pne": 1459,
+    "com_quadra": 576,
+    "com_rampa": 1562,
+    "com_laboratorio": 462,
+    "com_agua_potavel": 2015,
+    "com_energia": 0,
+    "media_indicador": 5.4
+  },
+  "SE_2025": {
+    "total": 2430,
+    "com_internet": 1986,
+    "com_banheiro_pne": 1498,
+    "com_quadra": 618,
+    "com_rampa": 1576,
+    "com_laboratorio": 442,
+    "com_agua_potavel": 1976,
+    "com_energia": 0,
+    "media_indicador": 5.6
+  }
+}

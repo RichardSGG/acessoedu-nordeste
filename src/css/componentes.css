@@ -1,5 +1,5 @@
 /* src/css/componentes.css */
-/* Componentes reutilizaveis: cards, botoes, badges, inputs */
+/* Componentes reutilizáveis: cards, botões, badges, inputs */
 
 /* --- Card Padrao --- */
 .card {
@@ -75,9 +75,9 @@
 }
 
 .badge-prata {
-  background-color: #EDF2F7;
-  color: #4A5568;
-  border: 1px solid #A0AEC0;
+  background-color: var(--cor-prata-fundo);
+  color: var(--cor-prata-texto);
+  border: 1px solid var(--cor-prata-borda);
   border-radius: var(--raio-total);
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
@@ -88,9 +88,9 @@
 }
 
 .badge-bronze {
-  background-color: #FFF5F0;
-  color: #C05621;
-  border: 1px solid #ED8936;
+  background-color: var(--cor-bronze-fundo);
+  color: var(--cor-bronze-texto);
+  border: 1px solid var(--cor-bronze-borda);
   border-radius: var(--raio-total);
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
@@ -236,6 +236,18 @@
   position: relative;
 }
 
+/* --- Navegacao do Header --- */
+.nav-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-header a {
+  white-space: nowrap;
+}
+
 /* --- Toggle Switch --- */
 .toggle-switch {
   position: relative;
@@ -269,6 +281,48 @@
 
 .toggle-switch.ativo::after {
   transform: translateX(22px);
+}
+
+/* --- Input Senha com Toggle de Visibilidade --- */
+.input-senha-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-senha-wrapper .input-padrao {
+  padding-right: 2.75rem;
+}
+
+.toggle-senha {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 200ms ease, background-color 200ms ease;
+  font-size: 1.125rem;
+  padding: 0;
+}
+
+.toggle-senha:hover {
+  color: var(--cor-primaria);
+  background-color: var(--cor-primaria-clara);
+}
+
+
+/* Cor do texto no body — sobrescreve Tailwind hardcoded */
+body {
+  color: var(--cor-texto-principal) !important;
 }
 
 /* --- Barra de Progresso --- */
@@ -308,42 +362,35 @@
   transform: scale(1.15);
 }
 
-/* --- Impressao (PDF) --- */
+/* --- Botão de Raio (Modal Perto de Mim) --- */
+.btn-raio.raio-ativo {
+  border-color: var(--cor-primaria) !important;
+  background-color: var(--cor-primaria) !important;
+  color: #FFFFFF !important;
+}
+
+/* --- Impressao --- */
 @media print {
-  header, footer, .filtros, .botoes-acao, .modal-overlay, .toast {
+  header, footer, #filtro-analise-uf, .modal-overlay, .toast {
     display: none !important;
   }
 
   body {
-    background: white;
-    color: black;
+    background: white !important;
+    color: black !important;
     font-size: 11pt;
   }
 
   .card {
-    box-shadow: none;
-    border: 1px solid #ccc;
-    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
-  .grafico-container {
-    width: 100%;
-    page-break-inside: avoid;
-  }
-
-  .relatorio-cabecalho {
-    display: block !important;
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-
-  .relatorio-cabecalho h1 {
-    font-size: 18pt;
-    font-weight: 800;
-  }
-
-  .relatorio-cabecalho p {
-    font-size: 10pt;
-    color: #666;
+  .grafico-container, canvas {
+    width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

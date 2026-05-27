@@ -1,33 +1,35 @@
-# Credenciais e variáveis de ambiente
+# Credenciais e variaveis de ambiente
 .env
 .env.local
 .env.production
 *.env
 
-# Documentos de contexto de IA (não devem ir ao repositório público)
-AI_CONTEXT.md
-ARQUITETURA.md
-PLAN.MD
-
-# Dependências e Ambientes Virtuais
+# Dependencias
 node_modules/
 .pnpm-store/
-.venv/
-.venv*/
 
 # Build e cache
 dist/
 .cache/
 .parcel-cache/
 
-# Dados brutos do ETL (muito grandes para o Git)
-etl/dados_brutos/
-etl/*.csv
-etl/*.xlsx
-seeder/escolas_limpo.json
-dados/*.csv
-dados/*.xlsx
-dados/*.json
+# Ambiente virtual e cache Python
+.venv/
+.venv*/
+__pycache__/
+*.pyc
+*.pyo
+
+# Dados brutos do ETL (pesados, gerados localmente)
+*.csv
+*.xlsx
+
+# JSONs gerados pelo ETL (nao versionar dados)
+escolas_2024.json
+escolas_2025.json
+escolas_bruto.json
+estatisticas_agregadas.json
+escolas_saeb_historico.json
 
 # Sistema operacional
 .DS_Store
@@ -37,3 +39,10 @@ Thumbs.db
 .vscode/settings.json
 .idea/
 *.swp
+
+# JSONs de saida pesados do pipeline (28MB+ cada)
+pipeline_dados/saida/complementos_*.json
+
+# Documentos markdown (apenas README.md vai ao repo)
+*.md
+!README.md

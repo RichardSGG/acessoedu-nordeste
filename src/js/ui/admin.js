@@ -1,28 +1,55 @@
 /**
  * src/js/ui/admin.js
  * Responsabilidade: Painel admin — moderacao de fotos e comentarios denunciados
- *                   Verificacao de role === 'admin' na primeira linha
  */
 
 import estado from '../core/estado.js';
 import * as FotosAPI from '../api/fotos.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
+import { verificarAdmin } from '../api/auth.api.js';
 
-Parse.initialize('8uIloIhmnqIK0y8P2vghyDGk20EX5wwnbBTxYAhk', 'o4wIFtX6xdbhdYX8PRfD57oOzN8ZkoLrA18Jxb93');
-Parse.serverURL = 'https://parseapi.back4app.com';
+Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
+Parse.serverURL = 'https://parseapi.back4app.com/parse/';
 
 async function iniciar() {
-  /* Verificacao de role — primeira instrucao */
-  const usuario = Parse.User.current();
-  if (!usuario || usuario.get('role') !== 'admin') {
-    window.location.href = 'index.html';
+  const admin = await verificarAdmin();
+  if (!admin) {
+    window.location.replace('index.html');
     return;
   }
+  const usuario = Parse.User.current();
   estado.definir('usuarioAtual', usuario);
 
   console.log('[ADMIN] Acesso autorizado:', usuario.get('username'));
+
+  configurarAbasFotos();
   await carregarFotosPendentes();
   await carregarDenuncias();
+}
+
+/* --- Abas Fotos --- */
+function configurarAbasFotos() {
+  const tabPendentes = document.getElementById('tab-fotos-pendentes');
+  const tabAprovadas = document.getElementById('tab-fotos-aprovadas');
+  const painelPendentes = document.getElementById('painel-fotos-pendentes');
+  const painelAprovadas = document.getElementById('painel-fotos-aprovadas');
+
+  if (!tabPendentes || !tabAprovadas) return;
+
+  tabPendentes.addEventListener('click', () => {
+    tabPendentes.className = 'px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300';
+    tabAprovadas.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    painelPendentes.classList.remove('hidden');
+    painelAprovadas.classList.add('hidden');
+  });
+
+  tabAprovadas.addEventListener('click', async () => {
+    tabAprovadas.className = 'px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300';
+    tabPendentes.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    painelPendentes.classList.add('hidden');
+    painelAprovadas.classList.remove('hidden');
+    await carregarFotosAprovadas();
+  });
 }
 
 /* --- Fotos Pendentes --- */
@@ -47,8 +74,19 @@ async function carregarFotosPendentes() {
     fotos.forEach(foto => {
       const tr = document.createElement('tr');
       tr.className = 'border-b border-slate-100';
+      const url = foto.get('arquivo')?.url();
+      const idEscola = foto.get('id_escola') || '';
+
       tr.innerHTML = `
-        <td class="py-3 px-3 text-sm font-medium text-slate-700">${esc(foto.get('id_escola') || '--')}</td>
+        <td class="py-3 px-3">
+          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="window.open('${esc(url)}', '_blank')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
+        </td>
+        <td class="py-3 px-3 text-sm font-medium text-slate-700">
+          ${esc(idEscola)}
+          <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
+            <i class="ph-bold ph-arrow-square-out"></i> Ver Perfil
+          </a>
+        </td>
         <td class="py-3 px-3 text-sm text-slate-500">${_formatarData(foto.createdAt)}</td>
         <td class="py-3 px-3 text-center">
           <div class="flex items-center justify-center gap-2">
@@ -66,7 +104,6 @@ async function carregarFotosPendentes() {
     tbody.innerHTML = '';
     tbody.appendChild(fragmento);
 
-    /* Eventos */
     tbody.querySelectorAll('.btn-aprovar').forEach(btn => {
       btn.addEventListener('click', async () => {
         await FotosAPI.moderarFoto(btn.dataset.fotoId, 'approved');
@@ -84,6 +121,69 @@ async function carregarFotosPendentes() {
     });
   } catch (erro) {
     console.error('[ADMIN] Erro fotos:', erro);
+    loader.classList.add('hidden');
+  }
+}
+
+/* --- Fotos Aprovadas --- */
+async function carregarFotosAprovadas() {
+  const loader = document.getElementById('loader-fotos-aprovadas');
+  const tabela = document.getElementById('tabela-fotos-aprovadas');
+  const tbody = document.getElementById('tabela-fotos-aprovadas-body');
+  const semFotos = document.getElementById('sem-fotos-aprovadas');
+
+  /* Evita recarregar se ja tem dados */
+  if (tbody.children.length > 0) return;
+
+  try {
+    const fotos = await FotosAPI.listarAprovadasAdmin();
+    loader.classList.add('hidden');
+
+    if (fotos.length === 0) {
+      semFotos.classList.remove('hidden');
+      return;
+    }
+
+    tabela.classList.remove('hidden');
+    const fragmento = document.createDocumentFragment();
+
+    fotos.forEach(foto => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-slate-100';
+      const url = foto.get('arquivo')?.url();
+      const idEscola = foto.get('id_escola') || '';
+
+      tr.innerHTML = `
+        <td class="py-3 px-3">
+          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="window.open('${esc(url)}', '_blank')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
+        </td>
+        <td class="py-3 px-3 text-sm font-medium text-slate-700">
+          ${esc(idEscola)}
+          <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
+            <i class="ph-bold ph-arrow-square-out"></i> Ver Perfil
+          </a>
+        </td>
+        <td class="py-3 px-3 text-sm text-slate-500">${_formatarData(foto.updatedAt)}</td>
+        <td class="py-3 px-3 text-center">
+          <button class="btn-remover-foto px-3 py-1.5 bg-red-50 text-red-500 rounded-full text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-1" data-foto-id="${foto.id}">
+            <i class="ph-bold ph-trash"></i> Remover
+          </button>
+        </td>`;
+      fragmento.appendChild(tr);
+    });
+
+    tbody.innerHTML = '';
+    tbody.appendChild(fragmento);
+
+    tbody.querySelectorAll('.btn-remover-foto').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await FotosAPI.moderarFoto(btn.dataset.fotoId, 'rejected');
+        btn.closest('tr').remove();
+        if (tbody.children.length === 0) { tabela.classList.add('hidden'); semFotos.classList.remove('hidden'); }
+      });
+    });
+  } catch (erro) {
+    console.error('[ADMIN] Erro fotos aprovadas:', erro);
     loader.classList.add('hidden');
   }
 }
@@ -110,11 +210,16 @@ async function carregarDenuncias() {
     denuncias.forEach(d => {
       const tr = document.createElement('tr');
       tr.className = 'border-b border-slate-100';
+      const idEscola = d.get('id_escola') || '';
+
       tr.innerHTML = `
         <td class="py-3 px-3 text-sm text-slate-700 max-w-xs truncate">${esc(d.get('mensagem') || '')}</td>
         <td class="py-3 px-3 text-sm text-slate-500">${esc(d.get('nome') || '--')}</td>
         <td class="py-3 px-3 text-center">
           <span class="px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-xs font-bold">${d.get('flags_count') || 0}</span>
+        </td>
+        <td class="py-3 px-3 text-center">
+          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center justify-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> Ver Perfil</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <div class="flex items-center justify-center gap-2">
