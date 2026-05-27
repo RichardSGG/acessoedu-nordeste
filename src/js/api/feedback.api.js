@@ -1,6 +1,6 @@
 /**
  * src/js/api/feedback.api.js
- * Responsabilidade: CRUD de avaliacoes (reviews) e interacoes (likes/flags) no Back4App
+ * Responsabilidade: CRUD de avaliações (reviews) e interações (likes/flags) no Back4App
  */
 
 import estado from '../core/estado.js';

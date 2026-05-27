@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termos de Uso | AcessoEdu Nordeste</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/css/variaveis.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            
+            theme: {
+                extend: {
+                    colors: {
+                        primaria: '#1A5691',
+                        secundaria: '#3DA35A',
+                        acento: '#F2994A',
+                        mobilidade: '#805AD5',
+                        fundo: '#F7F8FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="bg-fundo text-[#1A202C] antialiased min-h-screen flex flex-col">
+
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <i class="ph-fill ph-student text-3xl text-primaria"></i>
+            <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
+        </a>
+        <nav class="flex items-center gap-6">
+            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Início</a>
+        </nav>
+    </div>
+</header>
+
+<main class="flex-grow max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="font-display font-black text-3xl text-slate-800 mb-8">Termos de Uso</h1>
+
+    <div class="prose prose-slate max-w-none space-y-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-3">1. Aceitação dos Termos</h2>
+            <p class="text-sm text-slate-600 leading-relaxed">Ao acessar e utilizar a plataforma AcessoEdu Nordeste, você concorda integralmente com estes Termos de Uso. Caso não concorde, não utilize a plataforma.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-3">2. Natureza do Serviço</h2>
+            <p class="text-sm text-slate-600 leading-relaxed">O AcessoEdu Nordeste é uma plataforma acadêmica sem fins lucrativos desenvolvida no âmbito da disciplina de Desenvolvimento Web da Universidade Católica de Pernambuco (UNICAP). A plataforma agrega dados públicos do Censo Escolar INEP e permite a participação cidadã na auditoria de infraestrutura escolar.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-3">3. Conteúdo Gerado pelo Usuário</h2>
+            <p class="text-sm text-slate-600 leading-relaxed">Ao enviar fotos, avaliações ou comentários, você declara ser o autor do conteúdo e concede à plataforma o direito de exibi-lo publicamente. Conteúdo ofensivo, falso ou que viole direitos de terceiros será removido pela moderação.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-3">4. Privacidade e Dados</h2>
+            <p class="text-sm text-slate-600 leading-relaxed">Coletamos apenas os dados necessários para o funcionamento da plataforma, conforme descrito na nossa Política de Privacidade. Não compartilhamos dados pessoais com terceiros.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 class="font-display font-bold text-lg text-slate-800 mb-3">5. Limitação de Responsabilidade</h2>
+            <p class="text-sm text-slate-600 leading-relaxed">A plataforma é fornecida "como está". Embora nos esforcemos pela precisão dos dados, não garantimos a exatidão absoluta das informações do Censo Escolar, que são de responsabilidade do INEP.</p>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-white border-t border-slate-200 mt-auto">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <p class="text-sm font-semibold text-slate-700">Desenvolvido para a Atividade A07 — Desenvolvimento Web — UNICAP</p>
+        <p class="text-xs text-slate-500 mt-1">Dados: Censo Escolar INEP 2024/2025 | Mapa: OpenStreetMap contributors</p>
+    </div>
+</footer>
+
+<script type="module" src="src/js/core/inicializador.js"></script>
+</body>
+</html>

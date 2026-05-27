@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking de Excelencia | AcessoEdu Nordeste</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="src/css/variaveis.css">
+    <link rel="stylesheet" href="src/css/componentes.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            
+            theme: {
+                extend: {
+                    colors: {
+                        primaria: '#1A5691',
+                        secundaria: '#3DA35A',
+                        acento: '#F2994A',
+                        mobilidade: '#805AD5',
+                        fundo: '#F7F8FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
+</head>
+<body class="bg-fundo text-[#1A202C] antialiased min-h-screen flex flex-col">
+
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <i class="ph-fill ph-student text-3xl text-primaria"></i>
+            <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
+        </a>
+        <nav class="nav-header hidden md:flex">
+            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
+            <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Análise</a>
+            <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="nav-admin-link" style="display: none;">Painel Admin</a>
+        </nav>
+        <div class="flex items-center gap-4" id="container-auth">
+            <button id="btn-login" class="px-5 py-2 bg-primaria text-white rounded-full text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2" onclick="window.location.href='config.html'">
+                <i class="ph-bold ph-sign-in"></i> Entrar
+            </button>
+            <span id="nome-usuario-header" class="hidden text-sm font-semibold text-slate-700"></span>
+            <div id="avatar-usuario" class="hidden w-10 h-10 rounded-full bg-slate-200 border-2 border-primaria flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden" onclick="window.location.href='config.html'">
+                <i class="ph-fill ph-user text-xl text-slate-500"></i>
+            </div>
+            <button id="btn-logout-header" class="hidden px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center gap-1">
+                <i class="ph-bold ph-sign-out"></i> Sair
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="text-center mb-10">
+        <h1 class="font-display font-black text-3xl text-slate-800 mb-2">Ranking de Excelencia</h1>
+        <p class="text-slate-500">As 50 escolas com melhor infraestrutura do Nordeste</p>
+    </div>
+
+    <!-- Filtro de Estado -->
+    <div class="flex justify-center mb-8">
+        <select id="filtro-ranking-uf" class="select-padrao max-w-xs">
+            <option value="">Todos os Estados</option>
+            <option value="AL">Alagoas</option>
+            <option value="BA">Bahia</option>
+            <option value="CE">Ceara</option>
+            <option value="MA">Maranhao</option>
+            <option value="PB">Paraiba</option>
+            <option value="PE">Pernambuco</option>
+            <option value="PI">Piaui</option>
+            <option value="RN">Rio Grande do Norte</option>
+            <option value="SE">Sergipe</option>
+        </select>
+    </div>
+
+    <!-- Podio Top 3 -->
+    <div id="podio" class="flex items-end justify-center gap-4 sm:gap-8 mb-12" style="min-height: 280px;">
+        <!-- Renderizado via JS -->
+    </div>
+
+    <!-- Lista 4-50 -->
+    <div id="lista-ranking" class="space-y-3"></div>
+
+    <!-- Loader -->
+    <div id="loader-ranking" class="text-center py-12">
+        <div class="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full shadow-md border border-slate-200">
+            <div class="spinner"></div>
+            <span class="text-sm font-semibold text-slate-600">Calculando ranking...</span>
+        </div>
+    </div>
+
+    <!-- Modal de Transparencia Algoritmica -->
+    <div id="modal-algoritmo" class="modal-overlay">
+        <div class="modal-conteudo max-w-lg w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-display font-bold text-lg text-slate-800">Como e calculada esta nota?</h2>
+                <button id="fechar-modal" class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+                    <i class="ph-bold ph-x text-slate-500"></i>
+                </button>
+            </div>
+            <div class="space-y-4 text-sm text-slate-600 leading-relaxed">
+                <p>O <strong>Indice de Excelencia em Infraestrutura</strong> e calculado a partir de 7 indicadores binarios do Censo Escolar INEP:</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>Internet</li>
+                    <li>Biblioteca</li>
+                    <li>Laboratorio de Informatica</li>
+                    <li>Quadra de Esportes</li>
+                    <li>Rampas de Acessibilidade</li>
+                    <li>Banheiro Adaptado PCD</li>
+                    <li>Agua Potavel</li>
+                </ul>
+                <p>A nota final e a media simples dos 7 indicadores (cada um vale 0 ou 1), normalizada para escala de 0 a 10.</p>
+                <div class="flex gap-2 pt-2">
+                    <span class="badge-ouro"><i class="ph-fill ph-trophy"></i> Ouro: 9.0+</span>
+                    <span class="badge-prata"><i class="ph-fill ph-medal"></i> Prata: 7.5+</span>
+                    <span class="badge-bronze"><i class="ph-fill ph-medal"></i> Bronze: 6.0+</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="btn-como-calculado" class="botao-primario mx-auto mt-8 flex">
+        <i class="ph-bold ph-info"></i> Como e calculada esta nota?
+    </button>
+
+</main>
+
+<footer class="bg-white border-t border-slate-200 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <p class="text-sm font-semibold text-slate-700">Desenvolvido para a Atividade A07 — Desenvolvimento Web — UNICAP</p>
+        <p class="text-xs text-slate-500 mt-1">Dados: Censo Escolar INEP 2024/2025</p>
+    </div>
+</footer>
+
+<script type="module" src="src/js/core/inicializador.js"></script>
+<script type="module" src="src/js/ui/ranking.js"></script>
+</body>
+</html>

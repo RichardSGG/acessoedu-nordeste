@@ -26,6 +26,14 @@
   --cor-texto-principal: #1A202C;
   --cor-texto-secundario: #718096;
 
+  /* Badges */
+  --cor-prata-fundo: #EDF2F7;
+  --cor-prata-texto: #4A5568;
+  --cor-prata-borda: #A0AEC0;
+  --cor-bronze-fundo: #FFF5F0;
+  --cor-bronze-texto: #C05621;
+  --cor-bronze-borda: #ED8936;
+
   /* Semanticas */
   --cor-sucesso: var(--cor-secundaria);
   --cor-erro: #E53E3E;
@@ -51,15 +59,26 @@
   --transicao-padrao: all 300ms ease-in-out;
 }
 
-/* Modo Escuro */
-.dark {
-  --cor-fundo: #121212;
-  --cor-superficie: #1E1E1E;
-  --cor-borda: #2D2D2D;
-  --cor-texto-principal: #E0E0E0;
-  --cor-texto-secundario: #A0A0A0;
-  --cor-primaria-clara: #1A3050;
-  --cor-secundaria-clara: #1A3025;
-  --cor-acento-clara: #3D2810;
-  --cor-mobilidade-clara: #2D1F50;
+/* Reset global — garante que o fundo cubra a tela toda e responda ao modo escuro */
+html, body {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto-principal);
+  width: 100%;
+  min-height: 100vh;
+  transition: background-color 300ms ease, color 300ms ease;
 }
+
+/* Container do mapa Leaflet — dimensoes explicitas obrigatorias */
+#container-mapa {
+  min-height: 500px;
+  width: 100%;
+  z-index: 1;
+  position: relative;
+}
+
+#container-mapa .leaflet-container {
+  min-height: 500px;
+  width: 100%;
+  z-index: 1;
+}
+

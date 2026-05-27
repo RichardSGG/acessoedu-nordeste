@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação | AcessoEdu Nordeste</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="src/css/variaveis.css">
+    <link rel="stylesheet" href="src/css/componentes.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            
+            theme: {
+                extend: {
+                    colors: {
+                        primaria: '#1A5691',
+                        secundaria: '#3DA35A',
+                        acento: '#F2994A',
+                        mobilidade: '#805AD5',
+                        fundo: '#F7F8FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="bg-fundo text-[#1A202C] antialiased min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <i class="ph-fill ph-student text-3xl text-primaria"></i>
+            <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
+        </a>
+        <nav class="hidden md:flex items-center gap-6">
+            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
+            <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
+            <a href="documentacao.html" class="text-sm font-bold text-primaria transition-colors">Documentação</a>
+        </nav>
+    </div>
+</header>
+
+<main class="flex-grow max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Cabecalho da Pagina -->
+    <div class="mb-10">
+        <h1 class="font-display font-black text-3xl text-slate-800 mb-2">Documentação do Projeto</h1>
+        <p class="text-slate-500 text-sm font-medium">AcessoEdu Nordeste — Plataforma de transparência e auditoria cidadã para infraestrutura escolar do Nordeste brasileiro.</p>
+    </div>
+
+    <!-- Fontes de Dados -->
+    <section class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+        <h2 class="font-display font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
+            <i class="ph-fill ph-database text-primaria text-2xl"></i> Fontes de Dados
+        </h2>
+        <div class="space-y-4">
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="ph-fill ph-file-text text-primaria"></i> Censo Escolar INEP
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed mb-3">
+                    Os dados de infraestrutura escolar são extraídos dos microdados oficiais do Censo Escolar da Educação Básica, disponibilizados pelo INEP (Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira) para os anos de 2024 e 2025.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="flex items-start gap-2">
+                        <i class="ph-fill ph-check-circle text-secundaria mt-0.5"></i>
+                        <span class="text-slate-600">Indicadores binarios de infraestrutura (Internet, Biblioteca, Laboratorio, Quadra, Rampas, Banheiro Acessivel, Água Potável)</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <i class="ph-fill ph-check-circle text-secundaria mt-0.5"></i>
+                        <span class="text-slate-600">Dados de geolocalizacao (latitude e longitude) das escolas</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <i class="ph-fill ph-check-circle text-secundaria mt-0.5"></i>
+                        <span class="text-slate-600">Niveis de ensino ofertados (Infantil, Fundamental, Medio, EJA, Especial, Profissionalizante)</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <i class="ph-fill ph-check-circle text-secundaria mt-0.5"></i>
+                        <span class="text-slate-600">Dependência administrativa (Federal, Estadual, Municipal, Privada)</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <i class="ph-fill ph-check-circle text-secundaria mt-0.5"></i>
+                        <span class="text-slate-600">Quantidade de psicólogos por escola</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <i class="ph-fill ph-check-circle text-secundaria mt-0.5"></i>
+                        <span class="text-slate-600">Amostra: 150 escolas comuns aos dois anos (2024 e 2025)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- APIs Integradas -->
+    <section class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+        <h2 class="font-display font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
+            <i class="ph-fill ph-cloud text-primaria text-2xl"></i> APIs Integradas
+        </h2>
+        <div class="space-y-4">
+            <!-- Back4App -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="ph-fill ph-hard-drives text-primaria"></i> Back4App (Parse Server)
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    BaaS (Backend as a Service) que armazena e serve os dados escolares, avaliações e fotos. Utiliza o SDK Parse para consultas geoespaciais com GeoPoint, buscas por raio de proximidade, e controle de acesso baseado em Roles (admin/user).
+                </p>
+            </div>
+
+            <!-- ViaCEP -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="ph-fill ph-map-pin text-acento"></i> ViaCEP
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    API pública brasileira para consulta de endereços por CEP. Integrada ao modal "Perto de Mim" do dashboard, permitindo que o usuário digite um CEP e tenha os filtros de Estado e Município preenchidos automaticamente. A resposta inclui logradouro, bairro, cidade e UF.
+                </p>
+            </div>
+
+            <!-- Mapillary -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="ph-fill ph-image text-secundaria"></i> Mapillary Graph API
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    API de imagens de rua geolocalizadas (street-level imagery). Utilizada como fallback na cascata de imagens da página da escola: busca fotos da fachada através de uma bounding box de 0.001 graus ao redor das coordenadas da escola, retornando até 5 imagens com resolução de 1024px para o carrossel.
+                </p>
+            </div>
+
+            <!-- Leaflet / OpenStreetMap -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="ph-fill ph-globe text-mobilidade"></i> Leaflet + OpenStreetMap
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Biblioteca Leaflet.js com tiles do OpenStreetMap para renderização do mapa interativo no dashboard. Inclui o plugin MarkerCluster para agrupamento de marcadores em zoom distante, melhorando a performance com centenas de escolas plotadas simultaneamente.
+                </p>
+            </div>
+
+            <!-- Chart.js -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="ph-fill ph-chart-radar text-acento"></i> Chart.js
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Biblioteca leve para gráficos em canvas. Utilizada no gráfico radar da página da escola, comparando a infraestrutura da escola com as médias do município, estado e região em 7 indicadores simultâneos. Carregada sob demanda (lazy load) via IntersectionObserver.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Equipe -->
+    <section class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+        <h2 class="font-display font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
+            <i class="ph-fill ph-users text-primaria text-2xl"></i> Equipe de Desenvolvimento
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="card text-center">
+                <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                    <i class="ph-fill ph-user-circle text-3xl text-primaria"></i>
+                </div>
+                <h3 class="font-display font-bold text-slate-800">Richard</h3>
+                <p class="text-xs text-slate-500 mt-1">Desenvolvedor</p>
+            </div>
+            <div class="card text-center">
+                <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
+                    <i class="ph-fill ph-user-circle text-3xl text-secundaria"></i>
+                </div>
+                <h3 class="font-display font-bold text-slate-800">Micael Barros</h3>
+                <p class="text-xs text-slate-500 mt-1">Desenvolvedor</p>
+            </div>
+            <div class="card text-center">
+                <div class="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-3">
+                    <i class="ph-fill ph-user-circle text-3xl text-mobilidade"></i>
+                </div>
+                <h3 class="font-display font-bold text-slate-800">Suedson Fernando</h3>
+                <p class="text-xs text-slate-500 mt-1">Desenvolvedor</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Repositório GitHub -->
+    <section class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">
+        <h2 class="font-display font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
+            <i class="ph-fill ph-github-logo text-slate-700 text-2xl"></i> Repositório
+        </h2>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+            O código-fonte completo do projeto está disponível no GitHub. O repositório inclui o ETL Python para extração dos dados do Censo INEP, o seeder Node.js para importação no Back4App, e toda a interface web em Vanilla JS com TailwindCSS.
+        </p>
+        <a href="https://github.com/richsilvadev/acessoedu-nordeste" target="_blank" rel="noopener" class="botao-primario">
+            <i class="ph-bold ph-github-logo"></i> Acessar Repositório no GitHub
+        </a>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-white border-t border-slate-200 mt-auto">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex flex-col items-center md:items-start gap-1">
+            <p class="text-sm font-semibold text-slate-700">Desenvolvido para a Atividade A07 — Desenvolvimento Web — UNICAP</p>
+            <p class="text-xs text-slate-500">Dados: Censo Escolar INEP 2024/2025</p>
+        </div>
+        <div class="flex gap-4">
+            <a href="termos.html" class="text-xs text-primaria hover:underline">Termos de Uso</a>
+            <a href="privacidade.html" class="text-xs text-primaria hover:underline">Privacidade</a>
+        </div>
+    </div>
+</footer>
+
+<script type="module" src="src/js/core/inicializador.js"></script>
+<script type="module" src="src/js/ui/documentacao.js"></script>
+</body>
+</html>

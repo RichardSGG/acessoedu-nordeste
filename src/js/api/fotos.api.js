@@ -1,6 +1,6 @@
 /**
  * src/js/api/fotos.api.js
- * Responsabilidade: Gestao de upload e consulta de fotos comunitarias no Back4App
+ * Responsabilidade: Gestão de upload e consulta de fotos comunitárias no Back4App
  */
 
 const CLASSE_FOTO = 'SchoolPhoto';
@@ -60,6 +60,22 @@ export async function listarPendentes(limite = 50) {
     return await query.find();
   } catch (erro) {
     console.error('[fotos.api] Erro ao listar pendentes:', erro);
+    return [];
+  }
+}
+
+/**
+ * Lista fotos aprovadas (admin — historico)
+ */
+export async function listarAprovadasAdmin(limite = 50) {
+  try {
+    const query = new Parse.Query(CLASSE_FOTO);
+    query.equalTo('status', 'approved');
+    query.descending('createdAt');
+    query.limit(limite);
+    return await query.find();
+  } catch (erro) {
+    console.error('[fotos.api] Erro ao listar aprovadas admin:', erro);
     return [];
   }
 }

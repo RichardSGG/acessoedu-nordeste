@@ -41,14 +41,9 @@ Parse.serverURL = 'https://parseapi.back4app.com/';
 // ---------------------------------------------------------------------------
 // Constantes
 // ---------------------------------------------------------------------------
-const TAMANHO_LOTE = 50;
-const DELAY_ENTRE_LOTES_MS = 250;
+const TAMANHO_LOTE = 150;
+const DELAY_ENTRE_LOTES_MS = 300;
 const MAX_TENTATIVAS = 3;
-
-const CONFIG = {
-    'escolas_2024.json': 'Escolas2024',
-    'escolas_2025.json': 'Escolas2025',
-};
 
 // ---------------------------------------------------------------------------
 // Funcoes auxiliares
@@ -213,15 +208,12 @@ async function _tentarCriarLote(lote, nomeClasse) {
             obj.set('niveis_ensino', dados.niveis_ensino);
         }
 
-        // Endereco e contatos
+        // Endereco e contato
         if (dados.endereco) {
             obj.set('endereco', dados.endereco);
         }
         if (dados.telefone) {
             obj.set('telefone', dados.telefone);
-        }
-        if (dados.email) {
-            obj.set('email', dados.email);
         }
 
         // Delta de infraestrutura (pre-calculado no ETL)
@@ -333,13 +325,117 @@ async function processarArquivo(arquivoJson, nomeClasse) {
 }
 
 // ---------------------------------------------------------------------------
+// Processar estatisticas agregadas -> classe EstatisticasGeograficas
+// ---------------------------------------------------------------------------
+
+async function processarEstatisticas() {
+    const caminho = join(RAIZ, 'estatisticas_agregadas.json');
+    const nomeClasse = 'EstatisticasGeograficas';
+
+    console.log(`[SEED] JSON : ${caminho}`);
+    console.log(`[SEED] Classe: ${nomeClasse}`);
+
+    let entradas;
+    try {
+        const raw = readFileSync(caminho, 'utf-8');
+        entradas = JSON.parse(raw);
+        if (!Array.isArray(entradas)) {
+            throw new Error('JSON raiz nao e um array. Esperado lista de objetos.');
+        }
+    } catch (erro) {
+        console.error(`[ERRO] Falha ao ler JSON de estatisticas: ${erro.message}`);
+        return;
+    }
+
+    console.log(`[SEED] Total de entradas: ${entradas.length}`);
+
+    // Limpar classe
+    await limparClasse(nomeClasse);
+
+    // Inserir em lotes
+    const lotes = chunkArray(entradas, TAMANHO_LOTE);
+    console.log(`[SEED] Inserindo ${lotes.length} lotes...`);
+    console.log('');
+
+    let totalCriadas = 0;
+    let totalFalhas = 0;
+    const inicio = Date.now();
+
+    const CHAVES_INDICADORES = [
+        'internet', 'biblioteca', 'lab_informatica',
+        'quadra_esportes', 'rampas', 'banheiro_acessivel', 'agua_potavel',
+    ];
+
+    for (let i = 0; i < lotes.length; i++) {
+        const lote = lotes[i];
+        const objetos = [];
+
+        for (const entrada of lote) {
+            const obj = new Parse.Object(nomeClasse);
+
+            obj.set('nivel', entrada.nivel || '');
+            obj.set('total_escolas', entrada.total_escolas || 0);
+
+            if (entrada.uf) {
+                obj.set('uf', entrada.uf);
+            }
+            if (entrada.municipio) {
+                obj.set('municipio', entrada.municipio);
+            }
+
+            for (const ch of CHAVES_INDICADORES) {
+                obj.set(ch, entrada[ch] ?? 0.0);
+            }
+
+            objetos.push(obj);
+        }
+
+        try {
+            await Parse.Object.saveAll(objetos, { useMasterKey: true });
+            totalCriadas += objetos.length;
+            console.log(`[OK] Lote ${i + 1}/${lotes.length} - ${objetos.length} criadas`);
+        } catch (erro) {
+            // Fallback individual
+            let falhas = 0;
+            for (const obj of objetos) {
+                try {
+                    await obj.save(null, { useMasterKey: true });
+                    totalCriadas++;
+                } catch (errInd) {
+                    falhas++;
+                    totalFalhas++;
+                    if (falhas <= 3) {
+                        console.error(`[ERRO]   nivel=${obj.get('nivel')}: ${extrairMensagemErro(errInd)}`);
+                    }
+                }
+            }
+            if (falhas > 3) {
+                console.error(`[ERRO]   ... e mais ${falhas - 3} falhas`);
+            }
+            console.log(`[OK] Lote ${i + 1}/${lotes.length} - ${objetos.length - falhas} criadas, ${falhas} falhas`);
+        }
+
+        if (i < lotes.length - 1) {
+            await sleep(DELAY_ENTRE_LOTES_MS);
+        }
+    }
+
+    const duracao = ((Date.now() - inicio) / 1000).toFixed(1);
+    console.log('');
+    console.log(`[SEED]   Criadas : ${totalCriadas.toLocaleString()}`);
+    console.log(`[SEED]   Falhas  : ${totalFalhas.toLocaleString()}`);
+    console.log(`[SEED]   Duracao : ${duracao}s`);
+}
+
+// ---------------------------------------------------------------------------
 // Funcao principal
 // ---------------------------------------------------------------------------
 
 async function executarSeed() {
     console.log('='.repeat(60));
-    console.log('[SEED] FULL IMPORT — Escolas2024 + Escolas2025');
+    console.log('[SEED] FULL IMPORT LINEAR — Escolas2024 PRIMEIRO, depois Escolas2025');
     console.log(`[SEED] App ID : ${APP_ID}`);
+    console.log(`[SEED] Tamanho do lote: ${TAMANHO_LOTE} | Delay: ${DELAY_ENTRE_LOTES_MS}ms | Retry: ${MAX_TENTATIVAS}x`);
     console.log('='.repeat(60));
     console.log('');
 
@@ -350,13 +446,61 @@ async function executarSeed() {
     }
     console.log('');
 
-    for (const [arquivo, classe] of Object.entries(CONFIG)) {
-        await processarArquivo(arquivo, classe);
-        console.log('-'.repeat(60));
-        console.log('');
-    }
+    // -----------------------------------------------------------------------
+    // FASE 1: Escolas2024 (processamento isolado e completo)
+    // -----------------------------------------------------------------------
+    console.log('='.repeat(60));
+    console.log('[SEED] FASE 1/2 — Processando EXCLUSIVAMENTE Escolas2024');
+    console.log('='.repeat(60));
+    console.log('');
 
-    console.log('[SEED] Importacao concluida.');
+    await processarArquivo('escolas_2024.json', 'Escolas2024');
+
+    console.log('');
+    console.log('[SEED] FASE 1/2 CONCLUIDA — Escolas2024 finalizado.');
+    console.log('');
+
+    // Pausa entre anos para garantir isolamento total
+    console.log('[SEED] Aguardando 2s antes de iniciar FASE 2...');
+    await sleep(2000);
+    console.log('');
+
+    // -----------------------------------------------------------------------
+    // FASE 2: Escolas2025 (processamento isolado e completo)
+    // -----------------------------------------------------------------------
+    console.log('='.repeat(60));
+    console.log('[SEED] FASE 2/2 — Processando EXCLUSIVAMENTE Escolas2025');
+    console.log('='.repeat(60));
+    console.log('');
+
+    await processarArquivo('escolas_2025.json', 'Escolas2025');
+
+    console.log('');
+    console.log('[SEED] FASE 2/2 CONCLUIDA — Escolas2025 finalizado.');
+
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('[SEED] Importacao linear concluida com sucesso.');
+    console.log('='.repeat(60));
+
+    // -----------------------------------------------------------------------
+    // FASE 3: Estatisticas Geograficas (3 niveis)
+    // -----------------------------------------------------------------------
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('[SEED] FASE 3/3 — Processando EstatisticasGeograficas');
+    console.log('='.repeat(60));
+    console.log('');
+
+    await processarEstatisticas();
+
+    console.log('');
+    console.log('[SEED] FASE 3/3 CONCLUIDA — Todas as fases finalizadas.');
+
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('[SEED] Pipeline completo — Escolas2024, Escolas2025 e EstatisticasGeograficas.');
+    console.log('='.repeat(60));
 }
 
 // ---------------------------------------------------------------------------

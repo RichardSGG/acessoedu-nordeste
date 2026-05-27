@@ -5,24 +5,26 @@
 
 import estado from '../core/estado.js';
 import { EVENTOS } from '../core/constantes.js';
+import { mostrarAlerta } from './modal.ui.js';
+import { buscarPorBoundingBox } from '../api/escolas.api.js';
 
 let instanciaMapa = null;
 let markersCluster = null;
+let timerMoveend = null;
 
 export function obterInstanciaMapa() {
   return instanciaMapa;
 }
 
 // Inicializa Back4App no navegador
-Parse.initialize("8uIloIhmnqIK0y8P2vghyDGk20EX5wwnbBTxYAhk", "o4wIFtX6xdbhdYX8PRfD57oOzN8ZkoLrA18Jxb93");
-Parse.serverURL = 'https://parseapi.back4app.com/';
+Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
+Parse.serverURL = 'https://parseapi.back4app.com/parse/';
 
 export function inicializarMapa() {
     console.log('Inicializando Leaflet e OpenStreetMap...');
-    
-    // Configura o Leaflet na Div com id "map"
+
     instanciaMapa = L.map('map').setView([-8.0, -38.0], 6);
-    
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(instanciaMapa);
@@ -33,29 +35,39 @@ export function inicializarMapa() {
     // Eventos do Painel Lateral
     const fecharBtn = document.getElementById('fechar-painel');
     const enviarBtn = document.getElementById('btn-enviar-auditoria');
-    
+
     if (fecharBtn) fecharBtn.addEventListener('click', fecharPainel);
     if (enviarBtn) enviarBtn.addEventListener('click', enviarAuditoria);
 
-    // Carrega escolas direto da nuvem
-    carregarMapaEscolas();
+    // Carrega escolas apenas na area visivel
+    carregarEscolasVisiveis();
+
+    // Recarrega ao arrastar ou dar zoom (debounce 300ms)
+    instanciaMapa.on('moveend', () => {
+      clearTimeout(timerMoveend);
+      timerMoveend = setTimeout(carregarEscolasVisiveis, 300);
+    });
+    instanciaMapa.on('zoomend', () => {
+      clearTimeout(timerMoveend);
+      timerMoveend = setTimeout(carregarEscolasVisiveis, 300);
+    });
 }
 
-async function carregarMapaEscolas() {
-    console.log("Baixando escolas da nuvem Back4App...");
-    const EscolasClass = Parse.Object.extend("Escolas");
-    const query = new Parse.Query(EscolasClass);
-    
-    // Apenas escolas que têm geolocalização preenchida no banco
-    query.exists("latitude");
-    query.exists("longitude");
-    query.limit(2000); // Limite de 2000 para não travar o navegador
-    
+async function carregarEscolasVisiveis() {
+    const bounds = instanciaMapa.getBounds();
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+
+    console.log(`[Mapa] Carregando escolas na area visivel: SW(${sw.lat.toFixed(4)}, ${sw.lng.toFixed(4)}) NE(${ne.lat.toFixed(4)}, ${ne.lng.toFixed(4)})`);
+
     try {
-        const resultados = await query.find();
-        renderizarMarcadores(resultados);
+        const escolas = await buscarPorBoundingBox(
+            { lat: sw.lat, lng: sw.lng },
+            { lat: ne.lat, lng: ne.lng }
+        );
+        renderizarMarcadores(escolas);
     } catch (error) {
-        console.error("Erro ao baixar escolas:", error.message);
+        console.error('[Mapa] Erro ao carregar escolas visiveis:', error.message);
     }
 }
 
@@ -64,19 +76,61 @@ export function renderizarMarcadores(escolas) {
     markersCluster.clearLayers();
 
     escolas.forEach(escola => {
-        const lat = escola.get("latitude");
-        const lng = escola.get("longitude");
-        
-        // Trava rigorosa: Ignora escolas que vieram com GPS nulo ou corrompido do banco
+        /* Compatibilidade com Parse.Object e objetos planos */
+        const obter = (chave) => typeof escola.get === 'function' ? escola.get(chave) : escola[chave];
+
+        /* Extrai coordenadas: Parse.Object tem posicao_geografica, objeto plano tem lat/lng ou latitude/longitude */
+        let lat, lng;
+        if (typeof escola.get === 'function') {
+          const pos = escola.get('posicao_geografica');
+          lat = pos ? pos.latitude : null;
+          lng = pos ? pos.longitude : null;
+        } else {
+          lat = escola.lat ?? escola.latitude ?? null;
+          lng = escola.lng ?? escola.longitude ?? null;
+        }
+
         if (lat && lng && lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
             const marker = L.marker([lat, lng]);
-            
-            // Abre a barra lateral ao clicar no pino
-            marker.on('click', () => abrirPainel(escola));
-            
+
+            const nome = obter('nome') || 'Sem nome';
+            const municipio = obter('cidade') || '';
+            const uf = obter('uf') || '';
+
+            /* Calcula indice de infraestrutura (0-10) — schema real do DB */
+            const indicadores = [
+                obter('internet'),
+                obter('laboratorio'),
+                obter('quadra'),
+                obter('rampa_acessibilidade'),
+                obter('banheiro_pne'),
+                obter('agua_potavel'),
+                obter('energia_eletrica'),
+            ];
+            const soma = indicadores.reduce((acc, v) => acc + (v === 1 ? 1 : 0), 0);
+            const nota = ((soma / indicadores.length) * 10).toFixed(1);
+
+            marker.bindTooltip(`
+                <strong>${escHtml(nome)}</strong><br>
+                ${escHtml(municipio)} &mdash; ${escHtml(uf)}<br>
+                Indice: ${nota}
+            `, { direction: 'top', offset: [0, -10] });
+
+            marker.on('click', () => {
+                const idEscola = obter('id_escola');
+                window.location.href = `detalhes.html?id=${idEscola}`;
+            });
+
             markersCluster.addLayer(marker);
         }
     });
+}
+
+function escHtml(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(texto));
+    return div.innerHTML;
 }
 
 function abrirPainel(escola) {
@@ -106,11 +160,11 @@ async function enviarAuditoria() {
     const comentario = document.getElementById('form-comentario').value;
 
     if (!nota || nota < 1 || nota > 5) {
-        alert("Forneça uma nota entre 1 e 5.");
+        await mostrarAlerta('Forneça uma nota entre 1 e 5.', 'Validação');
         return;
     }
     if (!comentario.trim()) {
-        alert("Descreva a situação atual da escola.");
+        await mostrarAlerta('Descreva a situação atual da escola.', 'Validação');
         return;
     }
 
@@ -135,11 +189,11 @@ async function enviarAuditoria() {
         obj.set("flags_count", 0);
 
         await obj.save();
-        alert("Denúncia / Auditoria salva com sucesso!");
+        await mostrarAlerta('Denúncia / Auditoria salva com sucesso!', 'Sucesso');
         fecharPainel();
     } catch (error) {
         console.error("Erro no Back4App:", error);
-        alert("Falha na rede. Tente de novo.");
+        await mostrarAlerta('Falha na rede. Tente de novo.', 'Erro');
     } finally {
         btn.textContent = "Enviar Auditoria";
         btn.disabled = false;

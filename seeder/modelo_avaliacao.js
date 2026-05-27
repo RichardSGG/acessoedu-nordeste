@@ -7,7 +7,7 @@ const APP_ID = process.env.APP_ID;
 const JAVASCRIPT_KEY = process.env.JAVASCRIPT_KEY;
 
 Parse.initialize(APP_ID, JAVASCRIPT_KEY);
-Parse.serverURL = 'https://parseapi.back4app.com/';
+Parse.serverURL = 'https://parseapi.back4app.com/parse/';
 
 async function salvarAvaliacaoExemplo() {
     // 1. Instancia a classe 'Avaliacoes'

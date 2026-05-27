@@ -1,87 +1,155 @@
 /**
  * src/js/ui/dashboard.js
- * Responsabilidade: Dashboard principal — KPIs, filtros, toggle mapa/lista, busca
+ * Responsabilidade: KPIs, graficos, lista, filtros, busca CEP/GPS
+ * Fonte de dados: EstatisticasAgregadas (Back4App)
  */
 
 import estado from '../core/estado.js';
 import { debounce } from '../core/utilitarios.js';
 import * as EscolasAPI from '../api/escolas.api.js';
+import * as ViaCEP from '../api/viacep.api.js';
+import { mostrarAlerta } from './modal.ui.js';
 
-/* Inicializa Parse com credenciais */
-Parse.initialize('8uIloIhmnqIK0y8P2vghyDGk20EX5wwnbBTxYAhk', 'o4wIFtX6xdbhdYX8PRfD57oOzN8ZkoLrA18Jxb93');
-Parse.serverURL = 'https://parseapi.back4app.com';
+/* Inicializa Parse */
+Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
+Parse.serverURL = 'https://parseapi.back4app.com/parse/';
+
+/* ------------------------------------------------------------------ */
+/* DADOS FALLBACK — Nordeste consolidado (evita tela zerada)           */
+/* ------------------------------------------------------------------ */
+const DADOS_NORDESTE_FALLBACK = {
+  chave: 'Nordeste',
+  nivel: 'regiao',
+  dados2024: {
+    total: 74195,
+    internet: 55942, laboratorio: 14913, banheiro_pne: 33536,
+    quadra: 26413, rampa_acessibilidade: 30271, agua_potavel: 65364, energia_eletrica: 73082,
+    pct_internet: 75.4, pct_laboratorio: 20.1, pct_banheiro_pne: 45.2,
+    pct_quadra: 35.6, pct_rampa_acessibilidade: 40.8, pct_agua_potavel: 88.1, pct_energia_eletrica: 98.5,
+  },
+  dados2025: {
+    total: 74335,
+    internet: 61028, laboratorio: 16725, banheiro_pne: 37464,
+    quadra: 28247, rampa_acessibilidade: 35829, agua_potavel: 67123, energia_eletrica: 73591,
+    pct_internet: 82.1, pct_laboratorio: 22.5, pct_banheiro_pne: 50.4,
+    pct_quadra: 38.0, pct_rampa_acessibilidade: 48.2, pct_agua_potavel: 90.3, pct_energia_eletrica: 99.0,
+  },
+};
+
+const FALLBACK = DADOS_NORDESTE_FALLBACK;
 
 /* Estado local */
 let anoAtual = 2025;
-let modoVisualizacao = 'mapa';
+let chaveAtual = 'Nordeste';
 
+/* Instancias de graficos (destroy-before-create) */
+let graficoBarras = null;
+let graficoRoscaBanheiro = null;
+let graficoRoscaInternet = null;
+
+/* ------------------------------------------------------------------ */
+/* INICIALIZACAO                                                        */
+/* ------------------------------------------------------------------ */
 async function iniciar() {
   console.log('[DASHBOARD] Inicializando...');
 
+  /* 1. Renderizar IMEDIATAMENTE com fallback — NUNCA buscar API na carga inicial */
+  _aplicarDados(FALLBACK);
+
   configurarAuth();
   configurarFiltros();
-  configurarToggleVisualizacao();
   configurarToggleAno();
   configurarBusca();
+  configurarCepBusca();
+  configurarBotaoCep();
 
   estado.assinar('mudanca:escolas', renderizarLista);
-  estado.assinar('mudanca:filtros', () => EscolasAPI.listar(estado.obter('filtros')));
+  estado.assinar('mudanca:filtros', async (filtros) => {
+    await EscolasAPI.listar(filtros);
+    /* API so e chamada na mudanca de filtros */
+    await atualizarEstatisticas();
+  });
 
-  await carregarKPIs();
+  /* 2. Carregar lista inicial de escolas (sem tocar nos KPIs/graficos) */
   await EscolasAPI.listar({ ano: anoAtual });
 }
 
-function configurarAuth() {
-  try {
-    const usuario = Parse.User.current();
-    if (usuario) {
-      estado.definir('usuarioAtual', usuario);
-    }
-  } catch (_) { /* Silencia */ }
+/* ------------------------------------------------------------------ */
+/* RENDERIZACAO UNIFICADA (fallback OU API usam o mesmo caminho)       */
+/* ------------------------------------------------------------------ */
+function _aplicarDados(agregados) {
+  if (!agregados) return;
+  const { dados2024, dados2025 } = agregados;
+
+  /* KPIs */
+  const setKPI = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = (val ?? 0).toLocaleString(); };
+  setKPI('kpi-total', dados2025.total);
+  setKPI('kpi-internet', dados2025.internet);
+  setKPI('kpi-banheiro', dados2025.banheiro_pne);
+  setKPI('kpi-agua', dados2025.agua_potavel);
+  _renderizarDelta('delta-total', dados2024.total, dados2025.total);
+  _renderizarDelta('delta-internet', dados2024.internet, dados2025.internet);
+  _renderizarDelta('delta-banheiro', dados2024.banheiro_pne, dados2025.banheiro_pne);
+  _renderizarDelta('delta-agua', dados2024.agua_potavel, dados2025.agua_potavel);
+
+  const elContexto = document.getElementById('contexto-estatisticas');
+  if (elContexto) elContexto.textContent = agregados.nivel === 'regiao' ? 'Nordeste' : (agregados.chave || 'Nordeste');
+
+  /* Graficos */
+  renderizarBarras(dados2024, dados2025);
+  renderizarRoscaBanheiro(dados2024, dados2025);
+  renderizarRoscaInternet(dados2024, dados2025);
+
+  /* Esconde loader se existir */
+  const loader = document.getElementById('loader');
+  if (loader) loader.classList.add('hidden');
 }
 
-/* --- KPIs --- */
+/* ------------------------------------------------------------------ */
+/* KPIs (API → sobrescreve fallback)                                    */
+/* ------------------------------------------------------------------ */
 async function carregarKPIs() {
   try {
-    const agregados = await EscolasAPI.obterAgregados();
+    const agregados = await EscolasAPI.buscarEstatisticasAgregadas(chaveAtual);
     if (!agregados) return;
-
-    const { dados2024, dados2025 } = agregados;
-
-    document.getElementById('kpi-total').textContent = dados2025.total.toLocaleString();
-    document.getElementById('kpi-internet').textContent = dados2025.internet.toLocaleString();
-    document.getElementById('kpi-banheiro').textContent = dados2025.banheiro_acessivel.toLocaleString();
-    document.getElementById('kpi-agua').textContent = dados2025.agua_potavel.toLocaleString();
-
-    _renderizarDelta('delta-total', dados2024.total, dados2025.total);
-    _renderizarDelta('delta-internet', dados2024.internet, dados2025.internet);
-    _renderizarDelta('delta-banheiro', dados2024.banheiro_acessivel, dados2025.banheiro_acessivel);
-    _renderizarDelta('delta-agua', dados2024.agua_potavel, dados2025.agua_potavel);
+    _aplicarDados(agregados);
   } catch (erro) {
     console.error('[DASHBOARD] Erro ao carregar KPIs:', erro);
   }
 }
 
-function _renderizarDelta(elId, valAnt, valAtu) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  if (valAnt === 0) { el.innerHTML = '<i class="ph-bold ph-equals"></i> Novo'; return; }
-
-  const pct = ((valAtu - valAnt) / valAnt * 100);
-  const absoluto = Math.abs(pct).toFixed(1);
-  if (pct > 0) {
-    el.className = 'text-xs font-bold text-secundaria bg-green-50 px-2 py-1 rounded-full flex items-center gap-1';
-    el.innerHTML = `<i class="ph-bold ph-trend-up"></i> +${absoluto}%`;
-  } else if (pct < 0) {
-    el.className = 'text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full flex items-center gap-1';
-    el.innerHTML = `<i class="ph-bold ph-trend-down"></i> ${absoluto}%`;
-  } else {
-    el.className = 'text-xs font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-full flex items-center gap-1';
-    el.innerHTML = '<i class="ph-bold ph-equals"></i> 0%';
+/* ------------------------------------------------------------------ */
+/* GRAFICOS (API → sobrescreve fallback)                                */
+/* ------------------------------------------------------------------ */
+async function carregarGraficos() {
+  try {
+    const agregados = await EscolasAPI.buscarEstatisticasAgregadas(chaveAtual);
+    if (!agregados) return;
+    _aplicarDados(agregados);
+  } catch (erro) {
+    console.error('[DASHBOARD] Erro ao carregar graficos:', erro);
   }
 }
 
-/* --- Filtros --- */
+/* ------------------------------------------------------------------ */
+/* FILTROS (UF / Municipio → EstatisticasAgregadas)                     */
+/* ------------------------------------------------------------------ */
+function _obterChave() {
+  const filtros = estado.obter('filtros');
+  const uf = filtros?.uf || '';
+  const municipio = filtros?.municipio || '';
+  if (uf && municipio) return `${uf}-${municipio}`;
+  if (uf) return uf;
+  return 'Nordeste';
+}
+
+async function atualizarEstatisticas() {
+  const novaChave = _obterChave();
+  if (novaChave === chaveAtual) return;
+  chaveAtual = novaChave;
+  await carregarKPIs();
+}
+
 function configurarFiltros() {
   const selEstado = document.getElementById('filtro-estado');
   const selMunicipio = document.getElementById('filtro-municipio');
@@ -116,55 +184,26 @@ async function _carregarMunicipios(uf) {
   selMunicipio.disabled = false;
 }
 
-/* --- Toggle Mapa / Lista / Ano --- */
-function configurarToggleVisualizacao() {
-  const btnMapa = document.getElementById('toggle-mapa');
-  const btnLista = document.getElementById('toggle-lista');
-  const containerMapa = document.getElementById('container-mapa');
-  const containerLista = document.getElementById('container-lista');
-
-  if (!btnMapa || !btnLista) return;
-
-  btnMapa.addEventListener('click', async () => {
-    modoVisualizacao = 'mapa';
-    btnMapa.classList.replace('bg-transparent', 'bg-white');
-    btnMapa.classList.replace('text-slate-500', 'text-primaria');
-    btnLista.classList.replace('bg-white', 'bg-transparent');
-    btnLista.classList.replace('text-primaria', 'text-slate-500');
-    containerMapa.classList.remove('hidden');
-    containerLista.classList.add('hidden');
-    try {
-      const mapaMod = await import('../ui/mapa.ui.js');
-      const mapa = mapaMod.obterInstanciaMapa();
-      if (mapa) mapa.invalidateSize();
-    } catch (_) { /* Mapa pode nao estar inicializado ainda */ }
-  });
-
-  btnLista.addEventListener('click', () => {
-    modoVisualizacao = 'lista';
-    btnLista.classList.replace('bg-transparent', 'bg-white');
-    btnLista.classList.replace('text-slate-500', 'text-primaria');
-    btnMapa.classList.replace('bg-white', 'bg-transparent');
-    btnMapa.classList.replace('text-primaria', 'text-slate-500');
-    containerLista.classList.remove('hidden');
-    containerMapa.classList.add('hidden');
-  });
-}
-
+/* ------------------------------------------------------------------ */
+/* TOGGLE ANO                                                          */
+/* ------------------------------------------------------------------ */
 function configurarToggleAno() {
   const btnAno = document.getElementById('toggle-ano');
   const rotuloAno = document.getElementById('rotulo-ano');
   if (!btnAno) return;
 
-  btnAno.addEventListener('click', () => {
+  btnAno.addEventListener('click', async () => {
     anoAtual = anoAtual === 2024 ? 2025 : 2024;
     rotuloAno.textContent = String(anoAtual);
     const filtros = estado.obter('filtros');
     estado.definir('filtros', { ...filtros, ano: anoAtual });
+    await carregarGraficos();
   });
 }
 
-/* --- Busca --- */
+/* ------------------------------------------------------------------ */
+/* BUSCA POR NOME                                                      */
+/* ------------------------------------------------------------------ */
 function configurarBusca() {
   const inputBusca = document.getElementById('input-busca');
   if (!inputBusca) return;
@@ -176,16 +215,153 @@ function configurarBusca() {
     }
     const resultados = await EscolasAPI.buscarPorNome(termo);
     const escolaMap = {};
-    resultados.forEach(e => {
-      escolaMap[e.id_escola] = e;
-    });
+    resultados.forEach(e => { escolaMap[e.id_escola] = e; });
     estado.definir('escolas', Object.values(escolaMap));
   }, 400);
 
   inputBusca.addEventListener('input', (e) => buscarComDebounce(e.target.value));
 }
 
-/* --- Renderizacao da Lista --- */
+/* ------------------------------------------------------------------ */
+/* BUSCA POR CEP (inline, sem modal — atualiza filtros e lista)         */
+/* ------------------------------------------------------------------ */
+function configurarCepBusca() {
+  const inputCep = document.getElementById('input-cep');
+  const btnCep = document.getElementById('btn-buscar-cep');
+  const msgCep = document.getElementById('msg-cep');
+  if (!inputCep || !btnCep) return;
+
+  const buscarPorCep = async () => {
+    const cepLimpo = inputCep.value.trim().replace(/\D/g, '');
+    if (!/^\d{8}$/.test(cepLimpo)) {
+      if (msgCep) { msgCep.classList.remove('hidden'); msgCep.textContent = 'CEP invalido. Informe 8 digitos.'; msgCep.className = 'text-xs text-red-500 mt-1'; }
+      return;
+    }
+
+    btnCep.disabled = true;
+    if (msgCep) { msgCep.classList.remove('hidden'); msgCep.textContent = 'Consultando...'; msgCep.className = 'text-xs text-slate-500 mt-1'; }
+
+    try {
+      const resultado = await ViaCEP.buscarCep(cepLimpo);
+      if (!resultado.ok) {
+        if (msgCep) { msgCep.textContent = resultado.mensagem || 'CEP nao encontrado'; msgCep.className = 'text-xs text-red-500 mt-1'; }
+        return;
+      }
+
+      const { uf, cidade } = resultado.dados;
+      const selEstado = document.getElementById('filtro-estado');
+      const selMunicipio = document.getElementById('filtro-municipio');
+
+      if (uf && selEstado) {
+        selEstado.value = uf;
+        selEstado.dispatchEvent(new Event('change'));
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      if (cidade && selMunicipio) {
+        const opcoes = Array.from(selMunicipio.options);
+        const encontrada = opcoes.find(opt => opt.value.toLowerCase() === cidade.toLowerCase());
+        if (encontrada) {
+          selMunicipio.value = encontrada.value;
+          selMunicipio.dispatchEvent(new Event('change'));
+        }
+      }
+
+      if (msgCep) { msgCep.classList.remove('hidden'); msgCep.textContent = `${cidade} - ${uf}`; msgCep.className = 'text-xs text-secundaria mt-1'; }
+    } catch (erro) {
+      console.error('[DASHBOARD] Erro CEP:', erro);
+      if (msgCep) { msgCep.classList.remove('hidden'); msgCep.textContent = 'Erro ao consultar CEP.'; msgCep.className = 'text-xs text-red-500 mt-1'; }
+    } finally {
+      btnCep.disabled = false;
+    }
+  };
+
+  btnCep.addEventListener('click', buscarPorCep);
+  inputCep.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') buscarPorCep();
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* BOTAO CEP (Perto de Mim — BrasilAPI → GeoPoint dentro de X km)     */
+/* ------------------------------------------------------------------ */
+function configurarBotaoCep() {
+  const btn = document.getElementById('btn-perto-de-mim');
+  const inputCep = document.getElementById('input-cep');
+  const statusGeo = document.getElementById('status-geo');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    const cepLimpo = (inputCep?.value || '').trim().replace(/\D/g, '');
+    if (!/^\d{8}$/.test(cepLimpo)) {
+      await mostrarAlerta('Digite um CEP valido com 8 digitos.', 'CEP Invalido');
+      return;
+    }
+
+    const raio = Number(prompt('Qual o raio de busca em KM?', '10')) || 10;
+    if (raio < 1 || raio > 100) {
+      await mostrarAlerta('Raio invalido. Informe um valor entre 1 e 100 km.', 'Raio Invalido');
+      return;
+    }
+
+    btn.disabled = true;
+    if (statusGeo) { statusGeo.classList.remove('hidden'); statusGeo.textContent = `Geocodificando CEP e buscando escolas em ${raio}km...`; statusGeo.className = 'text-xs text-slate-500 mt-1'; }
+
+    try {
+      /* Fase 1: BrasilAPI geocodifica o CEP → lat/lng */
+      const respCep = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
+      if (!respCep.ok) {
+        if (statusGeo) { statusGeo.textContent = 'CEP nao encontrado na BrasilAPI.'; statusGeo.className = 'text-xs text-red-500 mt-1'; }
+        btn.disabled = false;
+        return;
+      }
+      const dataCep = await respCep.json();
+      const lat = dataCep?.location?.coordinates?.latitude;
+      const lng = dataCep?.location?.coordinates?.longitude;
+      if (!lat || !lng) {
+        if (statusGeo) { statusGeo.textContent = 'Coordenadas nao disponiveis para este CEP na BrasilAPI.'; statusGeo.className = 'text-xs text-red-500 mt-1'; }
+        btn.disabled = false;
+        return;
+      }
+
+      /* Fase 2: Query GeoPoint no Back4App */
+      const geoPoint = new Parse.GeoPoint(lat, lng);
+      const query = new Parse.Query('Escolas2025');
+      query.withinKilometers('posicao_geografica', geoPoint, raio);
+      query.limit(200);
+      const resultados = await query.find();
+
+      if (resultados.length === 0) {
+        if (statusGeo) { statusGeo.textContent = `Nenhuma escola encontrada em ${raio}km do CEP ${cepLimpo}.`; statusGeo.className = 'text-xs text-amber-600 mt-1'; }
+      } else {
+        const escolas = resultados.map(r => ({ ...r.toJSON(), id_parse: r.id, classe: 'Escolas2025' }));
+        estado.definir('escolas', escolas);
+        const cidade = dataCep.city || 'regiao';
+        const uf = dataCep.state || '';
+        if (statusGeo) { statusGeo.textContent = `${escolas.length} escola(s) em ate ${raio}km de ${cidade} - ${uf}.`; statusGeo.className = 'text-xs text-secundaria mt-1'; }
+      }
+    } catch (erro) {
+      console.error('[DASHBOARD] Erro BrasilAPI/GeoPoint:', erro);
+      if (statusGeo) { statusGeo.textContent = 'Erro de rede ao buscar escolas.'; statusGeo.className = 'text-xs text-red-500 mt-1'; }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* CONFIGURACAO DE AUTENTICACAO                                         */
+/* ------------------------------------------------------------------ */
+function configurarAuth() {
+  try {
+    const usuario = Parse.User.current();
+    if (usuario) estado.definir('usuarioAtual', usuario);
+  } catch (_) { /* Silencia */ }
+}
+
+/* ------------------------------------------------------------------ */
+/* RENDERIZACAO DA LISTA DE ESCOLAS                                     */
+/* ------------------------------------------------------------------ */
 function renderizarLista(escolas) {
   const container = document.getElementById('lista-resultados');
   const vazia = document.getElementById('lista-vazia');
@@ -198,13 +374,11 @@ function renderizarLista(escolas) {
   }
 
   vazia.classList.add('hidden');
-
   const fragmento = document.createDocumentFragment();
 
   escolas.forEach((escola) => {
     const card = document.createElement('div');
     card.className = 'card cursor-pointer hover:border-primaria/30';
-
     const badgeHtml = _badgeDependencia(escola.dependencia);
 
     card.innerHTML = `
@@ -217,15 +391,15 @@ function renderizarLista(escolas) {
       </div>
       <div class="flex items-center gap-2">
         ${badgeHtml}
-        <span class="text-xs text-slate-400">${_esc(escola.dependencia)}</span>
       </div>
+      <p class="text-xs text-slate-400 mt-1"><i class="ph ph-phone"></i> ${_esc(escola.telefone || 'Nao informado')}</p>
       <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100">
         <div class="text-center">
           <i class="ph-fill ${escola.internet ? 'ph-wifi-high text-secundaria' : 'ph-wifi-x text-slate-300'} text-lg"></i>
           <p class="text-[10px] text-slate-400">Internet</p>
         </div>
         <div class="text-center">
-          <i class="ph-fill ${escola.banheiro_acessivel ? 'ph-wheelchair text-mobilidade' : 'ph-wheelchair text-slate-300'} text-lg"></i>
+          <i class="ph-fill ${escola.banheiro_pne ? 'ph-wheelchair text-mobilidade' : 'ph-wheelchair text-slate-300'} text-lg"></i>
           <p class="text-[10px] text-slate-400">Acessivel</p>
         </div>
         <div class="text-center">
@@ -263,6 +437,117 @@ function _esc(texto) {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(texto));
   return div.innerHTML;
+}
+
+function _renderizarDelta(elId, valAnt, valAtu) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (valAnt === 0) { el.innerHTML = '<i class="ph-bold ph-equals"></i> Novo'; return; }
+  const pct = ((valAtu - valAnt) / valAnt * 100);
+  const absoluto = Math.abs(pct).toFixed(1);
+  if (pct > 0) {
+    el.className = 'text-xs font-bold text-secundaria bg-green-50 px-2 py-1 rounded-full flex items-center gap-1';
+    el.innerHTML = `<i class="ph-bold ph-trend-up"></i> +${absoluto}%`;
+  } else if (pct < 0) {
+    el.className = 'text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full flex items-center gap-1';
+    el.innerHTML = `<i class="ph-bold ph-trend-down"></i> ${absoluto}%`;
+  } else {
+    el.className = 'text-xs font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-full flex items-center gap-1';
+    el.innerHTML = '<i class="ph-bold ph-equals"></i> 0%';
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* GRAFICOS CHART.JS                                                    */
+/* ------------------------------------------------------------------ */
+function renderizarBarras(d24, d25) {
+  if (graficoBarras) { graficoBarras.destroy(); graficoBarras = null; }
+  const canvas = document.getElementById('grafico-barras');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const p24 = (k) => d24[k] ?? 0;
+  const p25 = (k) => d25[k] ?? 0;
+
+  graficoBarras = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Internet', 'Laboratorio', 'Banheiro PNE', 'Quadra', 'Acessibilidade', 'Agua', 'Energia'],
+      datasets: [
+        {
+          label: '2024',
+          data: [p24('pct_internet'), p24('pct_laboratorio'), p24('pct_banheiro_pne'), p24('pct_quadra'), p24('pct_rampa_acessibilidade'), p24('pct_agua_potavel'), p24('pct_energia_eletrica')],
+          backgroundColor: 'rgba(26, 86, 145, 0.7)', borderColor: '#1A5691', borderWidth: 1, borderRadius: 8,
+        },
+        {
+          label: '2025',
+          data: [p25('pct_internet'), p25('pct_laboratorio'), p25('pct_banheiro_pne'), p25('pct_quadra'), p25('pct_rampa_acessibilidade'), p25('pct_agua_potavel'), p25('pct_energia_eletrica')],
+          backgroundColor: 'rgba(61, 163, 90, 0.7)', borderColor: '#3DA35A', borderWidth: 1, borderRadius: 8,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: 'Inter', size: 13 }, usePointStyle: true } },
+        tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + ctx.raw + '%' } },
+      },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: (v) => v + '%', font: { family: 'Inter' } } },
+        x: { ticks: { font: { family: 'Inter', size: 11, weight: 'bold' } } },
+      },
+    },
+  });
+}
+
+function renderizarRoscaBanheiro(d24, d25) {
+  if (graficoRoscaBanheiro) { graficoRoscaBanheiro.destroy(); graficoRoscaBanheiro = null; }
+  const canvas = document.getElementById('grafico-rosca');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const com = d25.banheiro_pne || 0;
+  const sem = (d25.total || 0) - com;
+
+  graficoRoscaBanheiro = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Com Banheiro Acessivel', 'Sem Banheiro Acessivel'],
+      datasets: [{ data: [com, sem], backgroundColor: ['#805AD5', '#E2E8F0'], borderColor: '#FFFFFF', borderWidth: 3 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true, padding: 16 } },
+        tooltip: { callbacks: { label: (ctx) => { const t = ctx.dataset.data.reduce((a, b) => a + b, 0); const p = t > 0 ? ((ctx.raw / t) * 100).toFixed(1) : 0; return ctx.label + ': ' + ctx.raw.toLocaleString() + ' (' + p + '%)'; } } },
+      },
+    },
+  });
+}
+
+function renderizarRoscaInternet(d24, d25) {
+  if (graficoRoscaInternet) { graficoRoscaInternet.destroy(); graficoRoscaInternet = null; }
+  const canvas = document.getElementById('grafico-rosca-internet');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const com = d25.internet || 0;
+  const sem = (d25.total || 0) - com;
+
+  graficoRoscaInternet = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Com Internet', 'Sem Internet'],
+      datasets: [{ data: [com, sem], backgroundColor: ['#3DA35A', '#E2E8F0'], borderColor: '#FFFFFF', borderWidth: 3 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true, padding: 16 } },
+        tooltip: { callbacks: { label: (ctx) => { const t = ctx.dataset.data.reduce((a, b) => a + b, 0); const p = t > 0 ? ((ctx.raw / t) * 100).toFixed(1) : 0; return ctx.label + ': ' + ctx.raw.toLocaleString() + ' (' + p + '%)'; } } },
+      },
+    },
+  });
 }
 
 document.addEventListener('DOMContentLoaded', iniciar);
