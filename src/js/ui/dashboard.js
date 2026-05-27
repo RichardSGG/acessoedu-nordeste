@@ -373,10 +373,11 @@ function _esc(texto) {
 }
 
 function _iconeCard(valor, iconeSim, iconeNao) {
-  if (valor === 1) {
+  const v = (valor !== null && valor !== undefined) ? Number(valor) : null;
+  if (v === 1) {
     return `<i class="ph-fill ${iconeSim} text-secundaria text-lg" title="Disponível"></i>`;
   }
-  if (valor === 0) {
+  if (v === 0) {
     return `<i class="ph-fill ${iconeNao} text-red-400 text-lg" title="Não Disponível"></i>`;
   }
   return `<i class="ph-fill ${iconeNao} text-slate-300 text-lg" title="Sem Informação"></i>`;
