@@ -238,12 +238,20 @@ function configurarBusca() {
 }
 
 /* ------------------------------------------------------------------ */
-/* BUSCA POR CEP (BrasilAPI → GeoPoint, fallback string exata)         */
+/* BUSCA POR CEP (BrasilAPI v1 → cidade → query textual)               */
 /* ------------------------------------------------------------------ */
 function configurarBotaoCep() {
   const inputCep = document.getElementById('inputBuscaCep');
   const btnBuscar = document.getElementById('btn-buscar-cep');
   if (!inputCep || !btnBuscar) return;
+
+  function _normalizarCidade(nome) {
+    if (!nome) return '';
+    return nome
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+  }
 
   btnBuscar.addEventListener('click', async () => {
     const cepLimpo = (inputCep.value || '').trim().replace(/\D/g, '');
@@ -253,52 +261,46 @@ function configurarBotaoCep() {
       return;
     }
     inputCep.style.borderColor = '';
-
-    const cepComHifen = cepLimpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
     btnBuscar.disabled = true;
 
-    let resultados = [];
-    let usouGeo = false;
-
-    /* Plano A: BrasilAPI → coordenadas → withinKilometers */
     try {
-      const respCep = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
-      if (respCep.ok) {
-        const dataCep = await respCep.json();
-        const latStr = dataCep?.location?.coordinates?.latitude;
-        const lngStr = dataCep?.location?.coordinates?.longitude;
-        const lat = latStr ? parseFloat(latStr) : NaN;
-        const lng = lngStr ? parseFloat(lngStr) : NaN;
+      const respCep = await fetch(`https://brasilapi.com.br/api/cep/v1/${cepLimpo}`);
 
-        if (!isNaN(lat) && !isNaN(lng)) {
-          const queryGeo = new Parse.Query('Escolas2025');
-          queryGeo.withinKilometers('posicao_geografica', new Parse.GeoPoint(lat, lng), 10);
-          queryGeo.limit(200);
-          resultados = await queryGeo.find();
-          usouGeo = true;
-        }
+      if (respCep.status === 404) {
+        estado.definir('escolas', []);
+        btnBuscar.disabled = false;
+        return;
+      }
+
+      if (!respCep.ok) {
+        estado.definir('escolas', []);
+        btnBuscar.disabled = false;
+        return;
+      }
+
+      const dataCep = await respCep.json();
+      const cidadeCru = dataCep?.city || '';
+      const cidade = _normalizarCidade(cidadeCru);
+
+      if (!cidade) {
+        estado.definir('escolas', []);
+        btnBuscar.disabled = false;
+        return;
+      }
+
+      const query = new Parse.Query('Escolas2025');
+      query.equalTo('cidade', cidade);
+      query.limit(200);
+      const resultados = await query.find();
+
+      if (resultados.length > 0) {
+        const escolas = resultados.map(r => ({ ...r.toJSON(), id_parse: r.id, classe: 'Escolas2025' }));
+        estado.definir('escolas', escolas);
+      } else {
+        estado.definir('escolas', []);
       }
     } catch (erro) {
-      console.warn('[DASHBOARD] BrasilAPI indisponivel, usando fallback por CEP:', erro);
-    }
-
-    /* Plano B: Fallback — busca por CEP exato (com e sem hífen) */
-    if (!usouGeo || resultados.length === 0) {
-      try {
-        const querySemHifen = new Parse.Query('Escolas2025').equalTo('cep', cepLimpo);
-        const queryComHifen = new Parse.Query('Escolas2025').equalTo('cep', cepComHifen);
-        const queryFallback = Parse.Query.or(querySemHifen, queryComHifen);
-        queryFallback.limit(200);
-        resultados = await queryFallback.find();
-      } catch (erro) {
-        console.error('[DASHBOARD] Erro na busca por CEP:', erro);
-      }
-    }
-
-    if (resultados.length > 0) {
-      const escolas = resultados.map(r => ({ ...r.toJSON(), id_parse: r.id, classe: 'Escolas2025' }));
-      estado.definir('escolas', escolas);
-    } else {
+      console.error('[DASHBOARD] Erro na busca por CEP:', erro);
       estado.definir('escolas', []);
     }
 

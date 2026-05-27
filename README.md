@@ -26,8 +26,7 @@ Zero **não é** a mesma coisa que `null`. Zero significa ausência confirmada p
 - **Avaliações com verificação local** — fórmula de Haversine confirma se o usuário está a até 500m da escola
 - **Cascata de imagens** — Back4App (fotos comunitárias) -> placeholder
 - **Ranking de Excelência** com pódio Top 3 e badges ouro/prata/bronze baseados em 7 indicadores
-- **Busca por CEP** — preenche automaticamente os filtros de Estado e Município via BrasilAPI
-- **Busca por raio** — geocodificação de CEP via BrasilAPI + `query.withinKilometers()` do Parse
+- **Busca por CEP** — consulta BrasilAPI v1 para obter o município e filtra escolas por cidade no banco
 - **Painel admin** com moderação de fotos e denúncias, validado via `Parse.Role`
 
 ## Arquitetura e Fluxo de Dados (CRUD)
@@ -35,13 +34,13 @@ Zero **não é** a mesma coisa que `null`. Zero significa ausência confirmada p
 O sistema implementa as quatro operações fundamentais de persistência distribuídas entre o front-end Vanilla JS e o Back4App (Parse Server):
 
 ### Create
-- **Cadastro de usuários**: Registro com email/senha via `Parse.User.signUp()`, inicializando `eduPoints` em 0 e role padrão `usuario`.
+- **Cadastro de usuários**: Registro com email/senha via `Parse.User.signUp()` e role padrão `usuario`.
 - **Envio de fotos**: Upload de imagens para a classe `SchoolPhoto` via `Parse.File`, associadas ao `id_escola`. Fotos entram com status pendente de aprovação.
 - **Envio de denúncias**: Usuários logados podem denunciar avaliações impróprias, registradas na classe `Avaliacoes` com contador de flags.
 
 ### Read
 - **Dados consolidados do dashboard**: KPIs e gráficos consomem a classe `EstatisticasAgregadas`, que armazena percentuais pré-calculados por município, estado e região — evitando consultas pesadas em tempo real sobre ~74 mil registros.
-- **Busca geoespacial de escolas**: O botão "Perto de Mim" utiliza a BrasilAPI para geocodificar um CEP em coordenadas geográficas, e em seguida o Parse SDK executa `query.withinKilometers()` sobre a classe `Escolas2025` para retornar escolas em um raio configurável.
+- **Busca por CEP**: O campo de CEP na barra de filtros consulta a BrasilAPI v1 para obter o nome do município e em seguida realiza uma busca por cidade (`equalTo('cidade', ...)`) sobre a classe `Escolas2025`, retornando todas as escolas do município.
 - **Listagem com filtros**: Consultas paginadas com `Parse.Query` aplicando filtros de UF, município e busca textual por nome.
 
 ### Update
@@ -76,7 +75,8 @@ O sistema implementa as quatro operações fundamentais de persistência distrib
 
 | API | Propósito | Custo |
 |-----|-----------|-------|
-| **BrasilAPI** | Geocodificação de CEP (coordenadas geográficas) | Gratuito |
+| **BrasilAPI** | Consulta de endereço e município via CEP — converte CEPs em filtros de busca por município no banco de dados | Gratuito |
+| **ViaCEP** | Busca de endereço por CEP (fallback na página de detalhes da escola) | Gratuito |
 
 ## Arquitetura
 
