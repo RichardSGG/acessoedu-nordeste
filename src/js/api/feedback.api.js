@@ -83,6 +83,15 @@ export async function curtirAvaliacao(reviewId) {
   if (!usuario) throw new Error('Usuario nao autenticado');
 
   try {
+    const queryInteracao = new Parse.Query(CLASSE_INTERACAO);
+    queryInteracao.equalTo('review_id', reviewId);
+    queryInteracao.equalTo('usuario_id', usuario.id);
+    queryInteracao.equalTo('tipo', 'like');
+    const existente = await queryInteracao.first();
+    if (existente) {
+      throw new Error('Você já apoiou este comentário.');
+    }
+
     const interacao = new Parse.Object(CLASSE_INTERACAO);
     interacao.set('review_id', reviewId);
     interacao.set('usuario_id', usuario.id);
@@ -103,6 +112,15 @@ export async function denunciarAvaliacao(reviewId) {
   if (!usuario) throw new Error('Usuario nao autenticado');
 
   try {
+    const queryInteracao = new Parse.Query(CLASSE_INTERACAO);
+    queryInteracao.equalTo('review_id', reviewId);
+    queryInteracao.equalTo('usuario_id', usuario.id);
+    queryInteracao.equalTo('tipo', 'flag');
+    const existente = await queryInteracao.first();
+    if (existente) {
+      throw new Error('Você já enviou uma denúncia para este comentário.');
+    }
+
     const interacao = new Parse.Object(CLASSE_INTERACAO);
     interacao.set('review_id', reviewId);
     interacao.set('usuario_id', usuario.id);
