@@ -902,7 +902,6 @@ async function carregarFeedbacks() {
       }
 
       const usuarioAtual = estado.obter('usuarioAtual');
-      const nomeAutor = fb.get('nome') || '';
       const nomeUsuario = usuarioAtual?.get('nomeExibicao') || usuarioAtual?.get('username') || '';
       const isAdmin = usuarioAtual?.get('role') === 'admin';
       const isAutor = nomeAutor === nomeUsuario;
