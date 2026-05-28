@@ -68,17 +68,4 @@ html, body {
   transition: background-color 300ms ease, color 300ms ease;
 }
 
-/* Container do mapa Leaflet — dimensoes explicitas obrigatorias */
-#container-mapa {
-  min-height: 500px;
-  width: 100%;
-  z-index: 1;
-  position: relative;
-}
-
-#container-mapa .leaflet-container {
-  min-height: 500px;
-  width: 100%;
-  z-index: 1;
-}
 

@@ -9,15 +9,75 @@ import * as EscolasAPI from '../api/escolas.api.js';
 Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
 Parse.serverURL = 'https://parseapi.back4app.com/parse/';
 
+let ufSelecionada = null;
+
+const ESTADOS_NORDESTE = [
+  { sigla: '', nome: 'Todos os Estados' },
+  { sigla: 'AL', nome: 'Alagoas' },
+  { sigla: 'BA', nome: 'Bahia' },
+  { sigla: 'CE', nome: 'Ceará' },
+  { sigla: 'MA', nome: 'Maranhão' },
+  { sigla: 'PB', nome: 'Paraíba' },
+  { sigla: 'PE', nome: 'Pernambuco' },
+  { sigla: 'PI', nome: 'Piauí' },
+  { sigla: 'RN', nome: 'Rio Grande do Norte' },
+  { sigla: 'SE', nome: 'Sergipe' }
+];
+
 async function iniciar() {
-  configurarFiltro();
+  configurarDropdownEstado();
   configurarModal();
   await carregarRanking();
 }
 
-function configurarFiltro() {
-  document.getElementById('filtro-ranking-uf').addEventListener('change', () => {
-    carregarRanking();
+function configurarDropdownEstado() {
+  const inputUf = document.getElementById('filtro-ranking-uf');
+  const containerSugestoes = document.getElementById('lista-sugestoes-ranking');
+  if (!inputUf || !containerSugestoes) return;
+
+  const renderizarEstados = () => {
+    const fragment = document.createDocumentFragment();
+    ESTADOS_NORDESTE.forEach((est, index) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.textContent = est.nome;
+      item.style.cssText = `
+        width: 100%; text-align: left; padding: 10px 16px;
+        background-color: #ffffff; color: #334155;
+        font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+        border: none; cursor: pointer; display: block;
+        transition: background-color 150ms ease; outline: none;
+      `;
+      if (index < ESTADOS_NORDESTE.length - 1) {
+        item.style.borderBottom = '1px solid #f1f5f9';
+      }
+      item.addEventListener('mouseenter', () => { item.style.backgroundColor = '#f1f5f9'; });
+      item.addEventListener('mouseleave', () => { item.style.backgroundColor = '#ffffff'; });
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        inputUf.value = est.nome;
+        ufSelecionada = est.sigla || null;
+        containerSugestoes.classList.add('hidden');
+        carregarRanking();
+      });
+      fragment.appendChild(item);
+    });
+    containerSugestoes.innerHTML = '';
+    containerSugestoes.appendChild(fragment);
+    containerSugestoes.classList.remove('hidden');
+  };
+
+  inputUf.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (containerSugestoes.classList.contains('hidden')) {
+      renderizarEstados();
+    } else {
+      containerSugestoes.classList.add('hidden');
+    }
+  });
+
+  document.addEventListener('click', () => {
+    containerSugestoes.classList.add('hidden');
   });
 }
 
@@ -38,7 +98,7 @@ async function carregarRanking() {
   const loader = document.getElementById('loader-ranking');
   loader.classList.remove('hidden');
 
-  const uf = document.getElementById('filtro-ranking-uf').value || null;
+  const uf = ufSelecionada;
   const escolas = await EscolasAPI.obterRanking(uf);
 
   loader.classList.add('hidden');
