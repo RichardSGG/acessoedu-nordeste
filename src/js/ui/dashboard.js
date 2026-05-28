@@ -163,36 +163,51 @@ function configurarFiltros() {
     if (uf) {
       _carregarMunicipios(uf);
     } else {
-      selMunicipio.innerHTML = '<option value="">Selecione o Estado primeiro</option>';
+      selMunicipio.value = '';
+      selMunicipio.placeholder = 'Selecione o Estado primeiro';
       selMunicipio.disabled = true;
+      const datalist = document.getElementById('lista-municipios');
+      if (datalist) datalist.innerHTML = '';
     }
   });
 
   selMunicipio.addEventListener('change', () => {
     const filtros = estado.obter('filtros');
-    estado.definir('filtros', { ...filtros, municipio: selMunicipio.value || null });
+    estado.definir('filtros', { ...filtros, municipio: selMunicipio.value.trim() || null });
+  });
+
+  selMunicipio.addEventListener('input', () => {
+    const filtros = estado.obter('filtros');
+    if (!selMunicipio.value.trim()) {
+      estado.definir('filtros', { ...filtros, municipio: null });
+    }
   });
 }
 
 async function _carregarMunicipios(uf) {
   const selMunicipio = document.getElementById('filtro-municipio');
+  const datalist = document.getElementById('lista-municipios');
+  if (!selMunicipio || !datalist) return;
+
   selMunicipio.disabled = true;
-  selMunicipio.innerHTML = '<option value="">Carregando...</option>';
+  selMunicipio.value = '';
+  selMunicipio.placeholder = 'Carregando...';
+  datalist.innerHTML = '';
 
   try {
-    const query = new Parse.Query('Escolas2025');
+    const query = new Parse.Query('EstatisticasGeograficas');
+    query.equalTo('nivel', 'municipio');
     query.equalTo('uf', uf);
-    query.limit(2000);
-    query.exists('municipio');
+    query.limit(1000);
     query.select('municipio');
     const resultados = await query.find();
     const cidades = [...new Set(resultados.map(r => r.get('municipio')).filter(Boolean))].sort();
 
-    selMunicipio.innerHTML = '<option value="">Todos os Municípios</option>' +
-      cidades.map(c => `<option value="${c}">${c}</option>`).join('');
+    datalist.innerHTML = cidades.map(c => `<option value="${c}"></option>`).join('');
+    selMunicipio.placeholder = 'Todos os Municípios / Digite para buscar...';
   } catch (erro) {
     console.error('[DASHBOARD] Erro ao carregar municípios:', erro);
-    selMunicipio.innerHTML = '<option value="">Erro ao carregar</option>';
+    selMunicipio.placeholder = 'Erro ao carregar municípios';
   }
   selMunicipio.disabled = false;
 }
