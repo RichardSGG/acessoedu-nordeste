@@ -224,6 +224,7 @@ export async function listarDenunciadas(limite = 50) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
     query.greaterThanOrEqualTo('flags_count', 3);
+    query.notEqualTo('removido', true);
     query.descending('flags_count');
     query.limit(limite);
     return await query.find();

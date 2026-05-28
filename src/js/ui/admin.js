@@ -199,8 +199,13 @@ async function carregarDenuncias() {
   const semDenuncias = document.getElementById('sem-denuncias');
 
   try {
+    if (loader) loader.classList.remove('hidden');
+    if (tabela) tabela.classList.add('hidden');
+    if (semDenuncias) semDenuncias.classList.add('hidden');
+    if (tbody) tbody.innerHTML = '';
+
     const denuncias = await FeedbackAPI.listarDenunciadas();
-    loader.classList.add('hidden');
+    if (loader) loader.classList.add('hidden');
 
     if (denuncias.length === 0) {
       semDenuncias.classList.remove('hidden');
@@ -253,11 +258,12 @@ async function carregarDenuncias() {
         await FeedbackAPI.excluirAvaliacao(btn.dataset.reviewId);
         btn.closest('tr').remove();
         if (tbody.children.length === 0) { tabela.classList.add('hidden'); semDenuncias.classList.remove('hidden'); }
+        await carregarComentariosRemovidos();
       });
     });
   } catch (erro) {
     console.error('[ADMIN] Erro denuncias:', erro);
-    loader.classList.add('hidden');
+    if (loader) loader.classList.add('hidden');
   }
 }
 
@@ -308,6 +314,11 @@ async function carregarComentariosRemovidos() {
   const semRemovidos = document.getElementById('sem-removidos');
 
   try {
+    if (loader) loader.classList.remove('hidden');
+    if (tabela) tabela.classList.add('hidden');
+    if (semRemovidos) semRemovidos.classList.add('hidden');
+    if (tbody) tbody.innerHTML = '';
+
     const removidos = await FeedbackAPI.listarRemovidos();
     if (loader) loader.classList.add('hidden');
 
@@ -358,6 +369,7 @@ async function carregarComentariosRemovidos() {
             if (tabela) tabela.classList.add('hidden');
             if (semRemovidos) semRemovidos.classList.remove('hidden');
           }
+          await carregarDenuncias();
         });
       });
     }
