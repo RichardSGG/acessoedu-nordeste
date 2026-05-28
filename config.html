@@ -145,24 +145,21 @@
                     <i class="ph-fill ph-user text-4xl text-slate-400"></i>
                 </div>
                 <div>
-                    <p id="info-usuario-nome" class="font-bold text-slate-800"></p>
+                    <div class="flex items-center gap-2">
+                        <p id="info-usuario-nome" class="font-bold text-slate-800"></p>
+                        <button id="btn-editar-nome" class="text-primaria hover:text-blue-800 transition-colors p-1" title="Editar nome de exibição">
+                            <i class="ph ph-pencil-simple text-base"></i>
+                        </button>
+                    </div>
                     <p id="info-usuario-email" class="text-sm text-slate-500"></p>
-                    <button id="btn-upload-avatar" class="botao-secundario mt-3">
-                        <i class="ph-bold ph-upload"></i> Alterar Foto
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Toggle Modo Escuro -->
-        <div class="card">
-            <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
-                <i class="ph-fill ph-moon text-mobilidade"></i> Aparência
-            </h2>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="font-semibold text-sm text-slate-700">Modo Escuro</p>
-                    <p class="text-xs text-slate-500">Use o botão com ícone de sol/lua no cabeçalho para alternar o tema a qualquer momento</p>
+                    <div class="flex gap-2 mt-3 flex-wrap">
+                        <button id="btn-upload-avatar" class="botao-secundario">
+                            <i class="ph-bold ph-upload"></i> Alterar Foto
+                        </button>
+                        <button id="btn-remover-avatar" class="botao-secundario" style="color: var(--cor-erro); border-color: var(--cor-erro); display: none;">
+                            <i class="ph-bold ph-trash"></i> Remover Foto
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

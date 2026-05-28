@@ -158,22 +158,91 @@ function configurarFiltros() {
   const selEstado = document.getElementById('filtro-estado');
   const selMunicipio = document.getElementById('filtro-municipio');
   const containerSugestoes = document.getElementById('lista-sugestoes-municipio');
+  const containerSugestoesEstado = document.getElementById('lista-sugestoes-estado');
 
-  selEstado.addEventListener('change', () => {
-    const uf = selEstado.value;
-    estado.definir('filtros', { ...estado.obter('filtros'), uf, municipio: null, ano: anoAtual });
-    if (uf) {
-      _carregarMunicipios(uf);
-    } else {
-      selMunicipio.value = '';
-      selMunicipio.placeholder = 'Selecione o Estado primeiro';
-      selMunicipio.disabled = true;
-      cidadesDisponiveis = [];
-      if (containerSugestoes) {
-        containerSugestoes.innerHTML = '';
-        containerSugestoes.classList.add('hidden');
+  const ESTADOS_NORDESTE = [
+    { sigla: '', nome: 'Todos os Estados' },
+    { sigla: 'AL', nome: 'Alagoas' },
+    { sigla: 'BA', nome: 'Bahia' },
+    { sigla: 'CE', nome: 'Ceará' },
+    { sigla: 'MA', nome: 'Maranhão' },
+    { sigla: 'PB', nome: 'Paraíba' },
+    { sigla: 'PE', nome: 'Pernambuco' },
+    { sigla: 'PI', nome: 'Piauí' },
+    { sigla: 'RN', nome: 'Rio Grande do Norte' },
+    { sigla: 'SE', nome: 'Sergipe' }
+  ];
+
+  const renderizarEstados = () => {
+    if (!containerSugestoesEstado) return;
+    const fragment = document.createDocumentFragment();
+    ESTADOS_NORDESTE.forEach((est, index) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.textContent = est.nome;
+      
+      // Estilo inline para garantir o visual do site
+      item.style.cssText = `
+        width: 100%;
+        text-align: left;
+        padding: 10px 16px;
+        background-color: #ffffff;
+        color: #334155;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: block;
+        transition: background-color 150ms ease;
+        outline: none;
+      `;
+      
+      if (index < ESTADOS_NORDESTE.length - 1) {
+        item.style.borderBottom = '1px solid #f1f5f9';
       }
-    }
+      
+      // Hover
+      item.addEventListener('mouseenter', () => {
+        item.style.backgroundColor = '#f1f5f9';
+      });
+      item.addEventListener('mouseleave', () => {
+        item.style.backgroundColor = '#ffffff';
+      });
+      
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selEstado.value = est.nome;
+        containerSugestoesEstado.classList.add('hidden');
+        
+        const uf = est.sigla;
+        estado.definir('filtros', { ...estado.obter('filtros'), uf, municipio: null, ano: anoAtual });
+        if (uf) {
+          _carregarMunicipios(uf);
+        } else {
+          selMunicipio.value = '';
+          selMunicipio.placeholder = 'Selecione o Estado primeiro';
+          selMunicipio.disabled = true;
+          cidadesDisponiveis = [];
+          if (containerSugestoes) {
+            containerSugestoes.innerHTML = '';
+            containerSugestoes.classList.add('hidden');
+          }
+        }
+      });
+      
+      fragment.appendChild(item);
+    });
+    
+    containerSugestoesEstado.innerHTML = '';
+    containerSugestoesEstado.appendChild(fragment);
+    containerSugestoesEstado.classList.remove('hidden');
+  };
+
+  selEstado.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (containerSugestoes) containerSugestoes.classList.add('hidden');
+    renderizarEstados();
   });
 
   const renderizarSugestoes = (termo = '') => {
@@ -258,6 +327,9 @@ function configurarFiltros() {
   document.addEventListener('click', (e) => {
     if (containerSugestoes && !selMunicipio.contains(e.target) && !containerSugestoes.contains(e.target)) {
       containerSugestoes.classList.add('hidden');
+    }
+    if (containerSugestoesEstado && !selEstado.contains(e.target) && !containerSugestoesEstado.contains(e.target)) {
+      containerSugestoesEstado.classList.add('hidden');
     }
   });
 }
@@ -517,32 +589,35 @@ function renderizarLista(escolas) {
 
   escolas.forEach((escola) => {
     const card = document.createElement('div');
-    card.className = 'card cursor-pointer hover:border-primaria/30';
+    // Adiciona classes flexbox e h-full para alinhar a base perfeitamente
+    card.className = 'card cursor-pointer hover:border-primaria/30 flex flex-col justify-between h-full';
     const badgeHtml = _badgeDependencia(escola.dependencia);
 
     card.innerHTML = `
-      <div class="flex items-start justify-between mb-2">
-        <h4 class="font-display font-bold text-sm text-slate-800 line-clamp-2">${_esc(escola.nome)}</h4>
+      <div class="flex-grow">
+        <div class="flex items-start justify-between mb-2">
+          <h4 class="font-display font-bold text-sm text-slate-800 line-clamp-2">${_esc(escola.nome)}</h4>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-500 mb-3">
+          <i class="ph-fill ph-map-pin text-primaria text-[10px]"></i>
+          <span>${_esc(escola.cidade)} - ${_esc(escola.uf)}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          ${badgeHtml}
+        </div>
+        <p class="text-xs text-slate-400 mt-1"><i class="ph ph-phone"></i> ${_esc(escola.telefone || 'Não informado')}</p>
       </div>
-      <div class="flex items-center gap-2 text-xs text-slate-500 mb-3">
-        <i class="ph-fill ph-map-pin text-primaria text-[10px]"></i>
-        <span>${_esc(escola.cidade)} - ${_esc(escola.uf)}</span>
-      </div>
-      <div class="flex items-center gap-2">
-        ${badgeHtml}
-      </div>
-      <p class="text-xs text-slate-400 mt-1"><i class="ph ph-phone"></i> ${_esc(escola.telefone || 'Não informado')}</p>
       <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100">
         <div class="text-center">
-          ${_iconeCard(escola.internet, 'ph-wifi-high', 'ph-wifi-x')}
+          ${_iconeCard(escola.internet, 'ph-wifi-high', 'ph-wifi-x', 'text-sky-500')}
           <p class="text-[10px] text-slate-400">Internet</p>
         </div>
         <div class="text-center">
-          ${_iconeCard(escola.banheiro_pne, 'ph-wheelchair', 'ph-wheelchair')}
+          ${_iconeCard(escola.banheiro_pne, 'ph-wheelchair', 'ph-wheelchair', 'text-mobilidade')}
           <p class="text-[10px] text-slate-400">Acessível</p>
         </div>
         <div class="text-center">
-          ${_iconeCard(escola.agua_potavel, 'ph-drop', 'ph-drop')}
+          ${_iconeCard(escola.agua_potavel, 'ph-drop', 'ph-drop', 'text-blue-500')}
           <p class="text-[10px] text-slate-400">Água</p>
         </div>
       </div>
@@ -578,15 +653,15 @@ function _esc(texto) {
   return div.innerHTML;
 }
 
-function _iconeCard(valor, iconeSim, iconeNao) {
+function _iconeCard(valor, iconeSim, iconeNao, corSimClass) {
   const v = (valor !== null && valor !== undefined) ? Number(valor) : null;
   if (v === 1) {
-    return `<i class="ph-fill ${iconeSim} text-secundaria text-lg" title="Disponível"></i>`;
+    return `<i class="ph-fill ${iconeSim} ${corSimClass || 'text-secundaria'} text-lg" title="Disponível"></i>`;
   }
   if (v === 0) {
-    return `<i class="ph-fill ${iconeNao} text-red-400 text-lg" title="Não Disponível"></i>`;
+    return `<i class="ph-fill ${iconeNao} text-slate-300 text-lg" title="Não Disponível"></i>`;
   }
-  return `<i class="ph-fill ${iconeNao} text-slate-300 text-lg" title="Sem Informação"></i>`;
+  return `<i class="ph-fill ${iconeNao} text-slate-200/60 text-lg" title="Sem Informação"></i>`;
 }
 
 function _renderizarDelta(elId, valAnt, valAtu) {

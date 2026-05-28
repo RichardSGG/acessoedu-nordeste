@@ -88,6 +88,12 @@ export async function moderarFoto(fotoId, status) {
     const query = new Parse.Query(CLASSE_FOTO);
     const foto = await query.get(fotoId);
     foto.set('status', status);
+
+    const adminAtual = Parse.User.current();
+    if (adminAtual) {
+      foto.set('moderadoPor', adminAtual);
+    }
+
     await foto.save();
     return foto;
   } catch (erro) {

@@ -179,12 +179,31 @@ export async function atualizarAvatar(parseFile) {
   if (!usuario) throw new Error('Usuário não autenticado');
 
   try {
+    await parseFile.save();
     usuario.set('profilePhoto', parseFile);
     await usuario.save();
     estado.definir('usuarioAtual', usuario);
     return usuario;
   } catch (erro) {
     console.error('[auth.api] Erro ao atualizar avatar:', erro);
+    throw erro;
+  }
+}
+
+/**
+ * Remove o avatar do usuario
+ */
+export async function removerAvatar() {
+  const usuario = estado.obter('usuarioAtual');
+  if (!usuario) throw new Error('Usuário não autenticado');
+
+  try {
+    usuario.unset('profilePhoto');
+    await usuario.save();
+    estado.definir('usuarioAtual', usuario);
+    return usuario;
+  } catch (erro) {
+    console.error('[auth.api] Erro ao remover avatar:', erro);
     throw erro;
   }
 }
