@@ -15,6 +15,8 @@ export async function listarAprovadas(idEscola) {
     const query = new Parse.Query(CLASSE_FOTO);
     query.equalTo('id_escola', String(idEscola));
     query.equalTo('status', 'approved');
+    query.include('autor');
+    query.include('moderadoPor');
     query.descending('createdAt');
     query.limit(30);
     return await query.find();
@@ -38,6 +40,12 @@ export async function enviarFoto(idEscola, arquivoImagem) {
     foto.set('id_escola', String(idEscola));
     foto.set('arquivo', parseFile);
     foto.set('status', 'pending');
+
+    const autor = Parse.User.current();
+    if (autor) {
+      foto.set('autor', autor);
+    }
+
     await foto.save();
 
     return foto;
@@ -55,6 +63,7 @@ export async function listarPendentes(limite = 50) {
     const query = new Parse.Query(CLASSE_FOTO);
     query.equalTo('status', 'pending');
     query.include('id_escola');
+    query.include('autor');
     query.descending('createdAt');
     query.limit(limite);
     return await query.find();
@@ -71,6 +80,8 @@ export async function listarAprovadasAdmin(limite = 50) {
   try {
     const query = new Parse.Query(CLASSE_FOTO);
     query.equalTo('status', 'approved');
+    query.include('autor');
+    query.include('moderadoPor');
     query.descending('createdAt');
     query.limit(limite);
     return await query.find();

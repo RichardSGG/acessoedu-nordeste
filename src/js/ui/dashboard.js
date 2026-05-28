@@ -463,10 +463,31 @@ function normalizar(texto) {
 }
 
 function configurarBotaoCep() {
-  const inputCep = document.getElementById('inputBuscaCep');
-  const btnBuscar = document.getElementById('btn-buscar-cep');
-  if (!inputCep || !btnBuscar) return;
+  const btnAbrir = document.getElementById('btnAbrirModalCep');
+  const btnFechar = document.getElementById('btnFecharModalCep');
+  const btnBuscar = document.getElementById('btnBuscarDentroModal');
+  const modal = document.getElementById('modalBuscaCep');
+  const inputCep = document.getElementById('inputModalCep');
 
+  if (!btnAbrir || !btnFechar || !btnBuscar || !modal || !inputCep) return;
+
+  // Abrir Modal
+  btnAbrir.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    inputCep.value = '';
+    inputCep.focus();
+  });
+
+  // Fechar Modal
+  const fecharModal = () => {
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+    inputCep.value = '';
+  };
+  btnFechar.addEventListener('click', fecharModal);
+
+  // Buscar CEP
   btnBuscar.addEventListener('click', async () => {
     const cepLimpo = (inputCep.value || '').trim().replace(/\D/g, '');
     if (!/^\d{8}$/.test(cepLimpo)) {
@@ -543,6 +564,8 @@ function configurarBotaoCep() {
         estado.definir('mensagemVazia', `Nenhuma escola encontrada no município de ${cidadeCru}`);
         estado.definir('escolas', []);
       }
+
+      fecharModal();
     } catch (erro) {
       console.error('[DASHBOARD] Erro na busca por CEP:', erro);
       exibirToast('Erro de conexão ao buscar CEP', 'erro');
