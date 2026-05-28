@@ -39,12 +39,13 @@ export async function enviarAvaliacao({ idEscola, nota, comentario, latitude, lo
 }
 
 /**
- * Lista avaliacoes de uma escola
+ * Lista avaliacoes de uma escola (exclui as removidas pelo admin)
  */
 export async function listarPorEscola(idEscola) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
     query.equalTo('id_escola', idEscola);
+    query.notEqualTo('removido', true);
     query.descending('createdAt');
     query.limit(100);
     return await query.find();
@@ -119,19 +120,61 @@ export async function denunciarAvaliacao(reviewId) {
 }
 
 /**
- * Exclui uma avaliacao (admin ou autor)
+ * Remove uma avaliacao definitivamente (apenas admin — pelo painel)
+ * Usa soft-delete: marca como removido para manter historico no painel
  */
 export async function excluirAvaliacao(reviewId) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
     const obj = await query.get(reviewId);
-    await obj.destroy();
+    obj.set('removido', true);
+    obj.set('removidoEm', new Date().toISOString());
+    const adminAtual = Parse.User.current();
+    if (adminAtual) {
+      obj.set('removidoPor', adminAtual.get('nomeExibicao') || adminAtual.get('username'));
+    }
+    await obj.save();
     return true;
   } catch (erro) {
-    console.error('[feedback.api] Erro ao excluir:', erro);
+    console.error('[feedback.api] Erro ao remover avaliacao:', erro);
     return false;
   }
 }
+
+/**
+ * Lista avaliações removidas pelo admin (soft-deleted)
+ */
+export async function listarRemovidos(limite = 100) {
+  try {
+    const query = new Parse.Query(CLASSE_AVALIACOES);
+    query.equalTo('removido', true);
+    query.descending('removidoEm');
+    query.limit(limite);
+    return await query.find();
+  } catch (erro) {
+    console.error('[feedback.api] Erro ao listar removidos:', erro);
+    return [];
+  }
+}
+
+/**
+ * Restaura uma avaliação removida (desfaz soft-delete)
+ */
+export async function restaurarAvaliacao(reviewId) {
+  try {
+    const query = new Parse.Query(CLASSE_AVALIACOES);
+    const obj = await query.get(reviewId);
+    obj.unset('removido');
+    obj.unset('removidoEm');
+    obj.unset('removidoPor');
+    await obj.save();
+    return true;
+  } catch (erro) {
+    console.error('[feedback.api] Erro ao restaurar avaliacao:', erro);
+    return false;
+  }
+}
+
 
 /**
  * Responde a uma avaliacao (admin)

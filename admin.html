@@ -133,9 +133,11 @@
 
     <!-- Seção Comentários Denunciados -->
     <div class="card">
-        <h2 class="font-display font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
-            <i class="ph-fill ph-flag text-red-500"></i> Comentários Denunciados
-        </h2>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+                <i class="ph-fill ph-flag text-red-500"></i> Comentários Denunciados
+            </h2>
+        </div>
         <div id="loader-denuncias" class="text-center py-6">
             <div class="spinner mx-auto"></div>
         </div>
@@ -154,6 +156,35 @@
             </table>
         </div>
         <p id="sem-denuncias" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário denunciado no momento.</p>
+    </div>
+
+    <!-- Seção Comentários Removidos -->
+    <div class="card mt-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+                <i class="ph-fill ph-trash text-slate-500"></i> Comentários Removidos
+            </h2>
+            <span class="text-xs text-slate-400 font-medium">Histórico de moderação</span>
+        </div>
+        <div id="loader-removidos" class="text-center py-6">
+            <div class="spinner mx-auto"></div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm hidden" id="tabela-removidos">
+                <thead>
+                    <tr class="border-b border-slate-200 text-left">
+                        <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Removido por</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Data Remoção</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Restaurar</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-removidos-body"></tbody>
+            </table>
+        </div>
+        <p id="sem-removidos" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário removido no histórico.</p>
     </div>
 
 </main>

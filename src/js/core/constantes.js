@@ -24,9 +24,14 @@ export const STATUS_FOTO = {
     REJEITADA: 'rejected'
 };
 
+/* Credenciais Parse/Back4App — apenas App ID e JS Key (sem Master Key no frontend) */
+export const PARSE_CONFIG = {
+    APP_ID: 'pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj',
+    JS_KEY: 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN',
+    SERVER_URL: 'https://parseapi.back4app.com/parse/',
+};
+
 export const CONFIGURACOES = {
     LIMITE_CARREGAMENTO_ESCOLAS: 1000,
     RAIO_VERIFICACAO_LOCAL_KM: 0.5,
-    MAPILLARY_TOKEN: 'MLY|dXNlckB0ZXN0LmNvbXx0ZXN0X3Rva2Vu',
-    MAPILLARY_LIMIT: 5
 };
