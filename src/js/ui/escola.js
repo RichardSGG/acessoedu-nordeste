@@ -854,6 +854,15 @@ async function carregarFeedbacks() {
         ? '<span class="badge-verificado ml-2"><i class="ph-fill ph-map-pin"></i> Local Verificado</span>'
         : '';
 
+      const autorUser = fb.get('usuario');
+      let avatarHtml = '<i class="ph-fill ph-user-circle text-xl text-slate-400"></i>';
+      if (autorUser) {
+        const fotoFile = autorUser.get('profilePhoto');
+        if (fotoFile && fotoFile.url) {
+          avatarHtml = `<img src="${esc(fotoFile.url())}" alt="Avatar" class="w-6 h-6 rounded-full object-cover border border-slate-200">`;
+        }
+      }
+
       const usuarioAtual = estado.obter('usuarioAtual');
       const nomeAutor = fb.get('nome') || '';
       const nomeUsuario = usuarioAtual?.get('nomeExibicao') || usuarioAtual?.get('username') || '';
@@ -877,7 +886,7 @@ async function carregarFeedbacks() {
         <div class="flex items-start justify-between gap-3">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
-              <i class="ph-fill ph-user-circle text-xl text-slate-400"></i>
+              ${avatarHtml}
               <span class="font-bold text-sm text-slate-800">${esc(nomeAutor || 'Anônimo')}</span>
               ${verificado}
               <span class="text-xs text-slate-400">${esc(data)}</span>

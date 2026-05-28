@@ -24,6 +24,7 @@ export async function enviarAvaliacao({ idEscola, nota, comentario, latitude, lo
     review.set('verificado_local', !!verificadoLocal);
     review.set('respostas', []);
     review.set('flags_count', 0);
+    review.set('usuario', usuario);
 
     if (verificadoLocal && latitude != null && longitude != null) {
       review.set('latitude_envio', latitude);
@@ -46,6 +47,7 @@ export async function listarPorEscola(idEscola) {
     const query = new Parse.Query(CLASSE_AVALIACOES);
     query.equalTo('id_escola', idEscola);
     query.notEqualTo('removido', true);
+    query.include('usuario');
     query.descending('createdAt');
     query.limit(100);
     return await query.find();
