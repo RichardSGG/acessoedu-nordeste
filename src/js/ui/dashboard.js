@@ -47,6 +47,7 @@ let graficoRoscaInternet = null;
 
 /* Cache do ultimo agregados carregado (evita re-fetch no toggle de ano) */
 let ultimoAgregados = null;
+let cidadesDisponiveis = [];
 
 /* ------------------------------------------------------------------ */
 /* INICIALIZACAO                                                        */
@@ -156,6 +157,7 @@ async function atualizarEstatisticas() {
 function configurarFiltros() {
   const selEstado = document.getElementById('filtro-estado');
   const selMunicipio = document.getElementById('filtro-municipio');
+  const containerSugestoes = document.getElementById('lista-sugestoes-municipio');
 
   selEstado.addEventListener('change', () => {
     const uf = selEstado.value;
@@ -166,33 +168,113 @@ function configurarFiltros() {
       selMunicipio.value = '';
       selMunicipio.placeholder = 'Selecione o Estado primeiro';
       selMunicipio.disabled = true;
-      const datalist = document.getElementById('lista-municipios');
-      if (datalist) datalist.innerHTML = '';
+      cidadesDisponiveis = [];
+      if (containerSugestoes) {
+        containerSugestoes.innerHTML = '';
+        containerSugestoes.classList.add('hidden');
+      }
     }
   });
 
-  selMunicipio.addEventListener('change', () => {
-    const filtros = estado.obter('filtros');
-    estado.definir('filtros', { ...filtros, municipio: selMunicipio.value.trim() || null });
+  const renderizarSugestoes = (termo = '') => {
+    if (!containerSugestoes) return;
+    const termoLimpo = termo.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    const filtradas = cidadesDisponiveis.filter(c => {
+      const cLimpa = c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return cLimpa.includes(termoLimpo);
+    });
+
+    if (filtradas.length === 0) {
+      containerSugestoes.innerHTML = '<div style="padding: 12px; text-align: center; font-size: 12px; color: #94a3b8; font-weight: 500; font-family: \'Inter\', sans-serif; background-color: #ffffff;">Nenhum município encontrado</div>';
+    } else {
+      const fragment = document.createDocumentFragment();
+      filtradas.forEach((cidade, index) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.textContent = cidade;
+        
+        // Estilo inline para garantir o visual do site e impedir interferências externas
+        item.style.cssText = `
+          width: 100%;
+          text-align: left;
+          padding: 10px 16px;
+          background-color: #ffffff;
+          color: #334155;
+          font-family: 'Inter', sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          border: none;
+          cursor: pointer;
+          display: block;
+          transition: background-color 150ms ease;
+          outline: none;
+        `;
+        
+        if (index < filtradas.length - 1) {
+          item.style.borderBottom = '1px solid #f1f5f9';
+        }
+        
+        // Hover
+        item.addEventListener('mouseenter', () => {
+          item.style.backgroundColor = '#f1f5f9';
+        });
+        item.addEventListener('mouseleave', () => {
+          item.style.backgroundColor = '#ffffff';
+        });
+        
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selMunicipio.value = cidade;
+          containerSugestoes.classList.add('hidden');
+          estado.definir('filtros', { ...estado.obter('filtros'), municipio: cidade });
+        });
+        fragment.appendChild(item);
+      });
+      containerSugestoes.innerHTML = '';
+      containerSugestoes.appendChild(fragment);
+    }
+    containerSugestoes.classList.remove('hidden');
+  };
+
+  selMunicipio.addEventListener('focus', () => {
+    if (cidadesDisponiveis.length > 0) {
+      renderizarSugestoes(selMunicipio.value);
+    }
   });
 
   selMunicipio.addEventListener('input', () => {
     const filtros = estado.obter('filtros');
-    if (!selMunicipio.value.trim()) {
+    const valor = selMunicipio.value;
+    
+    if (!valor.trim()) {
       estado.definir('filtros', { ...filtros, municipio: null });
+      containerSugestoes.classList.add('hidden');
+    } else {
+      renderizarSugestoes(valor);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (containerSugestoes && !selMunicipio.contains(e.target) && !containerSugestoes.contains(e.target)) {
+      containerSugestoes.classList.add('hidden');
     }
   });
 }
 
 async function _carregarMunicipios(uf) {
   const selMunicipio = document.getElementById('filtro-municipio');
-  const datalist = document.getElementById('lista-municipios');
-  if (!selMunicipio || !datalist) return;
+  const containerSugestoes = document.getElementById('lista-sugestoes-municipio');
+  if (!selMunicipio) return;
 
   selMunicipio.disabled = true;
   selMunicipio.value = '';
   selMunicipio.placeholder = 'Carregando...';
-  datalist.innerHTML = '';
+  cidadesDisponiveis = [];
+  if (containerSugestoes) {
+    containerSugestoes.innerHTML = '';
+    containerSugestoes.classList.add('hidden');
+  }
 
   try {
     const query = new Parse.Query('EstatisticasAgregadas');
@@ -201,16 +283,24 @@ async function _carregarMunicipios(uf) {
     query.limit(1000);
     query.select('chave');
     const resultados = await query.find();
-    const cidades = resultados.map(r => {
-      const chave = r.get('chave') || '';
-      return chave.substring(3); // Remove o "UF-" (ex: "PE-Recife" -> "Recife")
-    }).filter(Boolean).sort();
+    
+    const cidadesUnicas = new Map();
+    resultados.forEach(r => {
+      const key = r.get('chave') || '';
+      const cidade = key.substring(3).trim();
+      if (cidade) {
+        const cidadeLower = cidade.toLowerCase();
+        if (!cidadesUnicas.has(cidadeLower)) {
+          cidadesUnicas.set(cidadeLower, cidade);
+        }
+      }
+    });
+    cidadesDisponiveis = Array.from(cidadesUnicas.values()).sort();
 
-    datalist.innerHTML = cidades.map(c => `<option value="${c}"></option>`).join('');
-    selMunicipio.placeholder = 'Todos os Municípios / Digite para buscar...';
+    selMunicipio.placeholder = 'Digite para buscar...';
   } catch (erro) {
     console.error('[DASHBOARD] Erro ao carregar municípios:', erro);
-    selMunicipio.placeholder = 'Erro ao carregar municípios';
+    selMunicipio.placeholder = 'Erro ao carregar';
   }
   selMunicipio.disabled = false;
 }

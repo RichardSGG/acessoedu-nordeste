@@ -34,7 +34,6 @@ Zero **não é** a mesma coisa que `null`. Zero significa ausência confirmada p
 ### 3. Painel Admin
 <!-- Espaço para o print do Painel Admin mostrando as tabelas de moderação de fotos e moderação de comentários denunciados. -->
 ![Painel Admin](docs/screenshots/painel_admin.png)
-
 ## Funcionalidades 🌴
 
 - **Dashboard** com KPIs, gráficos de barras comparativos 2024/2025 e gráficos de rosca
