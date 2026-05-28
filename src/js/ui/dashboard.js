@@ -103,6 +103,26 @@ function _aplicarDados(agregados) {
   const elContexto = document.getElementById('contexto-estatisticas');
   if (elContexto) elContexto.textContent = agregados.nivel === 'regiao' ? 'Nordeste' : (agregados.chave || 'Nordeste');
 
+  const elLegendaTotal = document.getElementById('legenda-kpi-total');
+  if (elLegendaTotal) {
+    if (agregados.nivel === 'regiao' || !agregados.nivel) {
+      elLegendaTotal.textContent = 'Escolas no Nordeste';
+    } else if (agregados.nivel === 'estado') {
+      const nomesEstados = {
+        'AL': 'Alagoas', 'BA': 'Bahia', 'CE': 'Ceará', 'MA': 'Maranhão',
+        'PB': 'Paraíba', 'PE': 'Pernambuco', 'PI': 'Piauí', 'RN': 'Rio Grande do Norte', 'SE': 'Sergipe'
+      };
+      const nomeEstado = nomesEstados[agregados.chave] || agregados.chave;
+      elLegendaTotal.textContent = `Escolas em ${nomeEstado}`;
+    } else if (agregados.nivel === 'municipio') {
+      const partes = (agregados.chave || '').split('-');
+      const nomeCidade = partes.length > 1 ? partes[1] : partes[0];
+      elLegendaTotal.textContent = `Escolas em ${nomeCidade}`;
+    } else {
+      elLegendaTotal.textContent = `Escolas em ${agregados.chave}`;
+    }
+  }
+
   /* Graficos */
   renderizarBarras(dados2024, dados2025);
   renderizarRoscaBanheiro(dados2024, dados2025);

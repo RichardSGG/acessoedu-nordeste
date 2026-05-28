@@ -834,6 +834,39 @@ async function carregarFeedbacks() {
       return;
     }
 
+    // Para comentários antigos sem pointer 'usuario', vamos buscar o usuário correspondente pelo nome
+    const nomesParaBuscar = [];
+    resultados.forEach(fb => {
+      if (!fb.get('usuario')) {
+        const nome = fb.get('nome');
+        if (nome) nomesParaBuscar.push(nome);
+      }
+    });
+
+    const mapaUsuariosPorNome = {};
+    if (nomesParaBuscar.length > 0) {
+      try {
+        const queryUsernames = new Parse.Query(Parse.User);
+        queryUsernames.containedIn('username', nomesParaBuscar);
+        
+        const queryNomesExibicao = new Parse.Query(Parse.User);
+        queryNomesExibicao.containedIn('nomeExibicao', nomesParaBuscar);
+        
+        const queryUsers = Parse.Query.or(queryUsernames, queryNomesExibicao);
+        queryUsers.limit(100);
+        const usersEncontrados = await queryUsers.find();
+        
+        usersEncontrados.forEach(u => {
+          const nomeExib = u.get('nomeExibicao');
+          const usrname = u.get('username');
+          if (nomeExib) mapaUsuariosPorNome[nomeExib] = u;
+          if (usrname) mapaUsuariosPorNome[usrname] = u;
+        });
+      } catch (err) {
+        console.error('[ESCOLA] Erro ao buscar usuários correspondentes:', err);
+      }
+    }
+
     const fragmento = document.createDocumentFragment();
 
     for (const fb of resultados) {
@@ -847,14 +880,19 @@ async function carregarFeedbacks() {
         : '';
 
       const estrelasHtml = Array.from({ length: 5 }, (_, i) =>
-        `<i class="ph-fill ph-star text-sm ${i < (fb.get('nota') || 0) ? 'text-acento' : 'text-slate-300'}"></i>`
+          `<i class="ph-fill ph-star text-sm ${i < (fb.get('nota') || 0) ? 'text-acento' : 'text-slate-300'}"></i>`
       ).join('');
 
       const verificado = fb.get('verificado_local')
         ? '<span class="badge-verificado ml-2"><i class="ph-fill ph-map-pin"></i> Local Verificado</span>'
         : '';
 
-      const autorUser = fb.get('usuario');
+      let autorUser = fb.get('usuario');
+      const nomeAutor = fb.get('nome') || '';
+      if (!autorUser && nomeAutor) {
+        autorUser = mapaUsuariosPorNome[nomeAutor];
+      }
+
       let avatarHtml = '<i class="ph-fill ph-user-circle text-xl text-slate-400"></i>';
       if (autorUser) {
         const fotoFile = autorUser.get('profilePhoto');
