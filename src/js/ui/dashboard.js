@@ -195,13 +195,16 @@ async function _carregarMunicipios(uf) {
   datalist.innerHTML = '';
 
   try {
-    const query = new Parse.Query('EstatisticasGeograficas');
+    const query = new Parse.Query('EstatisticasAgregadas');
     query.equalTo('nivel', 'municipio');
-    query.equalTo('uf', uf);
+    query.startsWith('chave', `${uf}-`);
     query.limit(1000);
-    query.select('municipio');
+    query.select('chave');
     const resultados = await query.find();
-    const cidades = [...new Set(resultados.map(r => r.get('municipio')).filter(Boolean))].sort();
+    const cidades = resultados.map(r => {
+      const chave = r.get('chave') || '';
+      return chave.substring(3); // Remove o "UF-" (ex: "PE-Recife" -> "Recife")
+    }).filter(Boolean).sort();
 
     datalist.innerHTML = cidades.map(c => `<option value="${c}"></option>`).join('');
     selMunicipio.placeholder = 'Todos os Municípios / Digite para buscar...';
