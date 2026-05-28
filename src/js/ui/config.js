@@ -6,7 +6,7 @@
 
 import estado from '../core/estado.js';
 import * as AuthAPI from '../api/auth.api.js';
-import { mostrarAlerta, mostrarPrompt, mostrarFormulario } from './modal.ui.js';
+import { mostrarAlerta, mostrarPrompt, mostrarFormulario, mostrarConfirmacao } from './modal.ui.js';
 
 Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
 Parse.serverURL = 'https://parseapi.back4app.com/parse/';
@@ -43,6 +43,8 @@ function mostrarSecaoLogado(usuario) {
 
   atualizarAvatar(usuario);
   configurarUploadAvatar();
+  configurarRemoverAvatar(usuario);
+  configurarEditarNome(usuario);
   configurarLogout();
 }
 
@@ -110,6 +112,8 @@ function atualizarAvatar(usuario) {
   const foto = usuario.get('profilePhoto');
   if (foto && foto.url) {
     container.innerHTML = `<img src="${foto.url()}" alt="Avatar" class="w-full h-full object-cover">`;
+  } else {
+    container.innerHTML = `<i class="ph-fill ph-user text-4xl text-slate-400"></i>`;
   }
 }
 
@@ -139,13 +143,75 @@ function configurarUploadAvatar() {
         const parseFile = new Parse.File(`avatar-${Date.now()}.jpg`, blob);
 
         await AuthAPI.atualizarAvatar(parseFile);
-        atualizarAvatar(estado.obter('usuarioAtual'));
+        const usuarioAtualizado = estado.obter('usuarioAtual');
+        atualizarAvatar(usuarioAtualizado);
+        
+        const btnRemover = document.getElementById('btn-remover-avatar');
+        if (btnRemover) btnRemover.style.display = 'inline-flex';
       } catch (erro) {
         console.error('[CONFIG] Erro upload avatar:', erro);
         await mostrarAlerta('Erro ao processar imagem.', 'Erro');
       }
     };
     input.click();
+  });
+}
+
+function configurarRemoverAvatar(usuario) {
+  const btnRemover = document.getElementById('btn-remover-avatar');
+  if (!btnRemover) return;
+
+  const foto = usuario.get('profilePhoto');
+  btnRemover.style.display = (foto && foto.url) ? 'inline-flex' : 'none';
+
+  // Remove listeners anteriores
+  const novoBtn = btnRemover.cloneNode(true);
+  btnRemover.parentNode.replaceChild(novoBtn, btnRemover);
+
+  novoBtn.addEventListener('click', async () => {
+    const confirmou = await mostrarConfirmacao('Tem certeza de que deseja remover sua foto de perfil?', 'Remover Foto');
+    if (confirmou) {
+      try {
+        await AuthAPI.removerAvatar();
+        atualizarAvatar(estado.obter('usuarioAtual'));
+        novoBtn.style.display = 'none';
+        await mostrarAlerta('Foto de perfil removida com sucesso!', 'Sucesso');
+      } catch (erro) {
+        console.error('[CONFIG] Erro ao remover avatar:', erro);
+        await mostrarAlerta('Erro ao remover a foto de perfil.', 'Erro');
+      }
+    }
+  });
+}
+
+function configurarEditarNome(usuario) {
+  const btnEditar = document.getElementById('btn-editar-nome');
+  if (!btnEditar) return;
+
+  // Remove listeners anteriores
+  const novoBtn = btnEditar.cloneNode(true);
+  btnEditar.parentNode.replaceChild(novoBtn, btnEditar);
+
+  novoBtn.addEventListener('click', async () => {
+    const nomeAtual = usuario.get('nomeExibicao') || usuario.get('username') || '';
+    const novoNome = await mostrarPrompt('Digite seu novo nome de exibição:', 'Editar Nome', nomeAtual);
+    if (novoNome !== null) {
+      const nomeLimpo = novoNome.trim();
+      if (!nomeLimpo) {
+        await mostrarAlerta('O nome não pode ficar vazio.', 'Aviso');
+        return;
+      }
+      try {
+        usuario.set('nomeExibicao', nomeLimpo);
+        await usuario.save();
+        document.getElementById('info-usuario-nome').textContent = nomeLimpo;
+        estado.definir('usuarioAtual', usuario);
+        await mostrarAlerta('Nome atualizado com sucesso!', 'Sucesso');
+      } catch (erro) {
+        console.error('[CONFIG] Erro ao salvar nome:', erro);
+        await mostrarAlerta('Erro ao salvar o nome.', 'Erro');
+      }
+    }
   });
 }
 

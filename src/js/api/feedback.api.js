@@ -169,3 +169,25 @@ export async function listarDenunciadas(limite = 50) {
     return [];
   }
 }
+
+/**
+ * Mantém uma avaliação denunciada, limpando as denúncias e definindo o moderador
+ */
+export async function manterAvaliacao(reviewId) {
+  try {
+    const query = new Parse.Query(CLASSE_AVALIACOES);
+    const obj = await query.get(reviewId);
+    obj.set('flags_count', 0);
+    
+    const adminAtual = Parse.User.current();
+    if (adminAtual) {
+      obj.set('moderadoPor', adminAtual);
+    }
+    
+    await obj.save();
+    return true;
+  } catch (erro) {
+    console.error('[feedback.api] Erro ao manter avaliacao:', erro);
+    return false;
+  }
+}

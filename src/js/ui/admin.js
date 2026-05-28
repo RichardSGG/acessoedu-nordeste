@@ -239,7 +239,8 @@ async function carregarDenuncias() {
     tbody.appendChild(fragmento);
 
     tbody.querySelectorAll('.btn-manter').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
+        await FeedbackAPI.manterAvaliacao(btn.dataset.reviewId);
         btn.closest('tr').remove();
         if (tbody.children.length === 0) { tabela.classList.add('hidden'); semDenuncias.classList.remove('hidden'); }
       });
