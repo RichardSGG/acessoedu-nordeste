@@ -59,7 +59,7 @@
   --transicao-padrao: all 300ms ease-in-out;
 }
 
-/* Reset global — garante que o fundo cubra a tela toda e responda ao modo escuro */
+/* Reset global — garante que o fundo cubra a tela toda */
 html, body {
   background-color: var(--cor-fundo);
   color: var(--cor-texto-principal);
@@ -67,5 +67,3 @@ html, body {
   min-height: 100vh;
   transition: background-color 300ms ease, color 300ms ease;
 }
-
-

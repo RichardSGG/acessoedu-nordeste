@@ -39,6 +39,9 @@ const FALLBACK = DADOS_NORDESTE_FALLBACK;
 /* Estado local */
 let anoAtual = 2025;
 let chaveAtual = 'Nordeste';
+/* Label do filtro ativo — atualizado de forma síncrona ao selecionar filtros
+ * para evitar race condition com requisições assíncronas paralelas */
+let _labelFiltroAtual = 'Nordeste';
 
 /* Instancias de graficos (destroy-before-create) */
 let graficoBarras = null;
@@ -216,6 +219,8 @@ function configurarFiltros() {
         containerSugestoesEstado.classList.add('hidden');
         
         const uf = est.sigla;
+        /* Atualiza label de forma síncrona antes da requisição assíncrona */
+        _labelFiltroAtual = est.sigla ? est.nome : 'Nordeste';
         estado.definir('filtros', { ...estado.obter('filtros'), uf, municipio: null, ano: anoAtual });
         if (uf) {
           _carregarMunicipios(uf);
@@ -296,6 +301,9 @@ function configurarFiltros() {
           e.stopPropagation();
           selMunicipio.value = cidade;
           containerSugestoes.classList.add('hidden');
+          /* Atualiza label com municipio - UF de forma síncrona */
+          const uf = estado.obter('filtros')?.uf || '';
+          _labelFiltroAtual = uf ? `${cidade} – ${uf}` : cidade;
           estado.definir('filtros', { ...estado.obter('filtros'), municipio: cidade });
         });
         fragment.appendChild(item);
@@ -580,20 +588,8 @@ function renderizarLista(escolas) {
     if (!escolas || escolas.length === 0) {
       elContagem.classList.add('hidden');
     } else {
-      const filtros = estado.obter('filtros');
-      const uf = filtros?.uf || '';
-      const municipio = filtros?.municipio || '';
-      let localLabel = 'Nordeste';
-      
-      if (uf && municipio) {
-        localLabel = `${municipio} - ${uf}`;
-      } else if (uf) {
-        const inputEstado = document.getElementById('filtro-estado');
-        localLabel = inputEstado?.value || uf;
-      }
-      
       const total = escolas.length;
-      elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} em ${localLabel}`;
+      elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} em ${_labelFiltroAtual}`;
       elContagem.classList.remove('hidden');
     }
   }

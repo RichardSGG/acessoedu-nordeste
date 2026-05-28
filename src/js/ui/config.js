@@ -1,7 +1,6 @@
 /**
  * src/js/ui/config.js
- * Responsabilidade: Configurações do usuário — login/registo, avatar (Pica.js),
- *                   toggle modo escuro sem FOUC
+ * Responsabilidade: Configurações do usuário — login/registo, avatar, toggle modo escuro sem FOUC
  */
 
 import estado from '../core/estado.js';
@@ -126,31 +125,49 @@ function configurarUploadAvatar() {
       const file = e.target.files[0];
       if (!file) return;
 
+      const btnUpload = document.getElementById('btn-upload-avatar');
+      const textoOriginal = btnUpload?.innerHTML || '';
+      if (btnUpload) btnUpload.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Enviando...';
+
       try {
-        /* Redimensiona com Pica.js */
+        /* Redimensiona com canvas nativo (sem Pica.js — compatível com proteção anti-fingerprinting) */
         const img = new Image();
-        img.src = URL.createObjectURL(file);
-        await new Promise((resolve) => { img.onload = resolve; });
+        const objectUrl = URL.createObjectURL(file);
+        img.src = objectUrl;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        /* Crop quadrado centralizado antes de redimensionar */
+        const lado = Math.min(img.naturalWidth, img.naturalHeight);
+        const offsetX = (img.naturalWidth - lado) / 2;
+        const offsetY = (img.naturalHeight - lado) / 2;
 
         const canvas = document.createElement('canvas');
         canvas.width = 256;
         canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, offsetX, offsetY, lado, lado, 0, 0, 256, 256);
+        URL.revokeObjectURL(objectUrl);
 
-        const pica = window.pica();
-        await pica.resize(img, canvas);
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob falhou')), 'image/jpeg', 0.88);
+        });
 
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
         const parseFile = new Parse.File(`avatar-${Date.now()}.jpg`, blob);
-
         await AuthAPI.atualizarAvatar(parseFile);
+
         const usuarioAtualizado = estado.obter('usuarioAtual');
         atualizarAvatar(usuarioAtualizado);
-        
+
         const btnRemover = document.getElementById('btn-remover-avatar');
         if (btnRemover) btnRemover.style.display = 'inline-flex';
       } catch (erro) {
         console.error('[CONFIG] Erro upload avatar:', erro);
-        await mostrarAlerta('Erro ao processar imagem.', 'Erro');
+        await mostrarAlerta('Erro ao processar a imagem. Tente novamente.', 'Erro');
+      } finally {
+        if (btnUpload) btnUpload.innerHTML = textoOriginal;
       }
     };
     input.click();
