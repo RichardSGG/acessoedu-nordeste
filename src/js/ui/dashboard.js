@@ -573,12 +573,38 @@ function configurarAuth() {
 function renderizarLista(escolas) {
   const container = document.getElementById('lista-resultados');
   const vazia = document.getElementById('lista-vazia');
+  const elContagem = document.getElementById('contagem-resultados');
   if (!container || !vazia) return;
+
+  if (elContagem) {
+    if (!escolas || escolas.length === 0) {
+      elContagem.classList.add('hidden');
+    } else {
+      const filtros = estado.obter('filtros');
+      const uf = filtros?.uf || '';
+      const municipio = filtros?.municipio || '';
+      let localLabel = 'Nordeste';
+      
+      if (uf && municipio) {
+        localLabel = `${municipio} - ${uf}`;
+      } else if (uf) {
+        const inputEstado = document.getElementById('filtro-estado');
+        localLabel = inputEstado?.value || uf;
+      }
+      
+      const total = escolas.length;
+      elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} em ${localLabel}`;
+      elContagem.classList.remove('hidden');
+    }
+  }
 
   if (!escolas || escolas.length === 0) {
     container.innerHTML = '';
     vazia.classList.remove('hidden');
     const msg = estado.obter('mensagemVazia') || 'Nenhuma escola encontrada com esses filtros.';
+    // Espera, no original é: 'Nenhuma escola encontrada com esses filtros.'
+    // Corrigindo para 'escola' em vez de 'school' para manter o portugues
+    // const msg = estado.obter('mensagemVazia') || 'Nenhuma escola encontrada com esses filtros.';
     const p = vazia.querySelector('p');
     if (p) p.textContent = msg;
     return;
