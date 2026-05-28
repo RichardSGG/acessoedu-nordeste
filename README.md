@@ -20,9 +20,6 @@ Zero **não é** a mesma coisa que `null`. Zero significa ausência confirmada p
 
 ## Demonstração Visual 📸
 
-> [!TIP]
-> Substitua os placeholders abaixo pelos prints reais das telas do projeto (recomenda-se salvar os arquivos no diretório `docs/screenshots/` e nomeá-los conforme indicado abaixo).
-
 ### 1. Dashboard Principal
 <!-- Espaço para o print da tela do Dashboard principal contendo filtros, KPIs e gráficos. -->
 ![Dashboard Principal](docs/screenshots/dashboard.png)
