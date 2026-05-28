@@ -283,14 +283,15 @@ export async function buscarPorRaio(latitude, longitude, raioKm = 10) {
 
 /**
  * Busca escolas por nome com debounce (a UI ja aplica o debounce)
+ * Retorna todos os campos de indicadores para que os cards exibam corretamente
+ * as cores de internet, agua, acessibilidade, etc.
  */
 export async function buscarPorNome(termo) {
   if (!termo || termo.length < 2) return [];
   try {
     const query = new Parse.Query(CLASSE_2025);
     query.matches('nome', termo, 'i');
-    query.limit(50);
-    query.exists('internet');
+    query.limit(100);
     const resultados = await query.find();
     return resultados.map(obj => {
       const pos = obj.get('posicao_geografica');
@@ -307,6 +308,15 @@ export async function buscarPorNome(termo) {
         longitude: lng,
         telefone: obj.get('telefone') || '',
         cep: obj.get('cep') || '',
+        dependencia: obj.get('dependencia') || '',
+        /* Indicadores — essenciais para a cor dos cards */
+        internet: obj.get('internet') ?? null,
+        laboratorio: obj.get('laboratorio') ?? null,
+        quadra: obj.get('quadra') ?? null,
+        rampa_acessibilidade: obj.get('rampa_acessibilidade') ?? null,
+        banheiro_pne: obj.get('banheiro_pne') ?? null,
+        agua_potavel: obj.get('agua_potavel') ?? null,
+        energia_eletrica: obj.get('energia_eletrica') ?? null,
       };
     });
   } catch (erro) {

@@ -5,9 +5,10 @@
 
 import estado from '../core/estado.js';
 import * as EscolasAPI from '../api/escolas.api.js';
+import { PARSE_CONFIG } from '../core/constantes.js';
 
-Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
-Parse.serverURL = 'https://parseapi.back4app.com/parse/';
+Parse.initialize(PARSE_CONFIG.APP_ID, PARSE_CONFIG.JS_KEY);
+Parse.serverURL = PARSE_CONFIG.SERVER_URL;
 
 let ufSelecionada = null;
 

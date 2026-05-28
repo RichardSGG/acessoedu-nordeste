@@ -7,9 +7,10 @@ import estado from '../core/estado.js';
 import * as FotosAPI from '../api/fotos.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
 import { verificarAdmin } from '../api/auth.api.js';
+import { PARSE_CONFIG } from '../core/constantes.js';
 
-Parse.initialize('pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj', 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN');
-Parse.serverURL = 'https://parseapi.back4app.com/parse/';
+Parse.initialize(PARSE_CONFIG.APP_ID, PARSE_CONFIG.JS_KEY);
+Parse.serverURL = PARSE_CONFIG.SERVER_URL;
 
 async function iniciar() {
   const admin = await verificarAdmin();
@@ -26,6 +27,7 @@ async function iniciar() {
   configurarBotaoRecarregar();
   await carregarFotosPendentes();
   await carregarDenuncias();
+  await carregarComentariosRemovidos();
 }
 
 /* --- Abas Fotos --- */
@@ -295,6 +297,73 @@ function configurarBotaoRecarregar() {
     btnRecarregar.addEventListener('click', () => {
       window.location.reload();
     });
+  }
+}
+
+/* --- Comentarios Removidos (soft-delete) --- */
+async function carregarComentariosRemovidos() {
+  const loader = document.getElementById('loader-removidos');
+  const tabela = document.getElementById('tabela-removidos');
+  const tbody = document.getElementById('tabela-removidos-body');
+  const semRemovidos = document.getElementById('sem-removidos');
+
+  try {
+    const removidos = await FeedbackAPI.listarRemovidos();
+    if (loader) loader.classList.add('hidden');
+
+    if (!removidos || removidos.length === 0) {
+      if (semRemovidos) semRemovidos.classList.remove('hidden');
+      return;
+    }
+
+    if (tabela) tabela.classList.remove('hidden');
+    const fragmento = document.createDocumentFragment();
+
+    removidos.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-slate-100';
+      const idEscola = d.get('id_escola') || '';
+      const removidoPor = d.get('removidoPor') || 'Admin';
+      const removidoEm = d.get('removidoEm') ? new Date(d.get('removidoEm')).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '--';
+
+      tr.innerHTML = `
+        <td class="py-3 px-3 text-sm text-slate-700 max-w-xs">
+          <span class="line-through text-slate-400">${esc(d.get('mensagem') || '--')}</span>
+        </td>
+        <td class="py-3 px-3 text-sm text-slate-500">${esc(d.get('nome') || '--')}</td>
+        <td class="py-3 px-3 text-sm text-slate-500">
+          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
+        </td>
+        <td class="py-3 px-3 text-center">
+          <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">${esc(removidoPor)}</span>
+        </td>
+        <td class="py-3 px-3 text-center text-sm text-slate-400">${removidoEm}</td>
+        <td class="py-3 px-3 text-center">
+          <button class="btn-restaurar px-3 py-1.5 bg-blue-50 text-primaria rounded-full text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-1 mx-auto" data-review-id="${d.id}">
+            <i class="ph-bold ph-arrow-counter-clockwise"></i> Restaurar
+          </button>
+        </td>`;
+      fragmento.appendChild(tr);
+    });
+
+    if (tbody) {
+      tbody.innerHTML = '';
+      tbody.appendChild(fragmento);
+
+      tbody.querySelectorAll('.btn-restaurar').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await FeedbackAPI.restaurarAvaliacao(btn.dataset.reviewId);
+          btn.closest('tr').remove();
+          if (tbody.children.length === 0) {
+            if (tabela) tabela.classList.add('hidden');
+            if (semRemovidos) semRemovidos.classList.remove('hidden');
+          }
+        });
+      });
+    }
+  } catch (erro) {
+    console.error('[ADMIN] Erro comentarios removidos:', erro);
+    if (loader) loader.classList.add('hidden');
   }
 }
 
