@@ -917,11 +917,26 @@ async function carregarFeedbacks() {
       btn.addEventListener('click', async () => {
         const usuario = estado.obter('usuarioAtual');
         if (!usuario) { await mostrarAlerta('É necessário fazer login.', 'Aviso'); return; }
+
+        const chaveCurtir = `curtiu_${usuario.id}_${btn.dataset.reviewId}`;
+        if (localStorage.getItem(chaveCurtir)) {
+          await mostrarAlerta('Você já apoiou este comentário.', 'Aviso');
+          return;
+        }
+
         try {
           await FeedbackAPI.curtirAvaliacao(btn.dataset.reviewId);
+          localStorage.setItem(chaveCurtir, 'true');
           btn.classList.add('text-secundaria');
           btn.querySelector('i').classList.replace('ph-bold', 'ph-fill');
-        } catch (_) { /* Silencia */ }
+        } catch (erro) {
+          if (erro.message && erro.message.includes('já apoiou')) {
+            localStorage.setItem(chaveCurtir, 'true');
+            btn.classList.add('text-secundaria');
+            btn.querySelector('i').classList.replace('ph-bold', 'ph-fill');
+          }
+          await mostrarAlerta(erro.message || 'Erro ao processar apoio.', 'Erro');
+        }
       });
     });
 
@@ -930,7 +945,7 @@ async function carregarFeedbacks() {
         const usuario = estado.obter('usuarioAtual');
         if (!usuario) { await mostrarAlerta('É necessário fazer login.', 'Aviso'); return; }
 
-        const chaveDenuncia = 'denunciou_' + btn.dataset.reviewId;
+        const chaveDenuncia = `denunciou_${usuario.id}_${btn.dataset.reviewId}`;
         if (localStorage.getItem(chaveDenuncia)) {
           await mostrarAlerta('Você já enviou uma denúncia para este comentário.', 'Aviso');
           return;
@@ -941,7 +956,13 @@ async function carregarFeedbacks() {
           await FeedbackAPI.denunciarAvaliacao(btn.dataset.reviewId);
           localStorage.setItem(chaveDenuncia, 'true');
           btn.classList.add('text-red-500');
-        } catch (_) { /* Silencia */ }
+        } catch (erro) {
+          if (erro.message && erro.message.includes('já enviou uma denúncia')) {
+            localStorage.setItem(chaveDenuncia, 'true');
+            btn.classList.add('text-red-500');
+          }
+          await mostrarAlerta(erro.message || 'Erro ao processar denúncia.', 'Erro');
+        }
       });
     });
 
