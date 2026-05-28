@@ -15,7 +15,7 @@ garante testabilidade, manutenibilidade e escalabilidade sem a necessidade de fr
 ```
 acesso-edu-nordeste/
 │
-├── index.html                  # Dashboard principal com mapa
+├── index.html                  # Dashboard principal
 ├── detalhes.html               # Perfil detalhado de escola
 ├── ranking.html                # Ranking de Excelência gamificado
 ├── analise.html                # Relatórios comparativos 2024 vs 2025
@@ -47,7 +47,6 @@ acesso-edu-nordeste/
 │       │   └── inicializador.js # Bootstrap: verifica sessão, inicia listeners
 │       │
 │       └── ui/                 # Controladores de interface (uma UI por tela)
-│           ├── mapa.ui.js      # Leaflet, marcadores, filtros geográficos
 │           ├── ranking.ui.js   # Renderização do pódio e lista com Fragment
 │           ├── detalhes.ui.js  # Carrossel, checklist, gráfico radar
 │           ├── analise.ui.js   # Chart.js: barras, linhas, donut, exportação PDF
@@ -94,11 +93,11 @@ ou API externa)
 │
 (emit 'escolasCarregadas')
 │
-┌──────────────────────┼──────────────────────┐
-▼                      ▼                      ▼
-[mapa.ui.js]         [ranking.ui.js]        [analise.ui.js]
-(re-renderiza         (re-renderiza          (re-renderiza
-marcadores)           lista/pódio)           gráficos)
+┌──────────────────────┐
+▼                      ▼
+[ranking.ui.js]        [analise.ui.js]
+(re-renderiza          (re-renderiza
+lista/pódio)           gráficos)
 
 **Regra inviolável:** Nenhum módulo de UI importa diretamente um módulo de API.
 A comunicação entre UI e serviços ocorre **exclusivamente** através de eventos emitidos
@@ -141,10 +140,10 @@ _ouvintes[evento] = _ouvintes[evento].filter((cb) => cb !== callback);
 
 | Evento                        | Emitido por         | Consumido por                     |
 |-------------------------------|---------------------|-----------------------------------|
-| `mudanca:escolas`             | escolas.api.js      | mapa.ui.js, ranking.ui.js         |
-| `mudanca:escolaSelecionada`   | mapa.ui.js          | detalhes.ui.js                    |
+| `mudanca:escolas`             | escolas.api.js      | ranking.ui.js                     |
+| `mudanca:escolaSelecionada`   | dashboard.js        | escola.js                         |
 | `mudanca:usuarioAtual`        | auth.api.js         | Todos os módulos de UI (permissão)|
-| `mudanca:filtros`             | mapa.ui.js          | escolas.api.js (nova query)       |
+| `mudanca:filtros`             | dashboard.js        | escolas.api.js (nova query)       |
 | `mudanca:carregando`          | Qualquer serviço    | Componente de loading global      |
 | `mudanca:modoEscuro`          | config.ui.js        | temas.css (via classe no `<html>`)|
 | `notificacao:nova`            | notificacoes.api.js | Componente de toast global        |
@@ -186,7 +185,7 @@ return function (...args) {
 clearTimeout(temporizador);
 temporizador = setTimeout(() => funcao.apply(this, args), espera);
 };
-}// Uso em mapa.ui.js
+}// Uso em dashboard.js
 import { debounce } from '../core/utilitarios.js';const buscarComDebounce = debounce((termo) => {
 escolas.api.buscarPorNome(termo);
 }, 400);document.getElementById('input-busca').addEventListener('input', (e) => {
@@ -195,7 +194,7 @@ buscarComDebounce(e.target.value);
 
 ### 5.3 Throttle para Eventos de Alta Frequência
 
-Eventos de scroll, resize e drag no mapa Leaflet devem ser interceptados por `throttle`:
+Eventos de scroll e resize devem ser interceptados por `throttle`:
 
 ```javascript// src/js/core/utilitarios.js
 export function throttle(funcao, limite = 200) {
@@ -211,19 +210,8 @@ funcao.apply(this, args);
 
 ### 5.4 Lazy Loading com IntersectionObserver
 
-O Leaflet.js e o Chart.js são pesados. Eles não devem ser inicializados no carregamento
-da página, mas apenas quando a `<div>` que os contém entra no viewport:
-
-```javascript// src/js/core/inicializador.js
-const observadorMapa = new IntersectionObserver(
-(entradas) => {
-if (entradas[0].isIntersecting) {
-import('../ui/mapa.ui.js').then((modulo) => modulo.inicializar());
-observadorMapa.disconnect(); // Inicializa uma única vez
-}
-},
-{ threshold: 0.1 }
-);observadorMapa.observe(document.getElementById('container-mapa'));
+O Chart.js é pesado. Ele não deve ser inicializado no carregamento
+da página, mas apenas quando a `<div>` que o contém entra no viewport:
 
 ---
 
@@ -275,7 +263,7 @@ renderizarPlaceholder();
 
 | Ação                             | Visitante | Usuário Autenticado | Admin |
 |----------------------------------|-----------|---------------------|-------|
-| Visualizar mapa e dados          | Sim       | Sim                 | Sim   |
+| Visualizar dashboard e dados     | Sim       | Sim                 | Sim   |
 | Enviar avaliação (estrelas)      | Não       | Sim                 | Sim   |
 | Fazer denúncia                   | Não       | Sim                 | Sim   |
 | Enviar foto de fachada           | Não       | Sim                 | Sim   |
