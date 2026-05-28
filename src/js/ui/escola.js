@@ -956,7 +956,7 @@ function contemTermosOfensivos(texto) {
     'porra', 'caralho', 'puta', 'merda', 'bosta', 'viado', 'fdp', 'arrombado', 
     'filho da puta', 'babaca', 'otario', 'imbecil', 'vagabundo', 'nazista', 
     'fascista', 'racista', 'putaria', 'cacete', 'buceta', 'retardado', 'retardada',
-    'macaco', 'bicha', 'corno', 'pqp'
+    'macaco', 'bicha', 'corno', 'pqp' 
   ];
   return termos.some(termo => {
     const regex = new RegExp('\\b' + termo + '\\b', 'i');
