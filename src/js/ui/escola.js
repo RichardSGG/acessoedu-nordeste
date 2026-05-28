@@ -209,6 +209,8 @@ async function carregarImagens() {
     renderizarFotos(fotosBack4App.map(f => ({
       url: f.get('arquivo')?.url(),
       fonte: 'Comunidade AcessoEdu',
+      autor: f.get('autor'),
+      moderadoPor: f.get('moderadoPor')
     })));
     return;
   }
@@ -268,15 +270,38 @@ function renderizarFotos(fotos) {
   if (placeholder) placeholder.classList.add('hidden');
   const fragmento = document.createDocumentFragment();
 
+  const usuarioLogado = estado.obter('usuarioAtual');
+  const isAdmin = usuarioLogado?.get('role') === 'admin';
+
   fotos.forEach((foto, idx) => {
     const slide = document.createElement('div');
     slide.className = 'flex-shrink-0 w-full sm:w-96 snap-center';
+
+    let legenda = foto.fonte || '';
+    if (foto.fonte === 'Comunidade AcessoEdu') {
+      const autorObj = foto.autor;
+      const nomeAutor = autorObj ? (autorObj.get('nomeExibicao') || autorObj.get('username') || 'Usuário') : '';
+      if (nomeAutor) {
+        legenda = `Enviada por: ${nomeAutor}`;
+      } else {
+        legenda = 'Comunidade AcessoEdu';
+      }
+
+      if (isAdmin) {
+        const moderadorObj = foto.moderadoPor;
+        const nomeModerador = moderadorObj ? (moderadorObj.get('nomeExibicao') || moderadorObj.get('username') || 'Admin') : '';
+        if (nomeModerador) {
+          legenda += ` | Aprovada por: ${nomeModerador}`;
+        }
+      }
+    }
+
     slide.innerHTML = `
       <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3]">
         <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover cursor-pointer" loading="lazy"
              onclick="abrirModalFoto('${esc(foto.url)}')"
              onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'ph-fill ph-image text-4xl text-slate-300\\'></i></div>'">
-        ${foto.fonte ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">${esc(foto.fonte)}</span>` : ''}
+        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">${esc(legenda)}</span>` : ''}
       </div>`;
     fragmento.appendChild(slide);
   });
