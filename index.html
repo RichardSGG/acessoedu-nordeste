@@ -150,7 +150,7 @@
                 </div>
             </div>
             <!-- CEP (Botão que abre o Modal) -->
-            <button id="btnAbrirModalCep" class="flex items-center gap-2 h-[40px] px-4 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition"><i class="ph ph-map-pin"></i> Buscar por CEP</button>
+            <button id="btnAbrirModalCep" class="flex items-center gap-1.5 h-[40px] px-4 bg-primaria text-white rounded-full text-sm font-bold hover:bg-blue-800 transition-all shadow-sm whitespace-nowrap"><i class="ph ph-map-pin"></i> Buscar por CEP</button>
             <!-- Ações -->
             <div class="flex items-center gap-2">
                 <button id="toggle-ano" class="px-4 py-2 bg-white rounded-full shadow-sm text-sm font-bold text-primaria border border-slate-200 hover:border-primaria transition-all flex items-center gap-1.5 whitespace-nowrap" title="Alternar ano 2024/2025">
@@ -194,13 +194,13 @@
 
   <!-- Modal de CEP -->
   <div id="modalBuscaCep" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white p-6 rounded-xl shadow-xl w-96 max-w-[90%] border border-slate-100">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-96 max-w-[90%] border border-slate-200">
       <h3 class="text-lg font-bold text-slate-800 mb-2">Buscar por CEP</h3>
       <p class="text-sm text-slate-500 mb-4">Encontre escolas na cidade correspondente ao CEP informado.</p>
-      <input type="text" id="inputModalCep" placeholder="Digite o CEP (Ex: 50030230)" class="w-full mb-4 p-3 border rounded-lg text-sm bg-slate-50 outline-none focus:border-blue-500">
+      <input type="text" id="inputModalCep" placeholder="Digite o CEP (Ex: 50030230)" class="w-full mb-4 p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 outline-none focus:border-primaria transition-all">
       <div class="flex justify-end gap-2">
-        <button id="btnFecharModalCep" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm font-medium">Cancelar</button>
-        <button id="btnBuscarDentroModal" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition">Buscar</button>
+        <button id="btnFecharModalCep" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-full text-sm font-medium transition-all">Cancelar</button>
+        <button id="btnBuscarDentroModal" class="px-4 py-2 bg-primaria hover:bg-blue-800 text-white rounded-full font-bold text-sm transition-all shadow-sm">Buscar</button>
       </div>
     </div>
   </div>
