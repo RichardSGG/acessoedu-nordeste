@@ -633,7 +633,13 @@ function renderizarLista(escolas) {
       elContagem.classList.add('hidden');
     } else {
       const total = escolas.length;
-      elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} em ${_labelFiltroAtual}`;
+      const inputBusca = document.getElementById('input-busca');
+      const termo = inputBusca ? inputBusca.value.trim() : '';
+      if (termo && termo.length >= 2) {
+        elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} correspondente${total === 1 ? '' : 's'} a "${termo}" no Nordeste`;
+      } else {
+        elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} em ${_labelFiltroAtual}`;
+      }
       elContagem.classList.remove('hidden');
     }
   }
