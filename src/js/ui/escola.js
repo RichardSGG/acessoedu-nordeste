@@ -507,31 +507,48 @@ async function renderizarRadar(ano) {
 
   const dadosEscolaArr = INDICADORES.map(ind => dadosAno[ind.chave] === 1 ? 100 : 0);
 
-  /* Estatisticas agregadas (municipio, estado, regiao) */
+  /* Estatisticas agregadas via EstatisticasAgregadas (mesma fonte do Dashboard) */
   const uf = dadosEscola.uf || dadosAno.uf || '';
   const municipio = dadosEscola.cidade || dadosAno.cidade || '';
-  const estatisticas = await EscolasAPI.obterEstatisticas(uf, municipio);
 
-  const mapearIndicadores = (fonte) => {
-    if (!fonte) return INDICADORES.map(() => 0);
+  /* Monta as chaves no formato da tabela EstatisticasAgregadas:
+     - Regiao: "Nordeste"
+     - Estado: "PE"
+     - Municipio: "PE-Recife" */
+  const chaveMunicipio = (uf && municipio) ? `${uf}-${municipio}` : '';
+  const chaveEstado = uf || '';
+  const chaveRegiao = 'Nordeste';
+
+  /* Busca as 3 estatisticas em paralelo */
+  const [estatMunicipio, estatEstado, estatRegiao] = await Promise.all([
+    chaveMunicipio ? EscolasAPI.buscarEstatisticasAgregadas(chaveMunicipio) : Promise.resolve(null),
+    chaveEstado ? EscolasAPI.buscarEstatisticasAgregadas(chaveEstado) : Promise.resolve(null),
+    EscolasAPI.buscarEstatisticasAgregadas(chaveRegiao),
+  ]);
+
+  /* Mapeia os pct_* do ano selecionado para o array de indicadores do radar */
+  const mapearPctParaRadar = (agregado) => {
+    if (!agregado) return INDICADORES.map(() => 0);
+    const dadosDoAno = ano === 2024 ? agregado.dados2024 : agregado.dados2025;
+    if (!dadosDoAno) return INDICADORES.map(() => 0);
     const mapaChaves = {
-      internet: 'internet',
-      laboratorio: 'lab_informatica',
-      banheiro_pne: 'banheiro_acessivel',
-      quadra: 'quadra_esportes',
-      rampa_acessibilidade: 'rampas',
-      agua_potavel: 'agua_potavel',
-      energia_eletrica: 'energia_eletrica'
+      internet: 'pct_internet',
+      laboratorio: 'pct_laboratorio',
+      banheiro_pne: 'pct_banheiro_pne',
+      quadra: 'pct_quadra',
+      rampa_acessibilidade: 'pct_rampa_acessibilidade',
+      agua_potavel: 'pct_agua_potavel',
+      energia_eletrica: 'pct_energia_eletrica',
     };
     return INDICADORES.map(ind => {
-      const chaveFonte = mapaChaves[ind.chave];
-      return fonte[chaveFonte] ?? 0;
+      const chavePct = mapaChaves[ind.chave];
+      return dadosDoAno[chavePct] ?? 0;
     });
   };
 
-  const dadosMunicipio = mapearIndicadores(estatisticas?.municipio);
-  const dadosEstado = mapearIndicadores(estatisticas?.estado);
-  const dadosRegiao = mapearIndicadores(estatisticas?.regiao);
+  const dadosMunicipio = mapearPctParaRadar(estatMunicipio);
+  const dadosEstado = mapearPctParaRadar(estatEstado);
+  const dadosRegiao = mapearPctParaRadar(estatRegiao);
 
   instanciaRadar = new Chart(ctx, {
     type: 'radar',
