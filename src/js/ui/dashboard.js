@@ -493,7 +493,7 @@ function configurarBusca() {
       await EscolasAPI.listar(estado.obter('filtros'));
       return;
     }
-    const resultados = await EscolasAPI.buscarPorNome(termo);
+    const resultados = await EscolasAPI.buscarPorNome(termo, estado.obter('filtros'));
     const escolaMap = {};
     resultados.forEach(e => { escolaMap[e.id_escola] = e; });
     estado.definir('escolas', Object.values(escolaMap));
