@@ -53,6 +53,11 @@ let graficoRoscaInternet = null;
 let ultimoAgregados = null;
 let cidadesDisponiveis = [];
 
+/* Variáveis de paginação infinita */
+let skipAtual = 0;
+let carregandoMais = false;
+let todasEscolasCarregadas = false;
+
 /* ------------------------------------------------------------------ */
 /* INICIALIZACAO                                                        */
 /* ------------------------------------------------------------------ */
@@ -71,13 +76,59 @@ async function iniciar() {
 
   estado.assinar('mudanca:escolas', renderizarLista);
   estado.assinar('mudanca:filtros', async (filtros) => {
-    await EscolasAPI.listar(filtros);
+    skipAtual = 0;
+    todasEscolasCarregadas = false;
+    const btnContainer = document.getElementById('container-carregar-mais');
+    if (btnContainer) btnContainer.classList.add('hidden');
+    
+    const novas = await EscolasAPI.listar(filtros, skipAtual, false);
+    
+    let limite = 100;
+    if (filtros?.uf || filtros?.municipio) limite = 500;
+    
+    if (novas && novas.length >= limite) {
+       if (btnContainer) btnContainer.classList.remove('hidden');
+    } else {
+       todasEscolasCarregadas = true;
+    }
+    
     /* API so e chamada na mudanca de filtros */
     await atualizarEstatisticas();
   });
 
+  /* Configurar evento do botão carregar mais para paginação */
+  const btnCarregarMais = document.getElementById('btn-carregar-mais');
+  if (btnCarregarMais) {
+    btnCarregarMais.addEventListener('click', async () => {
+      if (carregandoMais || todasEscolasCarregadas) return;
+      carregandoMais = true;
+      const btnContainer = document.getElementById('container-carregar-mais');
+      
+      const filtros = estado.obter('filtros') || {};
+      let limite = 100;
+      if (filtros.uf || filtros.municipio) limite = 500;
+      
+      skipAtual += limite;
+      
+      const novasEscolas = await EscolasAPI.listar(filtros, skipAtual, true);
+      
+      if (!novasEscolas || novasEscolas.length < limite) {
+        todasEscolasCarregadas = true;
+        if (btnContainer) btnContainer.classList.add('hidden');
+      }
+      
+      carregandoMais = false;
+    });
+  }
+
   /* 2. Carregar lista inicial de escolas (sem tocar nos KPIs/graficos) */
-  await EscolasAPI.listar({ ano: anoAtual });
+  const escolasIniciais = await EscolasAPI.listar({ ano: anoAtual }, 0, false);
+  const btnContainerInicial = document.getElementById('container-carregar-mais');
+  if (escolasIniciais && escolasIniciais.length >= 100) {
+      if (btnContainerInicial) btnContainerInicial.classList.remove('hidden');
+  } else {
+      todasEscolasCarregadas = true;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -95,10 +146,14 @@ function _aplicarDados(agregados) {
   setKPI('kpi-internet', dadosAno.internet);
   setKPI('kpi-banheiro', dadosAno.banheiro_pne);
   setKPI('kpi-agua', dadosAno.agua_potavel);
-  _renderizarDelta('delta-total', dados2024.total, dados2025.total);
-  _renderizarDelta('delta-internet', dados2024.internet, dados2025.internet);
-  _renderizarDelta('delta-banheiro', dados2024.banheiro_pne, dados2025.banheiro_pne);
-  _renderizarDelta('delta-agua', dados2024.agua_potavel, dados2025.agua_potavel);
+  
+  const valAnt = anoAtual === 2025 ? dados2024 : dados2025;
+  const valAtu = anoAtual === 2025 ? dados2025 : dados2024;
+  
+  _renderizarDelta('delta-total', valAnt.total, valAtu.total);
+  _renderizarDelta('delta-internet', valAnt.internet, valAtu.internet);
+  _renderizarDelta('delta-banheiro', valAnt.banheiro_pne, valAtu.banheiro_pne);
+  _renderizarDelta('delta-agua', valAnt.agua_potavel, valAtu.agua_potavel);
 
   const elContexto = document.getElementById('contexto-estatisticas');
   if (elContexto) elContexto.textContent = agregados.nivel === 'regiao' ? 'Nordeste' : (agregados.chave || 'Nordeste');
