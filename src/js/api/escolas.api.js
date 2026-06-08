@@ -299,11 +299,19 @@ export async function buscarPorRaio(latitude, longitude, raioKm = 10) {
  * Retorna todos os campos de indicadores para que os cards exibam corretamente
  * as cores de internet, agua, acessibilidade, etc.
  */
-export async function buscarPorNome(termo) {
+export async function buscarPorNome(termo, filtros = {}) {
   if (!termo || termo.length < 2) return [];
   try {
     const query = new Parse.Query(CLASSE_2025);
     query.matches('nome', termo, 'i');
+    
+    if (filtros.uf) {
+      query.equalTo('uf', filtros.uf);
+    }
+    if (filtros.municipio) {
+      query.equalTo('municipio', filtros.municipio);
+    }
+
     query.limit(100);
     const resultados = await query.find();
     return resultados.map(obj => {
