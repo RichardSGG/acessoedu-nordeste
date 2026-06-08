@@ -167,6 +167,13 @@
     <section id="container-lista" class="w-full">
         <div id="contagem-resultados" class="text-sm font-semibold text-slate-500 mb-4 ml-1 hidden"></div>
         <div id="lista-resultados" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        
+        <div id="container-carregar-mais" class="w-full flex justify-center mt-8 hidden">
+            <button id="btn-carregar-mais" class="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold rounded-full transition-colors flex items-center gap-2 text-sm shadow-sm">
+                Próxima <i class="ph-bold ph-arrow-right"></i>
+            </button>
+        </div>
+
         <div id="lista-vazia" class="w-full p-12 flex flex-col items-center justify-center text-slate-500 gap-3 bg-white rounded-2xl border border-slate-200 shadow-sm">
             <i class="ph ph-list-dashes text-4xl"></i>
             <p class="font-medium">Nenhuma escola encontrada com esses filtros.</p>

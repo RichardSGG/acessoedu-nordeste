@@ -20,11 +20,18 @@ function classeAtiva() {
 /**
  * Lista escolas com filtros geograficos e paginacao
  */
-export async function listar(filtros = {}) {
+export async function listar(filtros = {}, skip = 0, append = false) {
   estado.definir('carregando', true);
   try {
     const query = new Parse.Query(CLASSE_2025);
-    query.limit(CONFIGURACOES.LIMITE_CARREGAMENTO_ESCOLAS || 500);
+    
+    let limite = 100;
+    if (filtros.uf || filtros.municipio) {
+      limite = CONFIGURACOES.LIMITE_CARREGAMENTO_ESCOLAS || 500;
+    }
+    query.limit(limite);
+    query.skip(skip);
+    
     query.exists('internet');
 
     if (filtros.uf) {
@@ -62,11 +69,17 @@ export async function listar(filtros = {}) {
       };
     });
 
-    estado.definir('escolas', escolas);
+    if (append) {
+      const atuais = estado.obter('escolas') || [];
+      estado.definir('escolas', [...atuais, ...escolas]);
+    } else {
+      estado.definir('escolas', escolas);
+    }
     return escolas;
   } catch (erro) {
     console.error('[escolas.api] Erro ao listar:', erro);
     estado.definir('escolas', []);
+    return [];
   } finally {
     estado.definir('carregando', false);
   }
