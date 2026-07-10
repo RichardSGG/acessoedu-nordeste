@@ -210,7 +210,8 @@ async function carregarImagens() {
       url: f.get('arquivo')?.url(),
       fonte: 'Comunidade AcessoEdu',
       autor: f.get('autor'),
-      moderadoPor: f.get('moderadoPor')
+      moderadoPor: f.get('moderadoPor'),
+      status: f.get('status')
     })));
     return;
   }
@@ -278,7 +279,10 @@ function renderizarFotos(fotos) {
     slide.className = 'flex-shrink-0 w-full sm:w-96 snap-center';
 
     let legenda = foto.fonte || '';
-    if (foto.fonte === 'Comunidade AcessoEdu') {
+    const isPending = foto.status === 'pending';
+    if (isPending) {
+      legenda = 'Pendente de Aprovação';
+    } else if (foto.fonte === 'Comunidade AcessoEdu') {
       const autorObj = foto.autor;
       const nomeAutor = autorObj ? (autorObj.get('nomeExibicao') || autorObj.get('username') || 'Usuário') : '';
       if (nomeAutor) {
@@ -298,10 +302,11 @@ function renderizarFotos(fotos) {
 
     slide.innerHTML = `
       <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3]">
-        <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover cursor-pointer" loading="lazy"
+        <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover cursor-pointer ${isPending ? 'opacity-60 grayscale-[50%]' : ''}" loading="lazy"
              onclick="abrirModalFoto('${esc(foto.url)}')"
              onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'ph-fill ph-image text-4xl text-slate-300\\'></i></div>'">
         ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">${esc(legenda)}</span>` : ''}
+        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
       </div>`;
     fragmento.appendChild(slide);
   });
@@ -364,6 +369,7 @@ function dispararUploadFoto() {
 
       if (enviadas > 0) {
         await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderação. Obrigado pela contribuição!`, 'Sucesso');
+        await carregarImagens();
       }
     } catch (erro) {
       console.error('[ESCOLA] Erro ao validar limite de fotos:', erro);
@@ -844,6 +850,7 @@ async function carregarFeedbacks() {
 
   try {
     const resultados = await FeedbackAPI.listarPorEscola(dadosEscola.id_escola);
+    atualizarMediaEstrelasCabecalho(resultados);
     if (loader) loader.classList.add('hidden');
 
     if (resultados.length === 0) {
@@ -950,7 +957,7 @@ async function carregarFeedbacks() {
             ${respostasHtml}
             <div class="flex items-center gap-4 mt-3 pt-2 border-t border-slate-200">
               <button class="btn-curtir text-xs text-slate-400 hover:text-secundaria transition-colors flex items-center gap-1" data-review-id="${fb.id}">
-                <i class="ph-bold ph-heart"></i> Apoiar
+                <i class="ph-bold ph-heart"></i> Apoiar (${fb.get('likes_count') || 0})
               </button>
               <button class="btn-denunciar text-xs text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1" data-review-id="${fb.id}">
                 <i class="ph-bold ph-flag"></i> Denunciar
@@ -1089,6 +1096,39 @@ window.abrirModalFoto = function (url) {
     </button>
     <img src="${url}" alt="Foto ampliada" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);" onclick="event.stopPropagation()">
   `;
+}
+
+function atualizarMediaEstrelasCabecalho(feedbacks) {
+  const container = document.getElementById('escola-media-estrelas');
+  const estrelasEl = document.getElementById('estrelas-media-container');
+  const txtNota = document.getElementById('txt-media-nota');
+  const txtTotal = document.getElementById('txt-total-avaliacoes');
+  if (!container || !estrelasEl || !txtNota || !txtTotal) return;
+
+  if (!feedbacks || feedbacks.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  const soma = feedbacks.reduce((acc, f) => acc + (f.get('nota') || 0), 0);
+  const media = soma / feedbacks.length;
+  
+  const notaArredondada = Math.round(media * 2) / 2;
+  let estrelasHtml = '';
+  for (let i = 1; i <= 5; i++) {
+    if (i <= notaArredondada) {
+      estrelasHtml += '<i class="ph-fill ph-star text-amber-500 text-sm"></i>';
+    } else if (i - 0.5 === notaArredondada) {
+      estrelasHtml += '<i class="ph-fill ph-star-half text-amber-500 text-sm"></i>';
+    } else {
+      estrelasHtml += '<i class="ph-bold ph-star text-slate-300 text-sm"></i>';
+    }
+  }
+
+  estrelasEl.innerHTML = estrelasHtml;
+  txtNota.textContent = media.toFixed(1);
+  txtTotal.textContent = `(${feedbacks.length} ${feedbacks.length === 1 ? 'avaliação' : 'avaliações'})`;
+  container.classList.remove('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', iniciar);

@@ -6,11 +6,14 @@
 import estado from '../core/estado.js';
 import * as FotosAPI from '../api/fotos.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
-import { verificarAdmin } from '../api/auth.api.js';
+import { verificarAdmin, listarUsuarios, atualizarStatusUsuario } from '../api/auth.api.js';
 import { PARSE_CONFIG } from '../core/constantes.js';
 
 Parse.initialize(PARSE_CONFIG.APP_ID, PARSE_CONFIG.JS_KEY);
 Parse.serverURL = PARSE_CONFIG.SERVER_URL;
+
+let filtrosFotos = {};
+let filtrosComentarios = {};
 
 async function iniciar() {
   const admin = await verificarAdmin();
@@ -31,8 +34,11 @@ async function iniciar() {
   configurarAbasFotos();
   configurarAbasComentarios();
   configurarBotaoRecarregar();
+  configurarFiltrosAdmin();
+  configurarAbaUsuarios();
   await carregarFotosPendentes();
   await carregarTodosComentarios();
+  await carregarUsuarios();
 }
 
 /* --- Abas Fotos --- */
@@ -114,7 +120,12 @@ async function carregarFotosPendentes() {
   const semFotos = document.getElementById('sem-fotos');
 
   try {
-    const fotos = await FotosAPI.listarPendentes();
+    if (loader) loader.classList.remove('hidden');
+    if (tabela) tabela.classList.add('hidden');
+    if (semFotos) semFotos.classList.add('hidden');
+    if (tbody) tbody.innerHTML = '';
+
+    const fotos = await FotosAPI.listarPendentes(filtrosFotos);
     if (loader) loader.classList.add('hidden');
 
     if (fotos.length === 0) {
@@ -188,10 +199,13 @@ async function carregarFotosAprovadas() {
   const tbody = document.getElementById('tabela-fotos-aprovadas-body');
   const semFotos = document.getElementById('sem-fotos-aprovadas');
 
-  if (tbody && tbody.children.length > 0) return;
-
   try {
-    const fotos = await FotosAPI.listarAprovadasAdmin();
+    if (loader) loader.classList.remove('hidden');
+    if (tabela) tabela.classList.add('hidden');
+    if (semFotos) semFotos.classList.add('hidden');
+    if (tbody) tbody.innerHTML = '';
+
+    const fotos = await FotosAPI.listarAprovadasAdmin(filtrosFotos);
     if (loader) loader.classList.add('hidden');
 
     if (fotos.length === 0) {
@@ -258,7 +272,7 @@ async function carregarTodosComentarios() {
     if (semComentarios) semComentarios.classList.add('hidden');
     if (tbody) tbody.innerHTML = '';
 
-    const comentarios = await FeedbackAPI.listarTodos();
+    const comentarios = await FeedbackAPI.listarTodos(filtrosComentarios);
     if (loader) loader.classList.add('hidden');
 
     if (comentarios.length === 0) {
@@ -335,7 +349,7 @@ async function carregarDenuncias() {
     if (semDenuncias) semDenuncias.classList.add('hidden');
     if (tbody) tbody.innerHTML = '';
 
-    const denuncias = await FeedbackAPI.listarDenunciadas();
+    const denuncias = await FeedbackAPI.listarDenunciadas(filtrosComentarios);
     if (loader) loader.classList.add('hidden');
 
     if (denuncias.length === 0) {
@@ -449,7 +463,7 @@ async function carregarComentariosRemovidos() {
     if (semRemovidos) semRemovidos.classList.add('hidden');
     if (tbody) tbody.innerHTML = '';
 
-    const removidos = await FeedbackAPI.listarRemovidos();
+    const removidos = await FeedbackAPI.listarRemovidos(filtrosComentarios);
     if (loader) loader.classList.add('hidden');
 
     if (!removidos || removidos.length === 0) {
@@ -504,6 +518,200 @@ async function carregarComentariosRemovidos() {
     }
   } catch (erro) {
     console.error('[ADMIN] Erro comentarios removidos:', erro);
+    if (loader) loader.classList.add('hidden');
+  }
+}
+
+function configurarFiltrosAdmin() {
+  // Fotos Filtros
+  const btnFiltroFoto = document.getElementById('btn-filtro-foto');
+  const btnLimparFoto = document.getElementById('btn-limpar-foto');
+  
+  if (btnFiltroFoto && btnLimparFoto) {
+    btnFiltroFoto.addEventListener('click', async () => {
+      filtrosFotos = {
+        idEscola: document.getElementById('filtro-foto-escola').value.trim(),
+        autor: document.getElementById('filtro-foto-usuario').value.trim(),
+        dataInicio: document.getElementById('filtro-foto-inicio').value,
+        dataFim: document.getElementById('filtro-foto-fim').value
+      };
+      // Reload both tab lists
+      await carregarFotosPendentes();
+      await carregarFotosAprovadas();
+    });
+    
+    btnLimparFoto.addEventListener('click', async () => {
+      document.getElementById('filtro-foto-escola').value = '';
+      document.getElementById('filtro-foto-usuario').value = '';
+      document.getElementById('filtro-foto-inicio').value = '';
+      document.getElementById('filtro-foto-fim').value = '';
+      filtrosFotos = {};
+      await carregarFotosPendentes();
+      await carregarFotosAprovadas();
+    });
+  }
+
+  // Comentarios Filtros
+  const btnFiltroComentario = document.getElementById('btn-filtro-comentario');
+  const btnLimparComentario = document.getElementById('btn-limpar-comentario');
+
+  if (btnFiltroComentario && btnLimparComentario) {
+    btnFiltroComentario.addEventListener('click', async () => {
+      filtrosComentarios = {
+        idEscola: document.getElementById('filtro-comentario-escola').value.trim(),
+        autor: document.getElementById('filtro-comentario-usuario').value.trim(),
+        dataInicio: document.getElementById('filtro-comentario-inicio').value,
+        dataFim: document.getElementById('filtro-comentario-fim').value
+      };
+      await carregarTodosComentarios();
+      await carregarDenuncias();
+      await carregarComentariosRemovidos();
+    });
+
+    btnLimparComentario.addEventListener('click', async () => {
+      document.getElementById('filtro-comentario-escola').value = '';
+      document.getElementById('filtro-comentario-usuario').value = '';
+      document.getElementById('filtro-comentario-inicio').value = '';
+      document.getElementById('filtro-comentario-fim').value = '';
+      filtrosComentarios = {};
+      await carregarTodosComentarios();
+      await carregarDenuncias();
+      await carregarComentariosRemovidos();
+    });
+  }
+}
+
+function configurarAbaUsuarios() {
+  const btnBusca = document.getElementById('btn-busca-usuarios');
+  const campoBusca = document.getElementById('busca-usuarios');
+  if (btnBusca && campoBusca) {
+    btnBusca.addEventListener('click', async () => {
+      await carregarUsuarios(campoBusca.value.trim());
+    });
+    campoBusca.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        await carregarUsuarios(campoBusca.value.trim());
+      }
+    });
+  }
+}
+
+async function carregarUsuarios(busca = '') {
+  const loader = document.getElementById('loader-usuarios');
+  const tabela = document.getElementById('tabela-usuarios');
+  const tbody = document.getElementById('tabela-usuarios-body');
+  const semUsuarios = document.getElementById('sem-usuarios');
+
+  if (!tbody) return;
+
+  try {
+    if (loader) loader.classList.remove('hidden');
+    if (tabela) tabela.classList.add('hidden');
+    if (semUsuarios) semUsuarios.classList.add('hidden');
+    tbody.innerHTML = '';
+
+    const usuarios = await listarUsuarios(busca);
+    
+    // Obter os status de moderacao correspondentes a cada usuario
+    const queryMod = new Parse.Query('UserModeration');
+    queryMod.containedIn('user', usuarios);
+    const moderacoes = await queryMod.find();
+    
+    const mapaStatus = {};
+    moderacoes.forEach(m => {
+      const uPtr = m.get('user');
+      if (uPtr) {
+        mapaStatus[uPtr.id] = m.get('status') || 'active';
+      }
+    });
+
+    if (loader) loader.classList.add('hidden');
+
+    if (usuarios.length === 0) {
+      if (semUsuarios) semUsuarios.classList.remove('hidden');
+      return;
+    }
+
+    if (tabela) tabela.classList.remove('hidden');
+    const fragmento = document.createDocumentFragment();
+
+    usuarios.forEach(u => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-slate-100';
+      
+      const nome = u.get('nomeExibicao') || 'Sem Nome';
+      const email = u.get('email') || u.get('username') || '--';
+      const cargo = u.get('role') || 'usuario';
+      const cadastro = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : '--';
+      const status = mapaStatus[u.id] || 'active';
+      
+      let badgeStatus = '';
+      if (status === 'blocked') {
+        badgeStatus = '<span class="px-2.5 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold">Bloqueado</span>';
+      } else if (status === 'suspended') {
+        badgeStatus = '<span class="px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">Suspenso</span>';
+      } else {
+        badgeStatus = '<span class="px-2.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">Ativo</span>';
+      }
+
+      tr.innerHTML = `
+        <td class="py-3 px-3">
+          <div class="font-semibold text-slate-800">${esc(nome)}</div>
+          <div class="text-xs text-slate-400">${esc(email)}</div>
+        </td>
+        <td class="py-3 px-3 text-sm text-slate-500 uppercase font-bold text-xs">${esc(cargo)}</td>
+        <td class="py-3 px-3 text-sm text-slate-500">${cadastro}</td>
+        <td class="py-3 px-3 text-center">${badgeStatus}</td>
+        <td class="py-3 px-3 text-center">
+          <div class="flex items-center justify-center gap-1.5">
+            ${status !== 'active' ? `
+              <button class="btn-usuario-acao px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-xs font-bold hover:bg-green-100 transition-colors" data-user-id="${u.id}" data-action="active">
+                Reativar
+              </button>
+            ` : `
+              <button class="btn-usuario-acao px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full text-xs font-bold hover:bg-amber-100 transition-colors" data-user-id="${u.id}" data-action="suspended">
+                Suspender
+              </button>
+              <button class="btn-usuario-acao px-3 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-bold hover:bg-red-100 transition-colors" data-user-id="${u.id}" data-action="blocked">
+                Bloquear
+              </button>
+            `}
+          </div>
+        </td>
+      `;
+      fragmento.appendChild(tr);
+    });
+
+    tbody.appendChild(fragmento);
+
+    // Configurar cliques nas acoes de moderacao do usuario
+    tbody.querySelectorAll('.btn-usuario-acao').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.userId;
+        const acao = btn.dataset.action;
+        
+        let confirmacao = false;
+        if (acao === 'blocked') {
+          confirmacao = confirm('Tem certeza que deseja BLOQUEAR este usuário? Ele será deslogado imediatamente.');
+        } else if (acao === 'suspended') {
+          confirmacao = confirm('Tem certeza que deseja SUSPENDER temporariamente este usuário? Ele será deslogado imediatamente.');
+        } else {
+          confirmacao = confirm('Deseja reativar esta conta de usuário?');
+        }
+
+        if (confirmacao) {
+          const ok = await atualizarStatusUsuario(userId, acao);
+          if (ok) {
+            await carregarUsuarios(busca);
+          } else {
+            alert('Falha ao atualizar o status do usuário.');
+          }
+        }
+      });
+    });
+
+  } catch (erro) {
+    console.error('[ADMIN] Erro ao carregar usuarios:', erro);
     if (loader) loader.classList.add('hidden');
   }
 }

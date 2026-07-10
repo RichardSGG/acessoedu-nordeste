@@ -37,27 +37,48 @@
 </head>
 <body class="bg-fundo text-[#1A202C] antialiased min-h-screen flex flex-col">
 
-<!-- Header -->
 <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <i class="ph-fill ph-student text-3xl text-primaria"></i>
             <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
         </a>
-        <nav class="hidden lg:flex items-center gap-6">
-            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
+        <nav class="nav-header hidden lg:flex items-center gap-6">
             <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
-            <a href="documentacao.html" class="text-sm font-bold text-primaria transition-colors">Documentação</a>
+            <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Análise</a>
+            <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Documentação</a>
+            <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="link-config">Configurações</a>
+            <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="nav-admin-link" style="display: none;">Painel Admin</a>
         </nav>
-        <button id="btn-hamburguer" class="lg:hidden p-2 text-slate-600 hover:text-primaria hover:bg-slate-100 rounded-lg focus:outline-none transition-colors" aria-label="Abrir Menu">
-            <i class="ph-bold ph-list text-2xl"></i>
-        </button>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4" id="container-auth">
+                <button id="btn-login" class="px-5 py-2 bg-primaria text-white rounded-full text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2" onclick="window.location.href='config.html'">
+                    <i class="ph-bold ph-sign-in"></i> Entrar
+                </button>
+                <span id="nome-usuario-header" class="hidden lg:inline-block text-sm font-semibold text-slate-700"></span>
+                <div id="avatar-usuario" class="hidden w-10 h-10 rounded-full bg-slate-200 border-2 border-primaria flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden" onclick="window.location.href='config.html'">
+                    <i class="ph-fill ph-user text-xl text-slate-500"></i>
+                </div>
+                <button id="btn-logout-header" class="hidden lg:flex px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-full transition-colors items-center gap-1">
+                    <i class="ph-bold ph-sign-out"></i> Sair
+                </button>
+            </div>
+            <button id="btn-hamburguer" class="lg:hidden p-2 text-slate-600 hover:text-primaria hover:bg-slate-100 rounded-lg focus:outline-none transition-colors" aria-label="Abrir Menu">
+                <i class="ph-bold ph-list text-2xl"></i>
+            </button>
+        </div>
     </div>
     <!-- Menu Mobile -->
     <div id="menu-mobile" class="lg:hidden menu-mobile-transicao absolute top-16 left-0 right-0 bg-white border-b border-slate-200 shadow-lg px-4 py-4 flex flex-col gap-3 z-50">
-        <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Dashboard</a>
+        <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Início</a>
         <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Ranking</a>
-        <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Documentação</a>
+        <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Análise</a>
+        <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Configurações</a>
+        <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100" id="nav-admin-link-mobile" style="display: none;">Painel Admin</a>
+        
+        <button id="btn-logout-mobile" class="hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
+            <i class="ph-bold ph-sign-out"></i> Sair da Conta
+        </button>
     </div>
 </header>
 
@@ -242,6 +263,7 @@
             <p class="text-xs text-slate-500">Dados: Censo Escolar INEP 2024/2025</p>
         </div>
         <div class="flex gap-4">
+            <a href="documentacao.html" class="text-xs text-primaria hover:underline">Documentação</a>
             <a href="termos.html" class="text-xs text-primaria hover:underline">Termos de Uso</a>
             <a href="privacidade.html" class="text-xs text-primaria hover:underline">Privacidade</a>
         </div>

@@ -12,14 +12,30 @@ const CLASSE_FOTO = 'SchoolPhoto';
  */
 export async function listarAprovadas(idEscola) {
   try {
-    const query = new Parse.Query(CLASSE_FOTO);
-    query.equalTo('id_escola', String(idEscola));
-    query.equalTo('status', 'approved');
-    query.include('autor');
-    query.include('moderadoPor');
-    query.descending('createdAt');
-    query.limit(30);
-    return await query.find();
+    const queryApproved = new Parse.Query(CLASSE_FOTO);
+    queryApproved.equalTo('id_escola', String(idEscola));
+    queryApproved.equalTo('status', 'approved');
+
+    const usuarioLogado = Parse.User.current();
+    if (usuarioLogado) {
+      const queryPendingOwn = new Parse.Query(CLASSE_FOTO);
+      queryPendingOwn.equalTo('id_escola', String(idEscola));
+      queryPendingOwn.equalTo('status', 'pending');
+      queryPendingOwn.equalTo('autor', usuarioLogado);
+
+      const mainQuery = Parse.Query.or(queryApproved, queryPendingOwn);
+      mainQuery.include('autor');
+      mainQuery.include('moderadoPor');
+      mainQuery.descending('createdAt');
+      mainQuery.limit(30);
+      return await mainQuery.find();
+    } else {
+      queryApproved.include('autor');
+      queryApproved.include('moderadoPor');
+      queryApproved.descending('createdAt');
+      queryApproved.limit(30);
+      return await queryApproved.find();
+    }
   } catch (erro) {
     console.error('[fotos.api] Erro ao listar aprovadas:', erro);
     return [];
@@ -58,12 +74,29 @@ export async function enviarFoto(idEscola, arquivoImagem) {
 /**
  * Lista fotos pendentes de aprovacao (admin)
  */
-export async function listarPendentes(limite = 50) {
+export async function listarPendentes(filtros = {}, limite = 50) {
   try {
     const query = new Parse.Query(CLASSE_FOTO);
     query.equalTo('status', 'pending');
-    query.include('id_escola');
     query.include('autor');
+    
+    if (filtros.idEscola) {
+      query.equalTo('id_escola', String(filtros.idEscola));
+    }
+    if (filtros.autor) {
+      const innerQuery = new Parse.Query(Parse.User);
+      innerQuery.matches('username', filtros.autor, 'i');
+      query.matchesQuery('autor', innerQuery);
+    }
+    if (filtros.dataInicio) {
+      query.greaterThanOrEqualTo('createdAt', new Date(filtros.dataInicio));
+    }
+    if (filtros.dataFim) {
+      const dataAte = new Date(filtros.dataFim);
+      dataAte.setHours(23, 59, 59, 999);
+      query.lessThanOrEqualTo('createdAt', dataAte);
+    }
+
     query.descending('createdAt');
     query.limit(limite);
     return await query.find();
@@ -76,12 +109,30 @@ export async function listarPendentes(limite = 50) {
 /**
  * Lista fotos aprovadas (admin — historico)
  */
-export async function listarAprovadasAdmin(limite = 50) {
+export async function listarAprovadasAdmin(filtros = {}, limite = 50) {
   try {
     const query = new Parse.Query(CLASSE_FOTO);
     query.equalTo('status', 'approved');
     query.include('autor');
     query.include('moderadoPor');
+
+    if (filtros.idEscola) {
+      query.equalTo('id_escola', String(filtros.idEscola));
+    }
+    if (filtros.autor) {
+      const innerQuery = new Parse.Query(Parse.User);
+      innerQuery.matches('username', filtros.autor, 'i');
+      query.matchesQuery('autor', innerQuery);
+    }
+    if (filtros.dataInicio) {
+      query.greaterThanOrEqualTo('createdAt', new Date(filtros.dataInicio));
+    }
+    if (filtros.dataFim) {
+      const dataAte = new Date(filtros.dataFim);
+      dataAte.setHours(23, 59, 59, 999);
+      query.lessThanOrEqualTo('createdAt', dataAte);
+    }
+
     query.descending('createdAt');
     query.limit(limite);
     return await query.find();

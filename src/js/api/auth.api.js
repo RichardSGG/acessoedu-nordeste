@@ -208,3 +208,71 @@ export async function removerAvatar() {
   }
 }
 
+/**
+ * Lista usuarios do Parse com suporte a busca
+ */
+export async function listarUsuarios(busca = '', limite = 50) {
+  try {
+    const query = new Parse.Query(Parse.User);
+    if (busca) {
+      const queryUsername = new Parse.Query(Parse.User);
+      queryUsername.matches('username', busca, 'i');
+      
+      const queryEmail = new Parse.Query(Parse.User);
+      queryEmail.matches('email', busca, 'i');
+      
+      const queryNome = new Parse.Query(Parse.User);
+      queryNome.matches('nomeExibicao', busca, 'i');
+      
+      const mainQuery = Parse.Query.or(queryUsername, queryEmail, queryNome);
+      mainQuery.descending('createdAt');
+      mainQuery.limit(limite);
+      return await mainQuery.find();
+    }
+    query.descending('createdAt');
+    query.limit(limite);
+    return await query.find();
+  } catch (erro) {
+    console.error('[auth.api] Erro ao listar usuarios:', erro);
+    return [];
+  }
+}
+
+/**
+ * Altera o status de moderacao de um usuario na tabela UserModeration
+ */
+export async function atualizarStatusUsuario(userId, status) {
+  try {
+    const userPointer = Parse.User.createWithoutData(userId);
+    const query = new Parse.Query('UserModeration');
+    query.equalTo('user', userPointer);
+    let mod = await query.first();
+    
+    if (!mod) {
+      mod = new Parse.Object('UserModeration');
+      mod.set('user', userPointer);
+    }
+    mod.set('status', status);
+    await mod.save();
+    return true;
+  } catch (erro) {
+    console.error('[auth.api] Erro ao alterar status do usuario:', erro);
+    return false;
+  }
+}
+
+/**
+ * Verifica o status de moderacao do usuario logado
+ */
+export async function verificarStatusUsuario(usuario) {
+  if (!usuario) return 'active';
+  try {
+    const query = new Parse.Query('UserModeration');
+    query.equalTo('user', usuario);
+    const mod = await query.first();
+    return mod ? mod.get('status') || 'active' : 'active';
+  } catch (_) {
+    return 'active';
+  }
+}
+
