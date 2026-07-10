@@ -131,7 +131,7 @@ function configurarUploadAvatar() {
       if (btnUpload) btnUpload.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Enviando...';
 
       try {
-        const croppedBlob = await window.mostrarModalEnquadramento(file, false);
+        const croppedBlob = await _mostrarModalCropAvatar(file);
         if (!croppedBlob) {
           if (btnUpload) btnUpload.innerHTML = textoOriginal;
           return;
@@ -153,6 +153,96 @@ function configurarUploadAvatar() {
       }
     };
     input.click();
+  });
+}
+
+function _mostrarModalCropAvatar(file) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    document.body.appendChild(modal);
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+
+    let zoomVal = 1.0;
+    let offsetValX = 0;
+    let offsetValY = 0;
+    let isDragging = false;
+    let startX = 0, startY = 0;
+
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:16px;user-select:none;" onclick="event.stopPropagation()">
+        <h3 style="font-family:'Poppins',sans-serif;font-weight:700;font-size:18px;color:#1e293b;margin:0;">Ajustar Foto de Perfil</h3>
+        <p style="font-size:12px;color:#64748b;margin:0;">Arraste para reposicionar. Use o zoom para ajustar o enquadramento:</p>
+        <div id="crop-preview-wrap" style="position:relative;width:100%;aspect-ratio:1/1;background:#0f172a;border-radius:12px;overflow:hidden;cursor:move;border:2px solid #e2e8f0;">
+          <canvas id="crop-canvas-avatar" style="width:100%;height:100%;display:block;pointer-events:none;"></canvas>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:11px;font-weight:600;color:#64748b;display:flex;justify-content:space-between;">Zoom <span id="zoom-val-txt">100%</span></label>
+          <input type="range" id="crop-zoom-slider" min="1" max="3" step="0.05" value="1" style="width:100%;cursor:pointer;">
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <button id="crop-cancelar" style="padding:8px 18px;background:none;border:none;font-size:14px;font-weight:600;color:#64748b;cursor:pointer;border-radius:999px;">Cancelar</button>
+          <button id="crop-confirmar" style="padding:8px 20px;background:#1A5691;color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;">Confirmar</button>
+        </div>
+      </div>
+    `;
+
+    const wrap = modal.querySelector('#crop-preview-wrap');
+    const canvas = modal.querySelector('#crop-canvas-avatar');
+    const ctx = canvas.getContext('2d');
+    const slider = modal.querySelector('#crop-zoom-slider');
+    const zoomTxt = modal.querySelector('#zoom-val-txt');
+
+    const render = () => {
+      if (!img.naturalWidth) return;
+      const lado = Math.min(img.naturalWidth, img.naturalHeight);
+      const cropSize = lado / zoomVal;
+      const maxOff = (Math.min(img.naturalWidth, img.naturalHeight) - cropSize) / 2;
+      const clampedX = Math.max(-maxOff, Math.min(maxOff, ((img.naturalWidth - cropSize) / 2) + offsetValX));
+      const clampedY = Math.max(-maxOff, Math.min(maxOff, ((img.naturalHeight - cropSize) / 2) + offsetValY));
+      canvas.width = 512; canvas.height = 512;
+      ctx.clearRect(0, 0, 512, 512);
+      ctx.drawImage(img, clampedX, clampedY, cropSize, cropSize, 0, 0, 512, 512);
+    };
+
+    img.onload = render;
+
+    slider.oninput = (ev) => {
+      zoomVal = parseFloat(ev.target.value);
+      zoomTxt.textContent = `${Math.round(zoomVal * 100)}%`;
+      render();
+    };
+
+    wrap.addEventListener('mousedown', (ev) => { isDragging = true; startX = ev.clientX; startY = ev.clientY; ev.preventDefault(); });
+    window.addEventListener('mousemove', (ev) => {
+      if (!isDragging) return;
+      const scale = img.naturalWidth / wrap.offsetWidth;
+      offsetValX -= (ev.clientX - startX) * scale / zoomVal;
+      offsetValY -= (ev.clientY - startY) * scale / zoomVal;
+      startX = ev.clientX; startY = ev.clientY;
+      render();
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // Touch support
+    wrap.addEventListener('touchstart', (ev) => { isDragging = true; startX = ev.touches[0].clientX; startY = ev.touches[0].clientY; ev.preventDefault(); }, { passive: false });
+    window.addEventListener('touchmove', (ev) => {
+      if (!isDragging) return;
+      const scale = img.naturalWidth / wrap.offsetWidth;
+      offsetValX -= (ev.touches[0].clientX - startX) * scale / zoomVal;
+      offsetValY -= (ev.touches[0].clientY - startY) * scale / zoomVal;
+      startX = ev.touches[0].clientX; startY = ev.touches[0].clientY;
+      render();
+    }, { passive: true });
+    window.addEventListener('touchend', () => { isDragging = false; });
+
+    modal.querySelector('#crop-cancelar').onclick = () => { URL.revokeObjectURL(objectUrl); modal.remove(); resolve(null); };
+    modal.querySelector('#crop-confirmar').onclick = () => {
+      canvas.toBlob((blob) => { URL.revokeObjectURL(objectUrl); modal.remove(); resolve(blob); }, 'image/jpeg', 0.9);
+    };
   });
 }
 

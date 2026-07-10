@@ -18,12 +18,12 @@ function configurarAuthGlobal() {
     const usuario = Parse.User.current();
     if (usuario) {
       estado.definir('usuarioAtual', usuario);
+      atualizarHeaderAuth(usuario); // Atualiza imediatamente para evitar flicker
       usuario.fetch().then((u) => {
         estado.definir('usuarioAtual', u);
         atualizarHeaderAuth(u);
       }).catch(err => {
         console.error('[CORE] Erro ao sincronizar usuario:', err);
-        atualizarHeaderAuth(usuario);
       });
     } else {
       atualizarHeaderAuth(null);

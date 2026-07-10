@@ -8,7 +8,6 @@ import estado from '../core/estado.js';
 import { calcularDistanciaKm, debounce } from '../core/utilitarios.js';
 import * as EscolasAPI from '../api/escolas.api.js';
 import * as FotosAPI from '../api/fotos.api.js';
-import * as MapillaryAPI from '../api/mapillary.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
 import * as BrasilAPI from '../api/brasilapi.api.js';
 import { mostrarAlerta, mostrarConfirmacao, mostrarPrompt } from './modal.ui.js';
