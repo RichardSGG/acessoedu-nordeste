@@ -173,11 +173,20 @@ function configurarUploadAvatar() {
           canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob falhou')), 'image/jpeg', 0.88);
         });
 
-        const parseFile = new Parse.File(`avatar-${Date.now()}.jpg`, blob);
+        /* Converte Blob para File real (requerido pelo Parse SDK em alguns ambientes) */
+        const nomeArquivo = `avatar-${Date.now()}.jpg`;
+        const fileReal = new File([blob], nomeArquivo, { type: 'image/jpeg' });
+        const parseFile = new Parse.File(nomeArquivo, fileReal);
+
+        /* Invalida cache do avatar antes de salvar a nova foto */
+        sessionStorage.removeItem('avatar_url_cache');
+
         await AuthAPI.atualizarAvatar(parseFile);
 
-        const usuarioAtualizado = estado.obter('usuarioAtual');
-        atualizarAvatar(usuarioAtualizado);
+        /* Aguarda o Parse salvar e busca o usuario atualizado */
+        const usuarioFresco = await Parse.User.current().fetch();
+        estado.definir('usuarioAtual', usuarioFresco);
+        atualizarAvatar(usuarioFresco);
 
         const btnRemover = document.getElementById('btn-remover-avatar');
         if (btnRemover) btnRemover.style.display = 'inline-flex';
@@ -208,7 +217,10 @@ function configurarRemoverAvatar(usuario) {
     if (confirmou) {
       try {
         await AuthAPI.removerAvatar();
-        atualizarAvatar(estado.obter('usuarioAtual'));
+        sessionStorage.removeItem('avatar_url_cache');
+        const usuarioFresco = await Parse.User.current().fetch();
+        estado.definir('usuarioAtual', usuarioFresco);
+        atualizarAvatar(usuarioFresco);
         novoBtn.style.display = 'none';
         await mostrarAlerta('Foto de perfil removida com sucesso!', 'Sucesso');
       } catch (erro) {

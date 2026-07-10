@@ -121,24 +121,37 @@ async function atualizarHeaderAuth(usuario) {
     if (avatarContainer) {
       avatarContainer.classList.remove('hidden');
       const foto = usuario.get('profilePhoto');
-      if (foto && foto.url) {
-        /* Blur durante carregamento — evita piscar de texto/ícone */
-        avatarContainer.classList.add('blur-sm');
-        const img = document.createElement('img');
-        img.src = foto.url();
-        img.alt = 'Foto de perfil';
-        img.className = 'w-full h-full object-cover';
-        img.onload = () => {
-          avatarContainer.innerHTML = '';
+      const fotoUrl = foto && foto.url ? foto.url() : null;
+      /* Chave de cache por sessao — evita piscar ao navegar entre paginas */
+      const cacheKey = 'avatar_url_cache';
+      const urlCached = sessionStorage.getItem(cacheKey);
+
+      if (fotoUrl) {
+        /* Se ja temos a URL em cache, exibe imediatamente sem flash */
+        if (urlCached === fotoUrl) {
+          avatarContainer.innerHTML = `<img src="${fotoUrl}" alt="Foto de perfil" class="w-full h-full object-cover">`;
+        } else {
+          /* Nova URL: mostra icone enquanto carrega, depois troca */
+          const img = document.createElement('img');
+          img.src = fotoUrl;
+          img.alt = 'Foto de perfil';
+          img.className = 'w-full h-full object-cover';
+          img.style.opacity = '0';
           avatarContainer.appendChild(img);
-          avatarContainer.classList.remove('blur-sm');
-        };
-        img.onerror = () => {
-          avatarContainer.innerHTML = '<i class="ph-fill ph-user text-xl text-slate-500"></i>';
-          avatarContainer.classList.remove('blur-sm');
-        };
+          img.onload = () => {
+            avatarContainer.innerHTML = '';
+            img.style.opacity = '1';
+            avatarContainer.appendChild(img);
+            sessionStorage.setItem(cacheKey, fotoUrl);
+          };
+          img.onerror = () => {
+            avatarContainer.innerHTML = '<i class="ph-fill ph-user text-xl text-slate-500"></i>';
+            sessionStorage.removeItem(cacheKey);
+          };
+        }
       } else {
         avatarContainer.innerHTML = '<i class="ph-fill ph-user text-xl text-slate-500"></i>';
+        sessionStorage.removeItem(cacheKey);
       }
       avatarContainer.title = usuario.get('nomeExibicao') || usuario.get('username') || '';
     }

@@ -46,23 +46,33 @@
     <script src="https://unpkg.com/parse@5.0.0/dist/parse.min.js"></script>
     <!-- Estilos de proteção de imagem -->
     <style>
+      /* Foto não arrastável e sem seleção */
       .foto-protegida {
         -webkit-user-drag: none;
         user-drag: none;
         -webkit-user-select: none;
         user-select: none;
-        pointer-events: none;
+        -webkit-touch-callout: none; /* iOS: bloqueia menu de salvar */
+        pointer-events: none;        /* JS events vem pelo overlay */
       }
-      /* Overlay invisível que bloqueia interação do mouse na foto */
+      /* Overlay captura clique e passa pro modal — fica acima da foto */
       .overlay-protecao-foto {
         position: absolute;
         inset: 0;
         z-index: 2;
-        cursor: default;
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
       }
-      /* Botão de navegação fica acima do overlay */
+      /* Container da galeria não permite seleção de texto */
+      #galeria-fotos, #galeria-fotos * {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      /* Botões de navegação ficam acima do overlay */
       #btn-foto-prev, #btn-foto-prox {
         z-index: 3;
+        pointer-events: auto;
       }
     </style>
 </head>

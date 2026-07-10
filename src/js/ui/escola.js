@@ -277,23 +277,39 @@ function renderizarFotos(fotos) {
 
     slide.innerHTML = `
       <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3] grupo-foto">
-        <!-- Overlay anti-copia: bloqueia clique-direito e arrastar -->
-        <div class="overlay-protecao-foto" oncontextmenu="return false" ondragstart="return false"></div>
+        <!-- Overlay: captura clique p/ modal e bloqueia drag/contextmenu -->
+        <div class="overlay-protecao-foto"
+             data-foto-url="${esc(foto.url)}"
+             oncontextmenu="return false"
+             ondragstart="return false"></div>
         <img src="${esc(foto.url)}" alt="Foto da escola"
              class="w-full h-full object-cover foto-protegida ${isPending ? 'opacity-60 grayscale-[50%]' : ''}"
              loading="lazy"
+             draggable="false"
              oncontextmenu="return false"
              ondragstart="return false"
-             onclick="abrirModalFoto('${esc(foto.url)}')"
              onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'ph-fill ph-image text-4xl text-slate-300\\'></i></div>'">
-        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full select-none">${esc(legenda)}</span>` : ''}
-        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 select-none"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
+        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full select-none" style="z-index:3;">${esc(legenda)}</span>` : ''}
+        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 select-none" style="z-index:3;"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
       </div>`;
     fragmento.appendChild(slide);
   });
 
   container.innerHTML = '';
   container.appendChild(fragmento);
+
+  /* Event delegation: clique no overlay abre o modal */
+  container.addEventListener('click', (e) => {
+    const overlay = e.target.closest('.overlay-protecao-foto');
+    if (overlay) {
+      const url = overlay.dataset.fotoUrl;
+      if (url) abrirModalFoto(url);
+    }
+  });
+
+  /* Proteção global: bloqueia arrastar qualquer imagem da galeria */
+  container.addEventListener('dragstart', (e) => e.preventDefault());
+  container.addEventListener('contextmenu', (e) => e.preventDefault());
 
   if (fotos.length > 1) {
     if (btnAnterior) btnAnterior.classList.remove('hidden');
@@ -379,7 +395,14 @@ async function recortarImagem(file, enc) {
       canvas.height = alturaSaida;
       canvas.getContext('2d').drawImage(img, offsetX, offsetY, srcW, srcH, 0, 0, larguraSaida, alturaSaida);
       URL.revokeObjectURL(objUrl);
-      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob falhou')), 'image/jpeg', 0.88);
+
+      canvas.toBlob((blob) => {
+        if (!blob) { reject(new Error('toBlob falhou')); return; }
+        /* Converte para File real — Parse SDK exige File ou base64, não aceita Blob puro */
+        const nomeArquivo = `foto-escola-${enc.id}-${Date.now()}.jpg`;
+        const fileReal = new File([blob], nomeArquivo, { type: 'image/jpeg' });
+        resolve(fileReal);
+      }, 'image/jpeg', 0.88);
     };
     img.onerror = reject;
     img.src = objUrl;
@@ -426,8 +449,9 @@ function dispararUploadFoto() {
       let enviadas = 0;
       for (const file of arquivosParaEnviar) {
         try {
-          const blob = await recortarImagem(file, enc);
-          const parseFile = new Parse.File(`foto-escola-${Date.now()}.jpg`, blob);
+          /* recortarImagem já retorna File real — passa direto ao Parse.File */
+          const fileRecortado = await recortarImagem(file, enc);
+          const parseFile = new Parse.File(fileRecortado.name, fileRecortado);
           await FotosAPI.enviarFotoBlob(dadosEscola.id_escola, parseFile);
           enviadas++;
         } catch (erro) {
