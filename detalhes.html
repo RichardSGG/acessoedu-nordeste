@@ -41,14 +41,16 @@
 
 <!-- Header -->
 <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <i class="ph-fill ph-student text-3xl text-primaria"></i>
             <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
         </a>
         <nav class="nav-header hidden lg:flex items-center gap-6">
-            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
             <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
+            <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Análise</a>
+            <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Documentação</a>
+            <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="link-config">Configurações</a>
             <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="nav-admin-link" style="display: none;">Painel Admin</a>
         </nav>
         <div class="flex items-center gap-4">
@@ -74,9 +76,6 @@
         <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Início</a>
         <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Ranking</a>
         <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Análise</a>
-        <a href="explorar.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Explorar</a>
-        <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Documentação</a>
-        <a href="sobre.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Sobre</a>
         <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Configurações</a>
         <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100" id="nav-admin-link-mobile" style="display: none;">Painel Admin</a>
         
@@ -116,6 +115,11 @@
                 <span id="escola-cidade" class="flex items-center gap-1">
                     <i class="ph-fill ph-map-pin text-primaria"></i>
                 </span>
+                <div id="escola-media-estrelas" class="flex items-center gap-1.5 hidden bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+                    <div id="estrelas-media-container" class="flex items-center gap-0.5"></div>
+                    <span id="txt-media-nota" class="text-xs font-bold text-slate-700"></span>
+                    <span id="txt-total-avaliacoes" class="text-xs text-slate-400"></span>
+                </div>
                 <span id="escola-uf" class="px-2 py-0.5 bg-blue-50 text-primaria rounded-full font-bold text-xs uppercase"></span>
                 <span id="escola-dependencia" class="px-2 py-0.5 rounded-full font-bold text-xs"></span>
                 <span id="escola-id-inep" class="text-xs text-slate-400"></span>
@@ -328,6 +332,7 @@
         </div>
         <div class="flex flex-col items-center md:items-end gap-1">
             <div class="flex gap-4 mt-2">
+                <a href="documentacao.html" class="text-xs text-primaria hover:underline">Documentação</a>
                 <a href="termos.html" class="text-xs text-primaria hover:underline">Termos de Uso</a>
                 <a href="privacidade.html" class="text-xs text-primaria hover:underline">Privacidade</a>
             </div>

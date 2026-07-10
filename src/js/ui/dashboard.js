@@ -7,6 +7,7 @@
 import estado from '../core/estado.js';
 import { debounce } from '../core/utilitarios.js';
 import * as EscolasAPI from '../api/escolas.api.js';
+import * as FeedbackAPI from '../api/feedback.api.js';
 import { PARSE_CONFIG } from '../core/constantes.js';
 
 /* Inicializa Parse */
@@ -52,6 +53,7 @@ let graficoRoscaInternet = null;
 /* Cache do ultimo agregados carregado (evita re-fetch no toggle de ano) */
 let ultimoAgregados = null;
 let cidadesDisponiveis = [];
+let mapaNotasMedias = {};
 
 /* Variáveis de paginação infinita */
 let skipAtual = 0;
@@ -73,6 +75,15 @@ async function iniciar() {
   configurarBusca();
   configurarBotaoCep();
   configurarBotaoRecarregar();
+
+  /* Carregar mapa de notas medias de avaliacoes em background */
+  FeedbackAPI.obterMapaNotasMedias().then(mapa => {
+    mapaNotasMedias = mapa;
+    const escolasAtuais = estado.obter('escolas');
+    if (escolasAtuais && escolasAtuais.length > 0) {
+      renderizarLista(escolasAtuais);
+    }
+  }).catch(err => console.error('[DASHBOARD] Erro ao carregar mapa de notas medias:', err));
 
   estado.assinar('mudanca:escolas', renderizarLista);
   estado.assinar('mudanca:filtros', async (filtros) => {
@@ -720,10 +731,35 @@ function renderizarLista(escolas) {
     card.className = 'card cursor-pointer hover:border-primaria/30 flex flex-col justify-between h-full';
     const badgeHtml = _badgeDependencia(escola.dependencia);
 
+    // Obter dados de avaliacoes
+    const dadosNota = mapaNotasMedias[escola.id_escola];
+    let estrelasHtml = '';
+    if (dadosNota && dadosNota.total > 0) {
+      const notaArredondada = Math.round(dadosNota.media * 2) / 2;
+      for (let i = 1; i <= 5; i++) {
+        if (i <= notaArredondada) {
+          estrelasHtml += '<i class="ph-fill ph-star text-amber-500 text-[11px]"></i>';
+        } else if (i - 0.5 === notaArredondada) {
+          estrelasHtml += '<i class="ph-fill ph-star-half text-amber-500 text-[11px]"></i>';
+        } else {
+          estrelasHtml += '<i class="ph-bold ph-star text-slate-300 text-[11px]"></i>';
+        }
+      }
+      estrelasHtml += ` <span class="text-[10px] font-bold text-slate-600 ml-1">${dadosNota.media.toFixed(1)} (${dadosNota.total})</span>`;
+    } else {
+      for (let i = 1; i <= 5; i++) {
+        estrelasHtml += '<i class="ph-bold ph-star text-slate-200 text-[11px]"></i>';
+      }
+      estrelasHtml += ` <span class="text-[10px] text-slate-400 ml-1">(0)</span>`;
+    }
+
     card.innerHTML = `
       <div class="flex-grow">
-        <div class="flex items-start justify-between mb-2">
+        <div class="flex items-start justify-between mb-1">
           <h4 class="font-display font-bold text-sm text-slate-800 line-clamp-2">${_esc(escola.nome)}</h4>
+        </div>
+        <div class="flex items-center gap-0.5 mb-2">
+          ${estrelasHtml}
         </div>
         <div class="flex items-center gap-2 text-xs text-slate-500 mb-3">
           <i class="ph-fill ph-map-pin text-primaria text-[10px]"></i>

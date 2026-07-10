@@ -4,7 +4,7 @@
  */
 
 import estado from './estado.js';
-import { verificarAdmin } from '../api/auth.api.js';
+import { verificarAdmin, verificarStatusUsuario } from '../api/auth.api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[CORE] AcessoEdu Nordeste inicializado.');
@@ -18,6 +18,9 @@ function configurarAuthGlobal() {
     const usuario = Parse.User.current();
     if (usuario) {
       estado.definir('usuarioAtual', usuario);
+      usuario.fetch().then((u) => {
+        estado.definir('usuarioAtual', u);
+      }).catch(err => console.error('[CORE] Erro ao sincronizar usuario:', err));
     }
     atualizarHeaderAuth(usuario);
   } catch (_) { /* Parse pode nao estar carregado ainda */ }
@@ -97,6 +100,18 @@ async function atualizarHeaderAuth(usuario) {
   const nomeUsuario = document.getElementById('nome-usuario-header');
 
   if (usuario) {
+    // Verificar se o usuário está suspenso ou bloqueado
+    verificarStatusUsuario(usuario).then(async (status) => {
+      if (status === 'suspended' || status === 'blocked') {
+        await Parse.User.logOut();
+        estado.definir('usuarioAtual', null);
+        alert(status === 'blocked' 
+          ? 'Esta conta foi bloqueada por um administrador.' 
+          : 'Esta conta está temporariamente suspensa.');
+        window.location.href = 'index.html';
+      }
+    });
+
     if (btnLogin) btnLogin.classList.add('hidden');
     if (avatarContainer) {
       avatarContainer.classList.remove('hidden');

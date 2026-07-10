@@ -97,6 +97,13 @@ export async function curtirAvaliacao(reviewId) {
     interacao.set('usuario_id', usuario.id);
     interacao.set('tipo', 'like');
     await interacao.save();
+
+    // Incrementar e salvar o cache de likes_count na classe Avaliacoes
+    const queryReview = new Parse.Query(CLASSE_AVALIACOES);
+    const review = await queryReview.get(reviewId);
+    review.increment('likes_count');
+    await review.save();
+
     return interacao;
   } catch (erro) {
     console.error('[feedback.api] Erro ao curtir:', erro);
@@ -164,10 +171,29 @@ export async function excluirAvaliacao(reviewId) {
 /**
  * Lista avaliações removidas pelo admin (soft-deleted)
  */
-export async function listarRemovidos(limite = 100) {
+export async function listarRemovidos(filtros = {}, limite = 100) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
     query.equalTo('removido', true);
+    query.include('autor');
+
+    if (filtros.idEscola) {
+      query.equalTo('id_escola', String(filtros.idEscola));
+    }
+    if (filtros.autor) {
+      const innerQuery = new Parse.Query(Parse.User);
+      innerQuery.matches('username', filtros.autor, 'i');
+      query.matchesQuery('autor', innerQuery);
+    }
+    if (filtros.dataInicio) {
+      query.greaterThanOrEqualTo('createdAt', new Date(filtros.dataInicio));
+    }
+    if (filtros.dataFim) {
+      const dataAte = new Date(filtros.dataFim);
+      dataAte.setHours(23, 59, 59, 999);
+      query.lessThanOrEqualTo('createdAt', dataAte);
+    }
+
     query.descending('removidoEm');
     query.limit(limite);
     return await query.find();
@@ -220,11 +246,30 @@ export async function responderAvaliacao(reviewId, resposta) {
 /**
  * Lista avaliacoes denunciadas (admin)
  */
-export async function listarDenunciadas(limite = 50) {
+export async function listarDenunciadas(filtros = {}, limite = 50) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
     query.notEqualTo('removido', true);
     query.greaterThan('flags_count', 0);
+    query.include('autor');
+
+    if (filtros.idEscola) {
+      query.equalTo('id_escola', String(filtros.idEscola));
+    }
+    if (filtros.autor) {
+      const innerQuery = new Parse.Query(Parse.User);
+      innerQuery.matches('username', filtros.autor, 'i');
+      query.matchesQuery('autor', innerQuery);
+    }
+    if (filtros.dataInicio) {
+      query.greaterThanOrEqualTo('createdAt', new Date(filtros.dataInicio));
+    }
+    if (filtros.dataFim) {
+      const dataAte = new Date(filtros.dataFim);
+      dataAte.setHours(23, 59, 59, 999);
+      query.lessThanOrEqualTo('createdAt', dataAte);
+    }
+
     query.descending('flags_count');
     query.limit(limite);
     return await query.find();
@@ -237,10 +282,29 @@ export async function listarDenunciadas(limite = 50) {
 /**
  * Lista todos os comentários ativos no sistema (admin)
  */
-export async function listarTodos(limite = 100) {
+export async function listarTodos(filtros = {}, limite = 100) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
     query.notEqualTo('removido', true);
+    query.include('autor');
+
+    if (filtros.idEscola) {
+      query.equalTo('id_escola', String(filtros.idEscola));
+    }
+    if (filtros.autor) {
+      const innerQuery = new Parse.Query(Parse.User);
+      innerQuery.matches('username', filtros.autor, 'i');
+      query.matchesQuery('autor', innerQuery);
+    }
+    if (filtros.dataInicio) {
+      query.greaterThanOrEqualTo('createdAt', new Date(filtros.dataInicio));
+    }
+    if (filtros.dataFim) {
+      const dataAte = new Date(filtros.dataFim);
+      dataAte.setHours(23, 59, 59, 999);
+      query.lessThanOrEqualTo('createdAt', dataAte);
+    }
+
     query.descending('createdAt');
     query.limit(limite);
     return await query.find();
@@ -269,5 +333,41 @@ export async function manterAvaliacao(reviewId) {
   } catch (erro) {
     console.error('[feedback.api] Erro ao manter avaliacao:', erro);
     return false;
+  }
+}
+
+/**
+ * Obtem o mapeamento de notas medias por escola em memoria para evitar N+1 queries
+ */
+export async function obterMapaNotasMedias() {
+  try {
+    const query = new Parse.Query(CLASSE_AVALIACOES);
+    query.notEqualTo('removido', true);
+    query.select('id_escola', 'nota');
+    query.limit(1000);
+    const avaliacoes = await query.find();
+
+    const mapa = {};
+    avaliacoes.forEach(a => {
+      const idEscola = a.get('id_escola');
+      const nota = a.get('nota') || 0;
+      if (!mapa[idEscola]) {
+        mapa[idEscola] = { soma: 0, count: 0 };
+      }
+      mapa[idEscola].soma += nota;
+      mapa[idEscola].count += 1;
+    });
+
+    const mapaMedias = {};
+    for (const id in mapa) {
+      mapaMedias[id] = {
+        media: mapa[id].soma / mapa[id].count,
+        total: mapa[id].count
+      };
+    }
+    return mapaMedias;
+  } catch (erro) {
+    console.error('[feedback.api] Erro ao obter mapa de notas medias:', erro);
+    return {};
   }
 }

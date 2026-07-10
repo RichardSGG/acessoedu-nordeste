@@ -46,8 +46,11 @@
             <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
         </a>
         <nav class="nav-header hidden lg:flex items-center gap-6">
-            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
-            <a href="admin.html" class="text-sm font-bold text-primaria">Painel Admin</a>
+            <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
+            <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Análise</a>
+            <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Documentação</a>
+            <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="link-config">Configurações</a>
+            <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="nav-admin-link" style="display: none;">Painel Admin</a>
         </nav>
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-4" id="container-auth">
@@ -69,7 +72,10 @@
     </div>
     <!-- Menu Mobile -->
     <div id="menu-mobile" class="lg:hidden menu-mobile-transicao absolute top-16 left-0 right-0 bg-white border-b border-slate-200 shadow-lg px-4 py-4 flex flex-col gap-3 z-50">
-        <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Dashboard</a>
+        <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Início</a>
+        <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Ranking</a>
+        <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Análise</a>
+        <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Configurações</a>
         <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100" id="nav-admin-link-mobile" style="display: none;">Painel Admin</a>
         
         <button id="btn-logout-mobile" class="hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
@@ -121,6 +127,30 @@
             <div class="flex bg-slate-100 p-1 rounded-full shadow-inner">
                 <button id="tab-fotos-pendentes" class="px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300">Pendentes</button>
                 <button id="tab-fotos-aprovadas" class="px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300">Aprovadas</button>
+            </div>
+        </div>
+
+        <!-- Filtros Fotos -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="flex flex-col">
+                <label for="filtro-foto-escola" class="text-[10px] font-bold text-slate-500 mb-1">Escola (INEP)</label>
+                <input type="text" id="filtro-foto-escola" placeholder="Código INEP..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
+            </div>
+            <div class="flex flex-col">
+                <label for="filtro-foto-usuario" class="text-[10px] font-bold text-slate-500 mb-1">Autor</label>
+                <input type="text" id="filtro-foto-usuario" placeholder="Username..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[10px] font-bold text-slate-500 mb-1">Período</label>
+                <div class="flex items-center gap-1">
+                    <input type="date" id="filtro-foto-inicio" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
+                    <span class="text-slate-400 text-xs">a</span>
+                    <input type="date" id="filtro-foto-fim" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
+                </div>
+            </div>
+            <div class="flex items-end gap-2">
+                <button id="btn-filtro-foto" class="flex-1 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors">Filtrar</button>
+                <button id="btn-limpar-foto" class="flex-1 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors">Limpar</button>
             </div>
         </div>
 
@@ -177,6 +207,30 @@
                 <button id="tab-comentarios-todos" class="px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300">Todos</button>
                 <button id="tab-comentarios-denunciados" class="px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300">Denunciados</button>
                 <button id="tab-comentarios-removidos" class="px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300">Removidos</button>
+            </div>
+        </div>
+
+        <!-- Filtros Comentários -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="flex flex-col">
+                <label for="filtro-comentario-escola" class="text-[10px] font-bold text-slate-500 mb-1">Escola (INEP)</label>
+                <input type="text" id="filtro-comentario-escola" placeholder="Código INEP..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
+            </div>
+            <div class="flex flex-col">
+                <label for="filtro-comentario-usuario" class="text-[10px] font-bold text-slate-500 mb-1">Autor</label>
+                <input type="text" id="filtro-comentario-usuario" placeholder="Username..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[10px] font-bold text-slate-500 mb-1">Período</label>
+                <div class="flex items-center gap-1">
+                    <input type="date" id="filtro-comentario-inicio" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
+                    <span class="text-slate-400 text-xs">a</span>
+                    <input type="date" id="filtro-comentario-fim" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
+                </div>
+            </div>
+            <div class="flex items-end gap-2">
+                <button id="btn-filtro-comentario" class="flex-1 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors">Filtrar</button>
+                <button id="btn-limpar-comentario" class="flex-1 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors">Limpar</button>
             </div>
         </div>
 
@@ -248,6 +302,41 @@
         </div>
     </div>
 
+    <!-- Seção Usuários -->
+    <div class="card mb-8">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+            <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+                <i class="ph-fill ph-users text-primaria"></i> Gerenciamento de Usuários
+            </h2>
+            <div class="flex items-center gap-2 max-w-sm w-full">
+                <input type="text" id="busca-usuarios" placeholder="Buscar por nome, username ou e-mail..." class="flex-grow p-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-primaria transition-colors">
+                <button id="btn-busca-usuarios" class="px-4 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-1">
+                    <i class="ph-bold ph-magnifying-glass"></i> Buscar
+                </button>
+            </div>
+        </div>
+
+        <div id="loader-usuarios" class="text-center py-6 hidden">
+            <div class="spinner mx-auto"></div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm" id="tabela-usuarios">
+                <thead>
+                    <tr class="border-b border-slate-200 text-left">
+                        <th class="py-2 px-3 font-semibold text-slate-600">Usuário / Email</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600">Cargo</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600">Cadastro</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Status</th>
+                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-usuarios-body"></tbody>
+            </table>
+        </div>
+        <p id="sem-usuarios" class="hidden text-center text-sm text-slate-400 py-6">Nenhum usuário cadastrado ou encontrado.</p>
+    </div>
+
 </main>
 
 <footer class="bg-white border-t border-slate-200 mt-auto">
@@ -258,6 +347,7 @@
         </div>
         <div class="flex flex-col items-center md:items-end gap-1">
             <div class="flex gap-4 mt-2">
+                <a href="documentacao.html" class="text-xs text-primaria hover:underline">Documentação</a>
                 <a href="termos.html" class="text-xs text-primaria hover:underline">Termos de Uso</a>
                 <a href="privacidade.html" class="text-xs text-primaria hover:underline">Privacidade</a>
             </div>
