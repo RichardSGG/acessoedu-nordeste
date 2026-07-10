@@ -18,11 +18,16 @@ function configurarAuthGlobal() {
     const usuario = Parse.User.current();
     if (usuario) {
       estado.definir('usuarioAtual', usuario);
+      /* Primeiro renderiza com cache local para evitar flash de tela */
+      atualizarHeaderAuth(usuario);
+      /* Depois sincroniza com o servidor e re-renderiza com dados frescos */
       usuario.fetch().then((u) => {
         estado.definir('usuarioAtual', u);
+        atualizarHeaderAuth(u);
       }).catch(err => console.error('[CORE] Erro ao sincronizar usuario:', err));
+    } else {
+      atualizarHeaderAuth(null);
     }
-    atualizarHeaderAuth(usuario);
   } catch (_) { /* Parse pode nao estar carregado ainda */ }
 
   estado.assinar('mudanca:usuarioAtual', atualizarHeaderAuth);
@@ -117,9 +122,23 @@ async function atualizarHeaderAuth(usuario) {
       avatarContainer.classList.remove('hidden');
       const foto = usuario.get('profilePhoto');
       if (foto && foto.url) {
-        avatarContainer.innerHTML = `<img src="${foto.url()}" alt="Avatar" class="w-full h-full object-cover">`;
+        /* Blur durante carregamento — evita piscar de texto/ícone */
+        avatarContainer.classList.add('blur-sm');
+        const img = document.createElement('img');
+        img.src = foto.url();
+        img.alt = 'Foto de perfil';
+        img.className = 'w-full h-full object-cover';
+        img.onload = () => {
+          avatarContainer.innerHTML = '';
+          avatarContainer.appendChild(img);
+          avatarContainer.classList.remove('blur-sm');
+        };
+        img.onerror = () => {
+          avatarContainer.innerHTML = '<i class="ph-fill ph-user text-xl text-slate-500"></i>';
+          avatarContainer.classList.remove('blur-sm');
+        };
       } else {
-        avatarContainer.innerHTML = `<i class="ph-fill ph-user text-xl text-slate-500"></i>`;
+        avatarContainer.innerHTML = '<i class="ph-fill ph-user text-xl text-slate-500"></i>';
       }
       avatarContainer.title = usuario.get('nomeExibicao') || usuario.get('username') || '';
     }

@@ -106,16 +106,33 @@ function configurarLogout() {
   });
 }
 
-/* --- Avatar com Pica.js --- */
+/* --- Foto de Perfil --- */
 function atualizarAvatar(usuario) {
   const container = document.getElementById('container-avatar');
-  const foto = usuario.get('profilePhoto');
+  if (!container) return;
+  const foto = usuario?.get('profilePhoto');
   if (foto && foto.url) {
-    container.innerHTML = `<img src="${foto.url()}" alt="Avatar" class="w-full h-full object-cover">`;
+    /* Blur enquanto a imagem carrega */
+    container.classList.add('blur-sm');
+    const img = document.createElement('img');
+    img.src = foto.url();
+    img.alt = 'Foto de perfil';
+    img.className = 'w-full h-full object-cover';
+    img.onload = () => {
+      container.innerHTML = '';
+      container.appendChild(img);
+      container.classList.remove('blur-sm');
+    };
+    img.onerror = () => {
+      container.innerHTML = '<i class="ph-fill ph-user text-4xl text-slate-400"></i>';
+      container.classList.remove('blur-sm');
+    };
   } else {
-    container.innerHTML = `<i class="ph-fill ph-user text-4xl text-slate-400"></i>`;
+    container.innerHTML = '<i class="ph-fill ph-user text-4xl text-slate-400"></i>';
+    container.classList.remove('blur-sm');
   }
 }
+
 
 function configurarUploadAvatar() {
   document.getElementById('btn-upload-avatar').addEventListener('click', () => {

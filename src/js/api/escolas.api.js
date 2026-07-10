@@ -25,7 +25,7 @@ export async function listar(filtros = {}, skip = 0, append = false) {
   try {
     const query = new Parse.Query(CLASSE_2025);
     
-    let limite = 100;
+    let limite = 50; /* Máximo 50 escolas na carga inicial */
     if (filtros.uf || filtros.municipio) {
       limite = CONFIGURACOES.LIMITE_CARREGAMENTO_ESCOLAS || 500;
     }

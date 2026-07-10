@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escola | AcessoEdu Nordeste</title>
+    <meta name="description" content="Veja dados detalhados de infraestrutura, avaliações da comunidade e fotos de escolas públicas do Nordeste brasileiro. Dados do Censo Escolar INEP.">
+    <meta name="keywords" content="escola nordeste, infraestrutura escolar, INEP, educação pública, avaliação escola, acesso escola">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Detalhes da Escola | AcessoEdu Nordeste">
+    <meta property="og:description" content="Dados de infraestrutura e avaliações de escolas públicas do Nordeste.">
+    <meta property="og:type" content="website">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,6 +44,27 @@
 
     <!-- Parse SDK -->
     <script src="https://unpkg.com/parse@5.0.0/dist/parse.min.js"></script>
+    <!-- Estilos de proteção de imagem -->
+    <style>
+      .foto-protegida {
+        -webkit-user-drag: none;
+        user-drag: none;
+        -webkit-user-select: none;
+        user-select: none;
+        pointer-events: none;
+      }
+      /* Overlay invisível que bloqueia interação do mouse na foto */
+      .overlay-protecao-foto {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        cursor: default;
+      }
+      /* Botão de navegação fica acima do overlay */
+      #btn-foto-prev, #btn-foto-prox {
+        z-index: 3;
+      }
+    </style>
 </head>
 <body class="bg-fundo text-[#1A202C] antialiased min-h-screen flex flex-col">
 
@@ -51,7 +78,6 @@
             <nav class="nav-header hidden lg:flex items-center gap-6">
                 <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
                 <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Análise</a>
-                <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Documentação</a>
                 <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="link-config">Configurações</a>
                 <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="nav-admin-link" style="display: none;">Painel Admin</a>
             </nav>
@@ -90,8 +116,8 @@
     <!-- Conteudo Principal -->
     <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <!-- Loader -->
-        <div id="loader-escola" class="text-center py-12">
+        <!-- Carregando escola -->
+        <div id="carregando-escola" class="text-center py-12">
             <div class="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full shadow-md border border-slate-200">
                 <div class="w-5 h-5 border-2 border-primaria border-t-transparent rounded-full animate-spin"></div>
                 <span class="text-sm font-semibold text-slate-600">Carregando dados da escola...</span>
@@ -99,7 +125,7 @@
         </div>
 
         <!-- Erro escola não encontrada -->
-        <div id="erro-escola" class="hidden text-center py-12">
+        <div id="erro-pagina-escola" class="hidden text-center py-12">
             <div class="inline-flex flex-col items-center gap-3 px-6 py-6 bg-red-50 rounded-2xl border border-red-200">
                 <i class="ph-fill ph-warning-circle text-3xl text-red-500"></i>
                 <p class="text-sm font-semibold text-red-700">Escola não encontrada.</p>
@@ -108,8 +134,8 @@
             </div>
         </div>
 
-        <!-- Secao de Dados da Escola -->
-        <div id="secao-escola" class="hidden">
+        <!-- Conteudo da Escola -->
+        <div id="conteudo-escola" class="hidden">
 
             <!-- Cabecalho da Escola -->
             <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6 mb-6">

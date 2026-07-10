@@ -72,6 +72,34 @@ export async function enviarFoto(idEscola, arquivoImagem) {
 }
 
 /**
+ * Submete uma foto já convertida em Parse.File (blob recortado pelo seletor de enquadramento)
+ * @param {string} idEscola
+ * @param {Parse.File} parseFile - já instanciado e pronto para salvar
+ */
+export async function enviarFotoBlob(idEscola, parseFile) {
+  try {
+    await parseFile.save();
+
+    const foto = new Parse.Object(CLASSE_FOTO);
+    foto.set('id_escola', String(idEscola));
+    foto.set('arquivo', parseFile);
+    foto.set('status', 'pending');
+
+    const autor = Parse.User.current();
+    if (autor) {
+      foto.set('autor', autor);
+    }
+
+    await foto.save();
+    return foto;
+  } catch (erro) {
+    console.error('[fotos.api] Erro ao enviar foto blob:', erro);
+    throw erro;
+  }
+}
+
+
+/**
  * Lista fotos pendentes de aprovacao (admin)
  */
 export async function listarPendentes(filtros = {}, limite = 50) {

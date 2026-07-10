@@ -8,7 +8,7 @@ import estado from '../core/estado.js';
 import { calcularDistanciaKm, debounce } from '../core/utilitarios.js';
 import * as EscolasAPI from '../api/escolas.api.js';
 import * as FotosAPI from '../api/fotos.api.js';
-import * as MapillaryAPI from '../api/mapillary.api.js';
+/* MapillaryAPI removida — não mais necessária */
 import * as FeedbackAPI from '../api/feedback.api.js';
 import * as BrasilAPI from '../api/brasilapi.api.js';
 import { mostrarAlerta, mostrarConfirmacao, mostrarPrompt } from './modal.ui.js';
@@ -54,7 +54,7 @@ async function iniciar() {
 
     /* Renderiza */
     esconderLoader();
-    document.getElementById('secao-escola').classList.remove('hidden');
+    document.getElementById('conteudo-escola').classList.remove('hidden');
 
     renderizarCabecalho();
     await carregarImagens();
@@ -75,12 +75,12 @@ function obterIdUrl() {
 }
 
 function mostrarErro() {
-  document.getElementById('loader-escola').classList.add('hidden');
-  document.getElementById('erro-escola').classList.remove('hidden');
+  document.getElementById('carregando-escola').classList.add('hidden');
+  document.getElementById('erro-pagina-escola').classList.remove('hidden');
 }
 
 function esconderLoader() {
-  document.getElementById('loader-escola').classList.add('hidden');
+  document.getElementById('carregando-escola').classList.add('hidden');
 }
 
 /* --- Cabecalho --- */
@@ -196,14 +196,14 @@ function renderizarContato() {
   }
 }
 
-/* --- Cascata de Imagens --- */
+/* --- Galeria de Imagens --- */
 async function carregarImagens() {
-  const container = document.getElementById('carrossel-fotos');
-  const placeholder = document.getElementById('placeholder-foto');
-  const btnAnterior = document.getElementById('btn-foto-anterior');
-  const btnProximo = document.getElementById('btn-foto-proximo');
+  const container = document.getElementById('galeria-fotos');
+  const aviso = document.getElementById('aviso-sem-foto');
+  const btnAnterior = document.getElementById('btn-foto-prev');
+  const btnProximo = document.getElementById('btn-foto-prox');
 
-  /* Etapa 1: Back4App */
+  /* Etapa 1: Back4App — fotos aprovadas + pendentes do autor */
   const fotosBack4App = await FotosAPI.listarAprovadas(dadosEscola.id_escola);
   if (fotosBack4App.length > 0) {
     renderizarFotos(fotosBack4App.map(f => ({
@@ -216,59 +216,34 @@ async function carregarImagens() {
     return;
   }
 
-  /* Cache de Foto: Verifica se já existe uma URL salva no banco de dados */
-  if (dadosEscola.foto_url) {
-    renderizarFotos([{
-      url: dadosEscola.foto_url,
-      fonte: 'Mapillary (Cache)',
-    }]);
-    return;
+  /* Etapa 2: Placeholder — sem foto disponível */
+  if (container) container.innerHTML = '';
+  if (btnAnterior) btnAnterior.classList.add('hidden');
+  if (btnProximo) btnProximo.classList.add('hidden');
+  if (aviso) aviso.classList.remove('hidden');
+
+  const msgAviso = aviso?.querySelector('p');
+  if (msgAviso) msgAviso.textContent = 'Nenhuma foto disponível. Seja o primeiro a contribuir!';
+
+  const btnEnviar = document.getElementById('btn-enviar-primeira-foto');
+  if (btnEnviar) {
+    btnEnviar.addEventListener('click', () => {
+      const usuario = estado.obter('usuarioAtual');
+      if (!usuario) {
+        window.location.href = 'config.html';
+        return;
+      }
+      dispararUploadFoto();
+    });
   }
-
-  /* Etapa 2: Mapillary */
-  const resultadoMapillary = await MapillaryAPI.buscarFotosDaEscola(dadosEscola.latitude, dadosEscola.longitude);
-  if (resultadoMapillary.ok) {
-    const fotos = resultadoMapillary.fotos.map(img => ({
-      url: img.thumb_1024_url || img.thumb_512_url || '',
-      fonte: 'Mapillary',
-    }));
-    renderizarFotos(fotos);
-
-    const primeiraFotoUrl = fotos[0]?.url;
-    if (primeiraFotoUrl && dadosEscola.id_parse && dadosEscola.classe) {
-      EscolasAPI.atualizarFotoUrl(dadosEscola.id_parse, dadosEscola.classe, primeiraFotoUrl)
-        .catch(err => console.error('[ESCOLA] Falha ao atualizar cache de foto_url:', err));
-    }
-    return;
-  }
-
-  /* Etapa 3: Placeholder */
-  container.innerHTML = '';
-  btnAnterior.classList.add('hidden');
-  btnProximo.classList.add('hidden');
-  placeholder.classList.remove('hidden');
-
-  const placeholderMsg = document.getElementById('placeholder-foto')?.querySelector('p');
-  if (placeholderMsg) {
-    placeholderMsg.textContent = 'Nenhuma foto disponível para esta localização.';
-  }
-
-  document.getElementById('btn-enviar-primeira-foto').addEventListener('click', () => {
-    const usuario = estado.obter('usuarioAtual');
-    if (!usuario) {
-      window.location.href = 'config.html';
-      return;
-    }
-    dispararUploadFoto();
-  });
 }
 
 function renderizarFotos(fotos) {
-  const container = document.getElementById('carrossel-fotos');
-  const placeholder = document.getElementById('placeholder-foto');
-  const btnAnterior = document.getElementById('btn-foto-anterior');
-  const btnProximo = document.getElementById('btn-foto-proximo');
-  if (placeholder) placeholder.classList.add('hidden');
+  const container = document.getElementById('galeria-fotos');
+  const aviso = document.getElementById('aviso-sem-foto');
+  const btnAnterior = document.getElementById('btn-foto-prev');
+  const btnProximo = document.getElementById('btn-foto-prox');
+  if (aviso) aviso.classList.add('hidden');
   const fragmento = document.createDocumentFragment();
 
   const usuarioLogado = estado.obter('usuarioAtual');
@@ -301,12 +276,18 @@ function renderizarFotos(fotos) {
     }
 
     slide.innerHTML = `
-      <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3]">
-        <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover cursor-pointer ${isPending ? 'opacity-60 grayscale-[50%]' : ''}" loading="lazy"
+      <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3] grupo-foto">
+        <!-- Overlay anti-copia: bloqueia clique-direito e arrastar -->
+        <div class="overlay-protecao-foto" oncontextmenu="return false" ondragstart="return false"></div>
+        <img src="${esc(foto.url)}" alt="Foto da escola"
+             class="w-full h-full object-cover foto-protegida ${isPending ? 'opacity-60 grayscale-[50%]' : ''}"
+             loading="lazy"
+             oncontextmenu="return false"
+             ondragstart="return false"
              onclick="abrirModalFoto('${esc(foto.url)}')"
              onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'ph-fill ph-image text-4xl text-slate-300\\'></i></div>'">
-        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">${esc(legenda)}</span>` : ''}
-        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
+        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full select-none">${esc(legenda)}</span>` : ''}
+        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 select-none"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
       </div>`;
     fragmento.appendChild(slide);
   });
@@ -315,12 +296,94 @@ function renderizarFotos(fotos) {
   container.appendChild(fragmento);
 
   if (fotos.length > 1) {
-    btnAnterior.classList.remove('hidden');
-    btnProximo.classList.remove('hidden');
+    if (btnAnterior) btnAnterior.classList.remove('hidden');
+    if (btnProximo) btnProximo.classList.remove('hidden');
     let idxAtual = 0;
-    btnAnterior.onclick = () => { idxAtual = Math.max(0, idxAtual - 1); container.scrollTo({ left: idxAtual * container.offsetWidth, behavior: 'smooth' }); };
-    btnProximo.onclick = () => { idxAtual = Math.min(fotos.length - 1, idxAtual + 1); container.scrollTo({ left: idxAtual * container.offsetWidth, behavior: 'smooth' }); };
+    if (btnAnterior) btnAnterior.onclick = () => { idxAtual = Math.max(0, idxAtual - 1); container.scrollTo({ left: idxAtual * container.offsetWidth, behavior: 'smooth' }); };
+    if (btnProximo) btnProximo.onclick = () => { idxAtual = Math.min(fotos.length - 1, idxAtual + 1); container.scrollTo({ left: idxAtual * container.offsetWidth, behavior: 'smooth' }); };
+  } else {
+    if (btnAnterior) btnAnterior.classList.add('hidden');
+    if (btnProximo) btnProximo.classList.add('hidden');
   }
+}
+
+/* Enquadramentos disponíveis para upload */
+const ENQUADRAMENTOS = [
+  { id: 'quadrado',  rotulo: 'Quadrado',  icone: 'ph-square',          w: 1, h: 1 },
+  { id: 'paisagem',  rotulo: 'Paisagem',  icone: 'ph-rectangle-horizontal', w: 4, h: 3 },
+  { id: 'panorama',  rotulo: 'Panorâmico', icone: 'ph-rectangle-horizontal', w: 16, h: 9 },
+];
+
+function escolherEnquadramento() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm';
+    overlay.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-80 max-w-[90vw] flex flex-col gap-4">
+        <h3 class="font-display font-bold text-lg text-slate-800">Escolher enquadramento</h3>
+        <p class="text-xs text-slate-500">Selecione como a foto será recortada antes do envio.</p>
+        <div class="flex flex-col gap-3">
+          ${ENQUADRAMENTOS.map(e => `
+            <button data-enc="${e.id}" class="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-primaria hover:bg-blue-50 transition-all text-left">
+              <i class="ph-bold ${e.icone} text-2xl text-primaria flex-shrink-0"></i>
+              <div>
+                <p class="font-bold text-sm text-slate-800">${e.rotulo}</p>
+                <p class="text-xs text-slate-400">${e.w}:${e.h}</p>
+              </div>
+            </button>`).join('')}
+        </div>
+        <button id="cancelar-enquadramento" class="text-xs text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('[data-enc]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const enc = ENQUADRAMENTOS.find(e => e.id === btn.dataset.enc);
+        document.body.removeChild(overlay);
+        resolve(enc);
+      });
+    });
+    overlay.querySelector('#cancelar-enquadramento').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(null);
+    });
+  });
+}
+
+async function recortarImagem(file, enc) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const { w, h } = enc;
+      const razao = w / h;
+      let srcW = img.naturalWidth;
+      let srcH = img.naturalHeight;
+      let offsetX = 0, offsetY = 0;
+
+      if (srcW / srcH > razao) {
+        const novoW = srcH * razao;
+        offsetX = (srcW - novoW) / 2;
+        srcW = novoW;
+      } else {
+        const novoH = srcW / razao;
+        offsetY = (srcH - novoH) / 2;
+        srcH = novoH;
+      }
+
+      const larguraSaida = Math.min(1280, Math.round(srcW));
+      const alturaSaida = Math.round(larguraSaida / razao);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = larguraSaida;
+      canvas.height = alturaSaida;
+      canvas.getContext('2d').drawImage(img, offsetX, offsetY, srcW, srcH, 0, 0, larguraSaida, alturaSaida);
+      URL.revokeObjectURL(objUrl);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob falhou')), 'image/jpeg', 0.88);
+    };
+    img.onerror = reject;
+    img.src = objUrl;
+  });
 }
 
 function dispararUploadFoto() {
@@ -338,8 +401,11 @@ function dispararUploadFoto() {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
+    /* Escolher enquadramento antes de enviar */
+    const enc = await escolherEnquadramento();
+    if (!enc) return; /* Usuário cancelou */
+
     try {
-      // Conta fotos que o usuario ja enviou para esta escola
       const query = new Parse.Query('SchoolPhoto');
       query.equalTo('id_escola', String(dadosEscola.id_escola));
       query.equalTo('autor', usuario);
@@ -354,13 +420,15 @@ function dispararUploadFoto() {
       const arquivosParaEnviar = files.slice(0, restante);
 
       if (files.length > restante) {
-        await mostrarAlerta(`Apenas ${restante} fotos serão enviadas. Você já possui ${contagem} foto(s) cadastrada(s) para esta escola, e o limite é de 10 fotos.`, 'Limite Parcial');
+        await mostrarAlerta(`Apenas ${restante} fotos serão enviadas (limite: 10).`, 'Limite Parcial');
       }
 
       let enviadas = 0;
       for (const file of arquivosParaEnviar) {
         try {
-          await FotosAPI.enviarFoto(dadosEscola.id_escola, file);
+          const blob = await recortarImagem(file, enc);
+          const parseFile = new Parse.File(`foto-escola-${Date.now()}.jpg`, blob);
+          await FotosAPI.enviarFotoBlob(dadosEscola.id_escola, parseFile);
           enviadas++;
         } catch (erro) {
           console.error('[ESCOLA] Erro ao enviar foto:', erro);
@@ -368,7 +436,7 @@ function dispararUploadFoto() {
       }
 
       if (enviadas > 0) {
-        await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderação. Obrigado pela contribuição!`, 'Sucesso');
+        await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderação. Obrigado!`, 'Sucesso');
         await carregarImagens();
       }
     } catch (erro) {

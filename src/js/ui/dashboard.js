@@ -94,7 +94,7 @@ async function iniciar() {
     
     const novas = await EscolasAPI.listar(filtros, skipAtual, false);
     
-    let limite = 100;
+    let limite = 50;
     if (filtros?.uf || filtros?.municipio) limite = 500;
     
     if (novas && novas.length >= limite) {
@@ -116,7 +116,7 @@ async function iniciar() {
       const btnContainer = document.getElementById('container-carregar-mais');
       
       const filtros = estado.obter('filtros') || {};
-      let limite = 100;
+      let limite = 50;
       if (filtros.uf || filtros.municipio) limite = 500;
       
       skipAtual += limite;
@@ -135,7 +135,7 @@ async function iniciar() {
   /* 2. Carregar lista inicial de escolas (sem tocar nos KPIs/graficos) */
   const escolasIniciais = await EscolasAPI.listar({ ano: anoAtual }, 0, false);
   const btnContainerInicial = document.getElementById('container-carregar-mais');
-  if (escolasIniciais && escolasIniciais.length >= 100) {
+  if (escolasIniciais && escolasIniciais.length >= 50) {
       if (btnContainerInicial) btnContainerInicial.classList.remove('hidden');
   } else {
       todasEscolasCarregadas = true;
