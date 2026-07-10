@@ -44,11 +44,20 @@
             <i class="ph-fill ph-student text-3xl text-primaria"></i>
             <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
         </a>
-        <nav class="hidden md:flex items-center gap-6">
+        <nav class="hidden lg:flex items-center gap-6">
             <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
             <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
             <a href="documentacao.html" class="text-sm font-bold text-primaria transition-colors">Documentação</a>
         </nav>
+        <button id="btn-hamburguer" class="lg:hidden p-2 text-slate-600 hover:text-primaria hover:bg-slate-100 rounded-lg focus:outline-none transition-colors" aria-label="Abrir Menu">
+            <i class="ph-bold ph-list text-2xl"></i>
+        </button>
+    </div>
+    <!-- Menu Mobile -->
+    <div id="menu-mobile" class="lg:hidden menu-mobile-transicao absolute top-16 left-0 right-0 bg-white border-b border-slate-200 shadow-lg px-4 py-4 flex flex-col gap-3 z-50">
+        <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Dashboard</a>
+        <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Ranking</a>
+        <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Documentação</a>
     </div>
 </header>
 

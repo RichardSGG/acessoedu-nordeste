@@ -45,26 +45,62 @@
             <i class="ph-fill ph-student text-3xl text-primaria"></i>
             <span class="font-display font-bold text-xl text-primaria">AcessoEdu Nordeste</span>
         </a>
-        <nav class="flex items-center gap-6">
+        <nav class="nav-header hidden lg:flex items-center gap-6">
             <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
             <a href="admin.html" class="text-sm font-bold text-primaria">Painel Admin</a>
         </nav>
-        <div class="flex items-center gap-4" id="container-auth">
-            <button id="btn-login" class="px-5 py-2 bg-primaria text-white rounded-full text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2" onclick="window.location.href='config.html'">
-                <i class="ph-bold ph-sign-in"></i> Entrar
-            </button>
-            <span id="nome-usuario-header" class="hidden text-sm font-semibold text-slate-700"></span>
-            <div id="avatar-usuario" class="hidden w-10 h-10 rounded-full bg-slate-200 border-2 border-primaria flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden" onclick="window.location.href='config.html'">
-                <i class="ph-fill ph-user text-xl text-slate-500"></i>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4" id="container-auth">
+                <button id="btn-login" class="px-5 py-2 bg-primaria text-white rounded-full text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2" onclick="window.location.href='config.html'">
+                    <i class="ph-bold ph-sign-in"></i> Entrar
+                </button>
+                <span id="nome-usuario-header" class="hidden lg:inline-block text-sm font-semibold text-slate-700"></span>
+                <div id="avatar-usuario" class="hidden w-10 h-10 rounded-full bg-slate-200 border-2 border-primaria flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden" onclick="window.location.href='config.html'">
+                    <i class="ph-fill ph-user text-xl text-slate-500"></i>
+                </div>
+                <button id="btn-logout-header" class="hidden lg:flex px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-full transition-colors items-center gap-1">
+                    <i class="ph-bold ph-sign-out"></i> Sair
+                </button>
             </div>
-            <button id="btn-logout-header" class="hidden px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center gap-1">
-                <i class="ph-bold ph-sign-out"></i> Sair
+            <button id="btn-hamburguer" class="lg:hidden p-2 text-slate-600 hover:text-primaria hover:bg-slate-100 rounded-lg focus:outline-none transition-colors" aria-label="Abrir Menu">
+                <i class="ph-bold ph-list text-2xl"></i>
             </button>
         </div>
     </div>
+    <!-- Menu Mobile -->
+    <div id="menu-mobile" class="lg:hidden menu-mobile-transicao absolute top-16 left-0 right-0 bg-white border-b border-slate-200 shadow-lg px-4 py-4 flex flex-col gap-3 z-50">
+        <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Dashboard</a>
+        <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100" id="nav-admin-link-mobile" style="display: none;">Painel Admin</a>
+        
+        <button id="btn-logout-mobile" class="hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
+            <i class="ph-bold ph-sign-out"></i> Sair da Conta
+        </button>
+    </div>
 </header>
 
-<main class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+<!-- Loader de Verificação de Permissão -->
+<div id="loader-admin" class="flex-grow flex items-center justify-center py-16">
+    <div class="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full shadow-md border border-slate-200">
+        <div class="w-5 h-5 border-2 border-primaria border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm font-semibold text-slate-600">Verificando permissões...</span>
+    </div>
+</div>
+
+<!-- Acesso Negado -->
+<div id="sem-permissao" class="hidden flex-grow max-w-md mx-auto w-full px-4 py-16 flex flex-col items-center justify-center text-center gap-6">
+    <div class="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center text-red-500 text-4xl">
+        <i class="ph-bold ph-shield-warning"></i>
+    </div>
+    <div>
+        <h1 class="font-display font-black text-2xl text-slate-800 mb-2">Acesso Negado</h1>
+        <p class="text-slate-500 text-sm">Você não tem permissão para acessar o Painel Admin. Esta área é restrita a gestores autorizados.</p>
+    </div>
+    <a href="index.html" class="px-6 py-2.5 bg-primaria text-white rounded-full text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2">
+        <i class="ph-bold ph-house"></i> Voltar ao Início
+    </a>
+</div>
+
+<main id="conteudo-admin" class="hidden flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
 
     <div class="mb-8 flex items-center justify-between">
         <div>
@@ -131,60 +167,85 @@
         </div>
     </div>
 
-    <!-- Seção Comentários Denunciados -->
-    <div class="card">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
-                <i class="ph-fill ph-flag text-red-500"></i> Comentários Denunciados
-            </h2>
-        </div>
-        <div id="loader-denuncias" class="text-center py-6">
-            <div class="spinner mx-auto"></div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm hidden" id="tabela-denuncias">
-                <thead>
-                    <tr class="border-b border-slate-200 text-left">
-                        <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Denúncias</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Olhar comentários</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-denuncias-body"></tbody>
-            </table>
-        </div>
-        <p id="sem-denuncias" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário denunciado no momento.</p>
-    </div>
-
-    <!-- Seção Comentários Removidos -->
+    <!-- Seção Moderação de Comentários (All-in-One) -->
     <div class="card mt-8">
         <div class="flex items-center justify-between mb-4">
             <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
-                <i class="ph-fill ph-trash text-slate-500"></i> Comentários Removidos
+                <i class="ph-fill ph-chat text-primaria"></i> Moderação de Comentários
             </h2>
-            <span class="text-xs text-slate-400 font-medium">Histórico de moderação</span>
+            <div class="flex bg-slate-100 p-1 rounded-full shadow-inner">
+                <button id="tab-comentarios-todos" class="px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300">Todos</button>
+                <button id="tab-comentarios-denunciados" class="px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300">Denunciados</button>
+                <button id="tab-comentarios-removidos" class="px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300">Removidos</button>
+            </div>
         </div>
-        <div id="loader-removidos" class="text-center py-6">
-            <div class="spinner mx-auto"></div>
+
+        <!-- Painel: Todos -->
+        <div id="painel-comentarios-todos">
+            <div id="loader-comentarios-todos" class="text-center py-6">
+                <div class="spinner mx-auto"></div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm hidden" id="tabela-comentarios-todos">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-left">
+                            <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Escola</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Denúncias</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-comentarios-todos-body"></tbody>
+                </table>
+            </div>
+            <p id="sem-comentarios-todos" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário registrado no momento.</p>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm hidden" id="tabela-removidos">
-                <thead>
-                    <tr class="border-b border-slate-200 text-left">
-                        <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Removido por</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Data Remoção</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Restaurar</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-removidos-body"></tbody>
-            </table>
+
+        <!-- Painel: Denunciados -->
+        <div id="painel-comentarios-denunciados" class="hidden">
+            <div id="loader-denuncias" class="text-center py-6">
+                <div class="spinner mx-auto"></div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm hidden" id="tabela-denuncias">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-left">
+                            <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Denúncias</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Olhar comentários</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-denuncias-body"></tbody>
+                </table>
+            </div>
+            <p id="sem-denuncias" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário denunciado no momento.</p>
         </div>
-        <p id="sem-removidos" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário removido no histórico.</p>
+
+        <!-- Painel: Removidos -->
+        <div id="painel-comentarios-removidos" class="hidden">
+            <div id="loader-removidos" class="text-center py-6">
+                <div class="spinner mx-auto"></div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm hidden" id="tabela-removidos">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-left">
+                            <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Removido por</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Data Remoção</th>
+                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Restaurar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-removidos-body"></tbody>
+                </table>
+            </div>
+            <p id="sem-removidos" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário removido no histórico.</p>
+        </div>
     </div>
 
 </main>

@@ -48,10 +48,28 @@
                 <i class="ph-fill ph-buildings text-2xl text-primaria"></i>
                 <span class="font-display font-bold text-xl text-primaria">Perfil da Escola</span>
             </div>
-            <nav class="flex items-center gap-6">
+            <nav class="hidden lg:flex items-center gap-6">
                 <a href="index.html" class="text-sm font-semibold text-slate-600 hover:text-primaria transition-colors">Início</a>
                 <a href="dashboard.html" class="text-sm font-semibold text-slate-600 hover:text-primaria transition-colors">Dashboard</a>
             </nav>
+            <button id="btn-hamburguer" class="lg:hidden p-2 text-slate-600 hover:text-primaria hover:bg-slate-100 rounded-lg focus:outline-none transition-colors" aria-label="Abrir Menu">
+                <i class="ph-bold ph-list text-2xl"></i>
+            </button>
+        </div>
+        <!-- Menu Mobile -->
+        <div id="menu-mobile" class="lg:hidden menu-mobile-transicao absolute top-16 left-0 right-0 bg-white border-b border-slate-200 shadow-lg px-4 py-4 flex flex-col gap-3 z-50">
+            <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Início</a>
+            <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Ranking</a>
+            <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Análise</a>
+            <a href="explorar.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Explorar</a>
+            <a href="documentacao.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Documentação</a>
+            <a href="sobre.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Sobre</a>
+            <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100">Configurações</a>
+            <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors py-2 border-b border-slate-100" id="nav-admin-link-mobile" style="display: none;">Painel Admin</a>
+            
+            <button id="btn-logout-mobile" class="hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
+                <i class="ph-bold ph-sign-out"></i> Sair da Conta
+            </button>
         </div>
     </header>
 

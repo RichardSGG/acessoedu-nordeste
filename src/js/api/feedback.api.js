@@ -223,13 +223,29 @@ export async function responderAvaliacao(reviewId, resposta) {
 export async function listarDenunciadas(limite = 50) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
-    query.greaterThanOrEqualTo('flags_count', 3);
     query.notEqualTo('removido', true);
+    query.greaterThan('flags_count', 0);
     query.descending('flags_count');
     query.limit(limite);
     return await query.find();
   } catch (erro) {
     console.error('[feedback.api] Erro ao listar denunciadas:', erro);
+    return [];
+  }
+}
+
+/**
+ * Lista todos os comentários ativos no sistema (admin)
+ */
+export async function listarTodos(limite = 100) {
+  try {
+    const query = new Parse.Query(CLASSE_AVALIACOES);
+    query.notEqualTo('removido', true);
+    query.descending('createdAt');
+    query.limit(limite);
+    return await query.find();
+  } catch (erro) {
+    console.error('[feedback.api] Erro ao listar todos os comentarios:', erro);
     return [];
   }
 }

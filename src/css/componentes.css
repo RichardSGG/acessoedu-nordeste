@@ -387,3 +387,18 @@ body {
     break-inside: avoid !important;
   }
 }
+
+/* --- Transição do Menu Mobile --- */
+.menu-mobile-transicao {
+  display: flex !important;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.menu-mobile-transicao.aberto {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}

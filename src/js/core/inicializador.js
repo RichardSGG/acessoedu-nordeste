@@ -36,14 +36,66 @@ function configurarAuthGlobal() {
       } catch (_) { /* Silencia */ }
     });
   }
+
+  const btnLogoutMobile = document.getElementById('btn-logout-mobile');
+  if (btnLogoutMobile) {
+    btnLogoutMobile.addEventListener('click', async () => {
+      try {
+        await Parse.User.logOut();
+        estado.definir('usuarioAtual', null);
+        atualizarHeaderAuth(null);
+        window.location.href = 'index.html';
+      } catch (_) { /* Silencia */ }
+    });
+  }
+
+  /* Controle do menu hamburguer */
+  const btnHamburguer = document.getElementById('btn-hamburguer');
+  const menuMobile = document.getElementById('menu-mobile');
+  if (btnHamburguer && menuMobile) {
+    // Destacar o link ativo no menu mobile
+    const path = window.location.pathname;
+    const paginaAtual = path.split('/').pop() || 'index.html';
+    
+    menuMobile.querySelectorAll('a').forEach(link => {
+      const href = link.getAttribute('href');
+      if (href === paginaAtual || (paginaAtual === '' && href === 'index.html')) {
+        link.classList.remove('text-slate-600', 'font-medium');
+        link.classList.add('text-primaria', 'font-bold');
+      } else {
+        link.classList.remove('text-primaria', 'font-bold');
+        link.classList.add('text-slate-600', 'font-medium');
+      }
+    });
+
+    btnHamburguer.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menuMobile.classList.toggle('aberto');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!menuMobile.contains(e.target) && !btnHamburguer.contains(e.target)) {
+        menuMobile.classList.remove('aberto');
+      }
+    });
+
+    menuMobile.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('click', () => {
+        menuMobile.classList.remove('aberto');
+      });
+    });
+  }
 }
 
 async function atualizarHeaderAuth(usuario) {
   const btnLogin = document.getElementById('btn-login');
   const avatarContainer = document.getElementById('avatar-usuario');
   const linkAdmin = document.getElementById('nav-admin-link') || document.getElementById('link-admin');
+  const linkAdminMobile = document.getElementById('nav-admin-link-mobile') || document.getElementById('link-admin-mobile');
   const btnLogout = document.getElementById('btn-logout-header');
+  const btnLogoutMobile = document.getElementById('btn-logout-mobile');
   const nomeUsuario = document.getElementById('nome-usuario-header');
+
   if (usuario) {
     if (btnLogin) btnLogin.classList.add('hidden');
     if (avatarContainer) {
@@ -51,27 +103,41 @@ async function atualizarHeaderAuth(usuario) {
       const foto = usuario.get('profilePhoto');
       if (foto && foto.url) {
         avatarContainer.innerHTML = `<img src="${foto.url()}" alt="Avatar" class="w-full h-full object-cover">`;
+      } else {
+        avatarContainer.innerHTML = `<i class="ph-fill ph-user text-xl text-slate-500"></i>`;
       }
       avatarContainer.title = usuario.get('nomeExibicao') || usuario.get('username') || '';
     }
     if (nomeUsuario) {
       nomeUsuario.textContent = usuario.get('nomeExibicao') || usuario.get('username') || '';
       nomeUsuario.classList.remove('hidden');
+      nomeUsuario.classList.add('hidden', 'lg:inline-block');
     }
-    if (linkAdmin) {
-      try {
-        const isAdmin = await verificarAdmin();
-        linkAdmin.style.display = isAdmin ? 'inline-block' : 'none';
-      } catch (_) {
-        linkAdmin.style.display = 'none';
-      }
+    if (btnLogout) {
+      btnLogout.classList.remove('hidden');
+      btnLogout.classList.add('hidden', 'lg:flex');
     }
-    if (btnLogout) btnLogout.classList.remove('hidden');
+    
+    // Mobile Auth UI
+    if (btnLogoutMobile) btnLogoutMobile.classList.remove('hidden');
+
+    try {
+      const isAdmin = await verificarAdmin();
+      if (linkAdmin) linkAdmin.style.display = isAdmin ? 'inline-block' : 'none';
+      if (linkAdminMobile) linkAdminMobile.style.display = isAdmin ? 'block' : 'none';
+    } catch (_) {
+      if (linkAdmin) linkAdmin.style.display = 'none';
+      if (linkAdminMobile) linkAdminMobile.style.display = 'none';
+    }
   } else {
     if (btnLogin) btnLogin.classList.remove('hidden');
     if (avatarContainer) avatarContainer.classList.add('hidden');
     if (nomeUsuario) nomeUsuario.classList.add('hidden');
     if (linkAdmin) linkAdmin.style.display = 'none';
+    if (linkAdminMobile) linkAdminMobile.style.display = 'none';
     if (btnLogout) btnLogout.classList.add('hidden');
+    
+    // Mobile Auth UI
+    if (btnLogoutMobile) btnLogoutMobile.classList.add('hidden');
   }
 }

@@ -1,6 +1,6 @@
 /**
  * src/js/ui/admin.js
- * Responsabilidade: Painel admin — moderacao de fotos e comentarios denunciados
+ * Responsabilidade: Painel admin — moderacao de fotos e comentarios
  */
 
 import estado from '../core/estado.js';
@@ -14,20 +14,25 @@ Parse.serverURL = PARSE_CONFIG.SERVER_URL;
 
 async function iniciar() {
   const admin = await verificarAdmin();
+  document.getElementById('loader-admin')?.classList.add('hidden');
+
   if (!admin) {
-    window.location.replace('index.html');
+    document.getElementById('sem-permissao')?.classList.remove('hidden');
     return;
   }
+
+  document.getElementById('conteudo-admin')?.classList.remove('hidden');
+
   const usuario = Parse.User.current();
   estado.definir('usuarioAtual', usuario);
 
   console.log('[ADMIN] Acesso autorizado:', usuario.get('username'));
 
   configurarAbasFotos();
+  configurarAbasComentarios();
   configurarBotaoRecarregar();
   await carregarFotosPendentes();
-  await carregarDenuncias();
-  await carregarComentariosRemovidos();
+  await carregarTodosComentarios();
 }
 
 /* --- Abas Fotos --- */
@@ -55,6 +60,52 @@ function configurarAbasFotos() {
   });
 }
 
+/* --- Abas Comentários --- */
+function configurarAbasComentarios() {
+  const tabTodos = document.getElementById('tab-comentarios-todos');
+  const tabDenunciados = document.getElementById('tab-comentarios-denunciados');
+  const tabRemovidos = document.getElementById('tab-comentarios-removidos');
+
+  const painelTodos = document.getElementById('painel-comentarios-todos');
+  const painelDenunciados = document.getElementById('painel-comentarios-denunciados');
+  const painelRemovidos = document.getElementById('painel-comentarios-removidos');
+
+  if (!tabTodos || !tabDenunciados || !tabRemovidos) return;
+
+  tabTodos.addEventListener('click', async () => {
+    tabTodos.className = 'px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300';
+    tabDenunciados.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    tabRemovidos.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    
+    painelTodos.classList.remove('hidden');
+    painelDenunciados.classList.add('hidden');
+    painelRemovidos.classList.add('hidden');
+    await carregarTodosComentarios();
+  });
+
+  tabDenunciados.addEventListener('click', async () => {
+    tabDenunciados.className = 'px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300';
+    tabTodos.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    tabRemovidos.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    
+    painelTodos.classList.add('hidden');
+    painelDenunciados.classList.remove('hidden');
+    painelRemovidos.classList.add('hidden');
+    await carregarDenuncias();
+  });
+
+  tabRemovidos.addEventListener('click', async () => {
+    tabRemovidos.className = 'px-4 py-1.5 bg-white rounded-full shadow-sm text-xs font-bold text-primaria transition-all duration-300';
+    tabTodos.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    tabDenunciados.className = 'px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition-all duration-300';
+    
+    painelTodos.classList.add('hidden');
+    painelDenunciados.classList.add('hidden');
+    painelRemovidos.classList.remove('hidden');
+    await carregarComentariosRemovidos();
+  });
+}
+
 /* --- Fotos Pendentes --- */
 async function carregarFotosPendentes() {
   const loader = document.getElementById('loader-fotos');
@@ -64,14 +115,14 @@ async function carregarFotosPendentes() {
 
   try {
     const fotos = await FotosAPI.listarPendentes();
-    loader.classList.add('hidden');
+    if (loader) loader.classList.add('hidden');
 
     if (fotos.length === 0) {
-      semFotos.classList.remove('hidden');
+      if (semFotos) semFotos.classList.remove('hidden');
       return;
     }
 
-    tabela.classList.remove('hidden');
+    if (tabela) tabela.classList.remove('hidden');
     const fragmento = document.createDocumentFragment();
 
     fotos.forEach(foto => {
@@ -104,27 +155,29 @@ async function carregarFotosPendentes() {
       fragmento.appendChild(tr);
     });
 
-    tbody.innerHTML = '';
-    tbody.appendChild(fragmento);
+    if (tbody) {
+      tbody.innerHTML = '';
+      tbody.appendChild(fragmento);
 
-    tbody.querySelectorAll('.btn-aprovar').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await FotosAPI.moderarFoto(btn.dataset.fotoId, 'approved');
-        btn.closest('tr').remove();
-        if (tbody.children.length === 0) { tabela.classList.add('hidden'); semFotos.classList.remove('hidden'); }
+      tbody.querySelectorAll('.btn-aprovar').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await FotosAPI.moderarFoto(btn.dataset.fotoId, 'approved');
+          btn.closest('tr').remove();
+          if (tbody.children.length === 0) { tabela.classList.add('hidden'); semFotos.classList.remove('hidden'); }
+        });
       });
-    });
 
-    tbody.querySelectorAll('.btn-rejeitar').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await FotosAPI.moderarFoto(btn.dataset.fotoId, 'rejected');
-        btn.closest('tr').remove();
-        if (tbody.children.length === 0) { tabela.classList.add('hidden'); semFotos.classList.remove('hidden'); }
+      tbody.querySelectorAll('.btn-rejeitar').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await FotosAPI.moderarFoto(btn.dataset.fotoId, 'rejected');
+          btn.closest('tr').remove();
+          if (tbody.children.length === 0) { tabela.classList.add('hidden'); semFotos.classList.remove('hidden'); }
+        });
       });
-    });
+    }
   } catch (erro) {
     console.error('[ADMIN] Erro fotos:', erro);
-    loader.classList.add('hidden');
+    if (loader) loader.classList.add('hidden');
   }
 }
 
@@ -135,19 +188,18 @@ async function carregarFotosAprovadas() {
   const tbody = document.getElementById('tabela-fotos-aprovadas-body');
   const semFotos = document.getElementById('sem-fotos-aprovadas');
 
-  /* Evita recarregar se ja tem dados */
-  if (tbody.children.length > 0) return;
+  if (tbody && tbody.children.length > 0) return;
 
   try {
     const fotos = await FotosAPI.listarAprovadasAdmin();
-    loader.classList.add('hidden');
+    if (loader) loader.classList.add('hidden');
 
     if (fotos.length === 0) {
-      semFotos.classList.remove('hidden');
+      if (semFotos) semFotos.classList.remove('hidden');
       return;
     }
 
-    tabela.classList.remove('hidden');
+    if (tabela) tabela.classList.remove('hidden');
     const fragmento = document.createDocumentFragment();
 
     fotos.forEach(foto => {
@@ -175,19 +227,98 @@ async function carregarFotosAprovadas() {
       fragmento.appendChild(tr);
     });
 
-    tbody.innerHTML = '';
-    tbody.appendChild(fragmento);
+    if (tbody) {
+      tbody.innerHTML = '';
+      tbody.appendChild(fragmento);
 
-    tbody.querySelectorAll('.btn-remover-foto').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await FotosAPI.moderarFoto(btn.dataset.fotoId, 'rejected');
-        btn.closest('tr').remove();
-        if (tbody.children.length === 0) { tabela.classList.add('hidden'); semFotos.classList.remove('hidden'); }
+      tbody.querySelectorAll('.btn-remover-foto').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await FotosAPI.moderarFoto(btn.dataset.fotoId, 'rejected');
+          btn.closest('tr').remove();
+          if (tbody.children.length === 0) { tabela.classList.add('hidden'); semFotos.classList.remove('hidden'); }
+        });
       });
-    });
+    }
   } catch (erro) {
     console.error('[ADMIN] Erro fotos aprovadas:', erro);
-    loader.classList.add('hidden');
+    if (loader) loader.classList.add('hidden');
+  }
+}
+
+/* --- Todos os Comentários --- */
+async function carregarTodosComentarios() {
+  const loader = document.getElementById('loader-comentarios-todos');
+  const tabela = document.getElementById('tabela-comentarios-todos');
+  const tbody = document.getElementById('tabela-comentarios-todos-body');
+  const semComentarios = document.getElementById('sem-comentarios-todos');
+
+  try {
+    if (loader) loader.classList.remove('hidden');
+    if (tabela) tabela.classList.add('hidden');
+    if (semComentarios) semComentarios.classList.add('hidden');
+    if (tbody) tbody.innerHTML = '';
+
+    const comentarios = await FeedbackAPI.listarTodos();
+    if (loader) loader.classList.add('hidden');
+
+    if (comentarios.length === 0) {
+      if (semComentarios) semComentarios.classList.remove('hidden');
+      return;
+    }
+
+    if (tabela) tabela.classList.remove('hidden');
+    const fragmento = document.createDocumentFragment();
+
+    comentarios.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-slate-100';
+      const idEscola = c.get('id_escola') || '';
+
+      tr.innerHTML = `
+        <td class="py-3 px-3 text-sm text-slate-700 max-w-xs truncate">${esc(c.get('mensagem') || '')}</td>
+        <td class="py-3 px-3 text-sm text-slate-500">${esc(c.get('nome') || '--')}</td>
+        <td class="py-3 px-3 text-sm text-slate-500">
+          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
+        </td>
+        <td class="py-3 px-3 text-center">
+          <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">${c.get('flags_count') || 0}</span>
+        </td>
+        <td class="py-3 px-3 text-center">
+          <div class="flex items-center justify-center gap-2">
+            <button class="btn-manter px-3 py-1.5 bg-green-50 text-secundaria rounded-full text-xs font-bold hover:bg-green-100 transition-colors flex items-center gap-1" data-review-id="${c.id}">
+              <i class="ph-bold ph-check"></i> Manter
+            </button>
+            <button class="btn-remover px-3 py-1.5 bg-red-50 text-red-500 rounded-full text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-1" data-review-id="${c.id}">
+              <i class="ph-bold ph-trash"></i> Remover
+            </button>
+          </div>
+        </td>`;
+      fragmento.appendChild(tr);
+    });
+
+    if (tbody) {
+      tbody.innerHTML = '';
+      tbody.appendChild(fragmento);
+
+      tbody.querySelectorAll('.btn-manter').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await FeedbackAPI.manterAvaliacao(btn.dataset.reviewId);
+          btn.closest('tr').remove();
+          if (tbody.children.length === 0) { tabela.classList.add('hidden'); semComentarios.classList.remove('hidden'); }
+        });
+      });
+
+      tbody.querySelectorAll('.btn-remover').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await FeedbackAPI.excluirAvaliacao(btn.dataset.reviewId);
+          btn.closest('tr').remove();
+          if (tbody.children.length === 0) { tabela.classList.add('hidden'); semComentarios.classList.remove('hidden'); }
+        });
+      });
+    }
+  } catch (erro) {
+    console.error('[ADMIN] Erro ao carregar todos os comentarios:', erro);
+    if (loader) loader.classList.add('hidden');
   }
 }
 
@@ -258,7 +389,6 @@ async function carregarDenuncias() {
         await FeedbackAPI.excluirAvaliacao(btn.dataset.reviewId);
         btn.closest('tr').remove();
         if (tbody.children.length === 0) { tabela.classList.add('hidden'); semDenuncias.classList.remove('hidden'); }
-        await carregarComentariosRemovidos();
       });
     });
   } catch (erro) {
@@ -369,7 +499,6 @@ async function carregarComentariosRemovidos() {
             if (tabela) tabela.classList.add('hidden');
             if (semRemovidos) semRemovidos.classList.remove('hidden');
           }
-          await carregarDenuncias();
         });
       });
     }
