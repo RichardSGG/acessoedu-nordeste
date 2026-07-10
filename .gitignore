@@ -49,5 +49,6 @@ pipeline_dados/saida/complementos_*.json
 *.md
 !README.md
 !ARQUITETURA.md
-PLAN.MD
-PLAN.md
+!PLAN.MD
+!PLAN.md
+!SKILLS.md
