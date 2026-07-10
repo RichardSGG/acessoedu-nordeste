@@ -20,9 +20,14 @@ function configurarAuthGlobal() {
       estado.definir('usuarioAtual', usuario);
       usuario.fetch().then((u) => {
         estado.definir('usuarioAtual', u);
-      }).catch(err => console.error('[CORE] Erro ao sincronizar usuario:', err));
+        atualizarHeaderAuth(u);
+      }).catch(err => {
+        console.error('[CORE] Erro ao sincronizar usuario:', err);
+        atualizarHeaderAuth(usuario);
+      });
+    } else {
+      atualizarHeaderAuth(null);
     }
-    atualizarHeaderAuth(usuario);
   } catch (_) { /* Parse pode nao estar carregado ainda */ }
 
   estado.assinar('mudanca:usuarioAtual', atualizarHeaderAuth);
@@ -117,7 +122,7 @@ async function atualizarHeaderAuth(usuario) {
       avatarContainer.classList.remove('hidden');
       const foto = usuario.get('profilePhoto');
       if (foto && foto.url) {
-        avatarContainer.innerHTML = `<img src="${foto.url()}" alt="Avatar" class="w-full h-full object-cover">`;
+        avatarContainer.innerHTML = `<img src="${foto.url()}" alt="" class="w-full h-full object-cover pointer-events-none select-none" style="-webkit-user-drag: none; user-drag: none;" oncontextmenu="return false;">`;
       } else {
         avatarContainer.innerHTML = `<i class="ph-fill ph-user text-xl text-slate-500"></i>`;
       }

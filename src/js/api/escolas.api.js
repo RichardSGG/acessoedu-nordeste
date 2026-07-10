@@ -559,23 +559,6 @@ function _calcularNotaExcelencia(obj) {
   return { nota: Math.round(nota * 10) / 10, badge };
 }
 
-/**
- * Atualiza silenciosamente a foto_url de uma escola no Back4App (Cache)
- */
-export async function atualizarFotoUrl(idParse, classe, fotoUrl) {
-  if (!idParse || !classe || !fotoUrl) return false;
-  try {
-    const Escola = Parse.Object.extend(classe);
-    const query = new Parse.Query(Escola);
-    const obj = await query.get(idParse);
-    obj.set('foto_url', fotoUrl);
-    await obj.save();
-    return true;
-  } catch (erro) {
-    console.error('[escolas.api] Erro ao atualizar foto_url:', erro);
-    return false;
-  }
-}
 
 /**
  * Busca estatisticas agregadas (pre-calculadas) da classe EstatisticasAgregadas.

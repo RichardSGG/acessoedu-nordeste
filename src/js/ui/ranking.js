@@ -171,7 +171,7 @@ function renderizarLista(escolas) {
       <span class="font-display font-black text-lg text-primaria">${escola.notaExcelencia}</span>`;
 
     item.addEventListener('click', () => {
-      window.location.href = `detalhes.html?id=${escola.id_escola}`;
+      window.location.href = `escola.html?id=${escola.id_escola}`;
     });
 
     fragmento.appendChild(item);

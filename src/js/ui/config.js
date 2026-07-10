@@ -111,7 +111,7 @@ function atualizarAvatar(usuario) {
   const container = document.getElementById('container-avatar');
   const foto = usuario.get('profilePhoto');
   if (foto && foto.url) {
-    container.innerHTML = `<img src="${foto.url()}" alt="Avatar" class="w-full h-full object-cover">`;
+    container.innerHTML = `<img src="${foto.url()}" alt="" class="w-full h-full object-cover pointer-events-none select-none" style="-webkit-user-drag: none; user-drag: none;" oncontextmenu="return false;">`;
   } else {
     container.innerHTML = `<i class="ph-fill ph-user text-4xl text-slate-400"></i>`;
   }
@@ -131,32 +131,13 @@ function configurarUploadAvatar() {
       if (btnUpload) btnUpload.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Enviando...';
 
       try {
-        /* Redimensiona com canvas nativo (sem Pica.js — compatível com proteção anti-fingerprinting) */
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.src = objectUrl;
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
+        const croppedBlob = await window.mostrarModalEnquadramento(file, false);
+        if (!croppedBlob) {
+          if (btnUpload) btnUpload.innerHTML = textoOriginal;
+          return;
+        }
 
-        /* Crop quadrado centralizado antes de redimensionar */
-        const lado = Math.min(img.naturalWidth, img.naturalHeight);
-        const offsetX = (img.naturalWidth - lado) / 2;
-        const offsetY = (img.naturalHeight - lado) / 2;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 256;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, offsetX, offsetY, lado, lado, 0, 0, 256, 256);
-        URL.revokeObjectURL(objectUrl);
-
-        const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob falhou')), 'image/jpeg', 0.88);
-        });
-
-        const parseFile = new Parse.File(`avatar-${Date.now()}.jpg`, blob);
+        const parseFile = new Parse.File(`avatar-${Date.now()}.jpg`, croppedBlob);
         await AuthAPI.atualizarAvatar(parseFile);
 
         const usuarioAtualizado = estado.obter('usuarioAtual');

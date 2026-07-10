@@ -787,7 +787,7 @@ function renderizarLista(escolas) {
     `;
 
     card.addEventListener('click', () => {
-      window.location.href = `detalhes.html?id=${escola.id_escola}`;
+      window.location.href = `escola.html?id=${escola.id_escola}`;
     });
 
     fragmento.appendChild(card);

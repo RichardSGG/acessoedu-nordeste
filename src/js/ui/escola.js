@@ -202,6 +202,14 @@ async function carregarImagens() {
   const placeholder = document.getElementById('placeholder-foto');
   const btnAnterior = document.getElementById('btn-foto-anterior');
   const btnProximo = document.getElementById('btn-foto-proximo');
+  const btnEnviarFoto = document.getElementById('btn-enviar-foto');
+
+  /* Mostra o botão de enviar foto se logado */
+  const usuarioAtual = estado.obter('usuarioAtual') || Parse.User.current();
+  if (btnEnviarFoto && usuarioAtual) {
+    btnEnviarFoto.style.display = 'inline-flex';
+    btnEnviarFoto.onclick = () => dispararUploadFoto();
+  }
 
   /* Etapa 1: Back4App */
   const fotosBack4App = await FotosAPI.listarAprovadas(dadosEscola.id_escola);
@@ -216,33 +224,7 @@ async function carregarImagens() {
     return;
   }
 
-  /* Cache de Foto: Verifica se já existe uma URL salva no banco de dados */
-  if (dadosEscola.foto_url) {
-    renderizarFotos([{
-      url: dadosEscola.foto_url,
-      fonte: 'Mapillary (Cache)',
-    }]);
-    return;
-  }
-
-  /* Etapa 2: Mapillary */
-  const resultadoMapillary = await MapillaryAPI.buscarFotosDaEscola(dadosEscola.latitude, dadosEscola.longitude);
-  if (resultadoMapillary.ok) {
-    const fotos = resultadoMapillary.fotos.map(img => ({
-      url: img.thumb_1024_url || img.thumb_512_url || '',
-      fonte: 'Mapillary',
-    }));
-    renderizarFotos(fotos);
-
-    const primeiraFotoUrl = fotos[0]?.url;
-    if (primeiraFotoUrl && dadosEscola.id_parse && dadosEscola.classe) {
-      EscolasAPI.atualizarFotoUrl(dadosEscola.id_parse, dadosEscola.classe, primeiraFotoUrl)
-        .catch(err => console.error('[ESCOLA] Falha ao atualizar cache de foto_url:', err));
-    }
-    return;
-  }
-
-  /* Etapa 3: Placeholder */
+  /* Etapa 2: Placeholder */
   container.innerHTML = '';
   btnAnterior.classList.add('hidden');
   btnProximo.classList.add('hidden');
@@ -301,12 +283,12 @@ function renderizarFotos(fotos) {
     }
 
     slide.innerHTML = `
-      <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3]">
-        <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover cursor-pointer ${isPending ? 'opacity-60 grayscale-[50%]' : ''}" loading="lazy"
-             onclick="abrirModalFoto('${esc(foto.url)}')"
+      <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3] select-none">
+        <img src="${esc(foto.url)}" alt="" class="w-full h-full object-cover pointer-events-none ${isPending ? 'opacity-60 grayscale-[50%]' : ''}" loading="lazy" style="-webkit-user-drag: none; user-drag: none;"
              onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'ph-fill ph-image text-4xl text-slate-300\\'></i></div>'">
-        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">${esc(legenda)}</span>` : ''}
-        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
+        <div class="absolute inset-0 z-10 cursor-pointer" onclick="abrirModalFoto('${esc(foto.url)}')" oncontextmenu="return false;"></div>
+        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full z-20 pointer-events-none">${esc(legenda)}</span>` : ''}
+        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 z-20 pointer-events-none"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
       </div>`;
     fragmento.appendChild(slide);
   });
@@ -339,7 +321,6 @@ function dispararUploadFoto() {
     if (files.length === 0) return;
 
     try {
-      // Conta fotos que o usuario ja enviou para esta escola
       const query = new Parse.Query('SchoolPhoto');
       query.equalTo('id_escola', String(dadosEscola.id_escola));
       query.equalTo('autor', usuario);
@@ -360,10 +341,14 @@ function dispararUploadFoto() {
       let enviadas = 0;
       for (const file of arquivosParaEnviar) {
         try {
-          await FotosAPI.enviarFoto(dadosEscola.id_escola, file);
-          enviadas++;
+          const croppedBlob = await window.mostrarModalEnquadramento(file, false);
+          if (croppedBlob) {
+            const croppedFile = new File([croppedBlob], `escola-${Date.now()}.jpg`, { type: 'image/jpeg' });
+            await FotosAPI.enviarFoto(dadosEscola.id_escola, croppedFile);
+            enviadas++;
+          }
         } catch (erro) {
-          console.error('[ESCOLA] Erro ao enviar foto:', erro);
+          console.error('[ESCOLA] Erro ao processar ou enviar foto:', erro);
         }
       }
 
@@ -378,6 +363,186 @@ function dispararUploadFoto() {
   };
   input.click();
 }
+
+window.mostrarModalEnquadramento = function(file, forcarQuadrado = false) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    document.body.appendChild(modal);
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+
+    let proporcaoSelecionada = forcarQuadrado ? '1:1' : '4:3';
+    let zoomVal = 1.0;
+    let offsetValX = 0;
+    let offsetValY = 0;
+    let isDragging = false;
+    let startX = 0, startY = 0;
+
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col gap-4 select-none" onclick="event.stopPropagation()">
+        <h3 class="font-display font-bold text-lg text-slate-800">Enquadrar e Ajustar Foto</h3>
+        <p class="text-xs text-slate-500">Arraste a foto ou use os controles de zoom/posicionamento para ajustar o corte:</p>
+        
+        <div class="relative w-full aspect-[4/3] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-200 cursor-move" id="container-crop-preview">
+          <canvas id="canvas-crop-preview" class="max-w-full max-h-full object-contain pointer-events-none"></canvas>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold text-slate-600 flex justify-between">Zoom: <span id="txt-zoom">100%</span></label>
+          <input type="range" id="slider-zoom" min="1.0" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primaria">
+        </div>
+
+        <div class="flex gap-2 justify-center ${forcarQuadrado ? 'hidden' : ''}">
+          <button id="btn-prop-1-1" class="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-50 transition-colors">1:1</button>
+          <button id="btn-prop-4-3" class="px-3 py-1.5 rounded-lg border border-primaria bg-primaria/5 text-primaria text-xs font-semibold transition-colors">4:3</button>
+          <button id="btn-prop-16-9" class="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-50 transition-colors">16:9</button>
+          <button id="btn-prop-livre" class="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-50 transition-colors">Manual</button>
+        </div>
+
+        <div class="flex gap-3 justify-end mt-2">
+          <button id="btn-crop-cancelar" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-full transition-colors">Cancelar</button>
+          <button id="btn-crop-confirmar" class="px-5 py-2 bg-primaria text-white rounded-full text-sm font-bold hover:bg-blue-800 transition-colors shadow-md">Confirmar</button>
+        </div>
+      </div>
+    `;
+
+    const previewContainer = modal.querySelector('#container-crop-preview');
+    const canvas = modal.querySelector('#canvas-crop-preview');
+    const ctx = canvas.getContext('2d');
+    const sliderZoom = modal.querySelector('#slider-zoom');
+    const txtZoom = modal.querySelector('#txt-zoom');
+
+    const renderCrop = () => {
+      if (!img.naturalWidth) return;
+      let w = 0, h = 0;
+      let targetW = 0, targetH = 0;
+
+      if (proporcaoSelecionada === '1:1') {
+        const lado = Math.min(img.naturalWidth, img.naturalHeight);
+        w = lado; h = lado;
+        targetW = 600; targetH = 600;
+      } else if (proporcaoSelecionada === '4:3') {
+        if (img.naturalWidth / img.naturalHeight > 4 / 3) {
+          h = img.naturalHeight;
+          w = img.naturalHeight * 4 / 3;
+        } else {
+          w = img.naturalWidth;
+          h = img.naturalWidth * 3 / 4;
+        }
+        targetW = 800; targetH = 600;
+      } else if (proporcaoSelecionada === '16:9') {
+        if (img.naturalWidth / img.naturalHeight > 16 / 9) {
+          h = img.naturalHeight;
+          w = img.naturalHeight * 16 / 9;
+        } else {
+          w = img.naturalWidth;
+          h = img.naturalWidth * 9 / 16;
+        }
+        targetW = 960; targetH = 540;
+      } else {
+        w = img.naturalWidth;
+        h = img.naturalHeight;
+        targetW = img.naturalWidth;
+        targetH = img.naturalHeight;
+      }
+
+      // Aplica o Zoom
+      const cropW = w / zoomVal;
+      const cropH = h / zoomVal;
+
+      // Centralizado + Offset manual
+      const limitX = (w - cropW) / 2;
+      const limitY = (h - cropH) / 2;
+
+      // Limita deslocamento para não sair da imagem original
+      const maxOffsetX = (img.naturalWidth - cropW) / 2;
+      const maxOffsetY = (img.naturalHeight - cropH) / 2;
+      const minOffsetX = -maxOffsetX;
+      const minOffsetY = -maxOffsetY;
+
+      const offsetX = Math.max(minOffsetX, Math.min(maxOffsetX, ((img.naturalWidth - cropW) / 2) + offsetValX));
+      const offsetY = Math.max(minOffsetY, Math.min(maxOffsetY, ((img.naturalHeight - cropH) / 2) + offsetValY));
+
+      canvas.width = targetW;
+      canvas.height = targetH;
+      ctx.clearRect(0, 0, targetW, targetH);
+      ctx.drawImage(img, offsetX, offsetY, cropW, cropH, 0, 0, targetW, targetH);
+    };
+
+    img.onload = renderCrop;
+
+    sliderZoom.oninput = (e) => {
+      zoomVal = parseFloat(e.target.value);
+      txtZoom.textContent = `${Math.round(zoomVal * 100)}%`;
+      renderCrop();
+    };
+
+    // Controle de arraste manual
+    previewContainer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      // Ajusta deslocamento escalonado com o zoom
+      offsetValX -= (dx * (img.naturalWidth / canvas.clientWidth)) / zoomVal;
+      offsetValY -= (dy * (img.naturalHeight / canvas.clientHeight)) / zoomVal;
+      renderCrop();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    const updateActiveButton = () => {
+      if (forcarQuadrado) return;
+      const btn1 = modal.querySelector('#btn-prop-1-1');
+      const btn2 = modal.querySelector('#btn-prop-4-3');
+      const btn3 = modal.querySelector('#btn-prop-16-9');
+      const btnL = modal.querySelector('#btn-prop-livre');
+      const activeClass = 'border-primaria bg-primaria/5 text-primaria';
+      const inactiveClass = 'border-slate-200 text-slate-600 hover:bg-slate-50';
+
+      [btn1, btn2, btn3, btnL].forEach(b => { if (b) b.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${inactiveClass}`; });
+
+      if (proporcaoSelecionada === '1:1' && btn1) btn1.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
+      if (proporcaoSelecionada === '4:3' && btn2) btn2.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
+      if (proporcaoSelecionada === '16:9' && btn3) btn3.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
+      if (proporcaoSelecionada === 'livre' && btnL) btnL.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
+    };
+
+    if (!forcarQuadrado) {
+      modal.querySelector('#btn-prop-1-1').onclick = () => { proporcaoSelecionada = '1:1'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
+      modal.querySelector('#btn-prop-4-3').onclick = () => { proporcaoSelecionada = '4:3'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
+      modal.querySelector('#btn-prop-16-9').onclick = () => { proporcaoSelecionada = '16:9'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
+      modal.querySelector('#btn-prop-livre').onclick = () => { proporcaoSelecionada = 'livre'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
+    }
+
+    modal.querySelector('#btn-crop-cancelar').onclick = () => {
+      URL.revokeObjectURL(objectUrl);
+      modal.remove();
+      resolve(null);
+    };
+
+    modal.querySelector('#btn-crop-confirmar').onclick = () => {
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(objectUrl);
+        modal.remove();
+        resolve(blob);
+      }, 'image/jpeg', 0.88);
+    };
+  });
+};
 
 /* --- Checklist Comparativo --- */
 function renderizarChecklist() {
@@ -1091,10 +1256,13 @@ window.abrirModalFoto = function (url) {
     document.body.appendChild(modal);
   }
   modal.innerHTML = `
-    <button style="position:absolute;top:16px;right:16px;color:#fff;background:none;border:none;font-size:32px;cursor:pointer;opacity:0.8;" onclick="this.parentElement.remove()">
+    <button style="position:absolute;top:16px;right:16px;color:#fff;background:none;border:none;font-size:32px;cursor:pointer;opacity:0.8;z-index:10000;" onclick="this.parentElement.remove()">
       <i class="ph-bold ph-x"></i>
     </button>
-    <img src="${url}" alt="Foto ampliada" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);" onclick="event.stopPropagation()">
+    <div style="position:relative;max-width:90vw;max-height:85vh;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);user-select:none;" onclick="event.stopPropagation()">
+      <img src="${url}" alt="" style="width:100%;height:100%;max-width:90vw;max-height:85vh;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-drag:none;">
+      <div style="position:absolute;inset:0;z-index:9999;cursor:zoom-out;" onclick="this.parentElement.parentElement.remove()" oncontextmenu="return false;"></div>
+    </div>
   `;
 }
 

@@ -148,7 +148,7 @@ async function carregarFotosPendentes() {
         </td>
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
-          <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
+          <a href="escola.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
             <i class="ph-bold ph-arrow-square-out"></i> Olhar perfil
           </a>
         </td>
@@ -228,7 +228,7 @@ async function carregarFotosAprovadas() {
         </td>
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
-          <a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
+          <a href="escola.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
             <i class="ph-bold ph-arrow-square-out"></i> Olhar perfil
           </a>
         </td>
@@ -292,7 +292,7 @@ async function carregarTodosComentarios() {
         <td class="py-3 px-3 text-sm text-slate-700 max-w-xs truncate">${esc(c.get('mensagem') || '')}</td>
         <td class="py-3 px-3 text-sm text-slate-500">${esc(c.get('nome') || '--')}</td>
         <td class="py-3 px-3 text-sm text-slate-500">
-          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
+          ${idEscola ? `<a href="escola.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">${c.get('flags_count') || 0}</span>
@@ -372,7 +372,7 @@ async function carregarDenuncias() {
           <span class="px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-xs font-bold">${d.get('flags_count') || 0}</span>
         </td>
         <td class="py-3 px-3 text-center">
-          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center justify-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> Olhar comentários</a>` : '<span class="text-xs text-slate-400">--</span>'}
+          ${idEscola ? `<a href="escola.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center justify-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> Olhar comentários</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <div class="flex items-center justify-center gap-2">
@@ -487,7 +487,7 @@ async function carregarComentariosRemovidos() {
         </td>
         <td class="py-3 px-3 text-sm text-slate-500">${esc(d.get('nome') || '--')}</td>
         <td class="py-3 px-3 text-sm text-slate-500">
-          ${idEscola ? `<a href="detalhes.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
+          ${idEscola ? `<a href="escola.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">${esc(removidoPor)}</span>
