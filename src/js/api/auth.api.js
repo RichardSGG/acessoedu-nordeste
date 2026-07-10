@@ -211,27 +211,31 @@ export async function removerAvatar() {
 /**
  * Lista usuarios do Parse com suporte a busca
  */
-export async function listarUsuarios(busca = '', limite = 50) {
+export async function listarUsuarios(busca = '', limite = 500) {
   try {
-    const query = new Parse.Query(Parse.User);
+    const usuarioAtual = Parse.User.current();
+    const opts = usuarioAtual ? { sessionToken: usuarioAtual.getSessionToken() } : {};
+
     if (busca) {
       const queryUsername = new Parse.Query(Parse.User);
-      queryUsername.matches('username', busca, 'i');
-      
+      queryUsername.matches('username', new RegExp(busca, 'i'));
+
       const queryEmail = new Parse.Query(Parse.User);
-      queryEmail.matches('email', busca, 'i');
-      
+      queryEmail.matches('email', new RegExp(busca, 'i'));
+
       const queryNome = new Parse.Query(Parse.User);
-      queryNome.matches('nomeExibicao', busca, 'i');
-      
+      queryNome.matches('nomeExibicao', new RegExp(busca, 'i'));
+
       const mainQuery = Parse.Query.or(queryUsername, queryEmail, queryNome);
       mainQuery.descending('createdAt');
       mainQuery.limit(limite);
-      return await mainQuery.find();
+      return await mainQuery.find(opts);
     }
+
+    const query = new Parse.Query(Parse.User);
     query.descending('createdAt');
     query.limit(limite);
-    return await query.find();
+    return await query.find(opts);
   } catch (erro) {
     console.error('[auth.api] Erro ao listar usuarios:', erro);
     return [];

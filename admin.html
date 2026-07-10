@@ -118,8 +118,8 @@
     </div>
 
     <!-- Seção Fotos -->
-    <div class="card mb-8">
-        <div class="flex items-center justify-between mb-4">
+    <div class="card mb-10">
+        <div class="flex items-center justify-between mb-5">
             <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
                 <i class="ph-fill ph-image text-primaria"></i> Moderação de Fotos
             </h2>
@@ -130,75 +130,77 @@
         </div>
 
         <!-- Filtros Fotos -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div class="flex flex-col">
-                <label for="filtro-foto-escola" class="text-[10px] font-bold text-slate-500 mb-1">Escola (INEP)</label>
-                <input type="text" id="filtro-foto-escola" placeholder="Código INEP..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
-            </div>
-            <div class="flex flex-col">
-                <label for="filtro-foto-usuario" class="text-[10px] font-bold text-slate-500 mb-1">Autor</label>
-                <input type="text" id="filtro-foto-usuario" placeholder="Username..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
-            </div>
-            <div class="flex flex-col">
-                <label class="text-[10px] font-bold text-slate-500 mb-1">Período</label>
-                <div class="flex items-center gap-1">
-                    <input type="date" id="filtro-foto-inicio" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
-                    <span class="text-slate-400 text-xs">a</span>
-                    <input type="date" id="filtro-foto-fim" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5">
+            <div class="flex flex-wrap gap-3">
+                <div class="flex flex-col min-w-[160px] flex-1">
+                    <label for="filtro-foto-escola" class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Escola (INEP)</label>
+                    <input type="text" id="filtro-foto-escola" placeholder="Código INEP..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white focus:border-primaria transition-colors">
                 </div>
-            </div>
-            <div class="flex items-end gap-2">
-                <button id="btn-filtro-foto" class="flex-1 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors">Filtrar</button>
-                <button id="btn-limpar-foto" class="flex-1 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors">Limpar</button>
+                <div class="flex flex-col min-w-[160px] flex-1">
+                    <label for="filtro-foto-usuario" class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Autor</label>
+                    <input type="text" id="filtro-foto-usuario" placeholder="Username..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white focus:border-primaria transition-colors">
+                </div>
+                <div class="flex flex-col min-w-[220px] flex-1">
+                    <label class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Período</label>
+                    <div class="flex items-center gap-2">
+                        <input type="date" id="filtro-foto-inicio" class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white flex-1 focus:border-primaria transition-colors">
+                        <span class="text-slate-400 text-xs font-medium">até</span>
+                        <input type="date" id="filtro-foto-fim" class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white flex-1 focus:border-primaria transition-colors">
+                    </div>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button id="btn-filtro-foto" class="px-5 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors whitespace-nowrap">Filtrar</button>
+                    <button id="btn-limpar-foto" class="px-4 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap">Limpar</button>
+                </div>
             </div>
         </div>
 
         <!-- Pendentes -->
         <div id="painel-fotos-pendentes">
-            <div id="loader-fotos" class="text-center py-6">
+            <div id="loader-fotos" class="text-center py-8">
                 <div class="spinner mx-auto"></div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto rounded-lg border border-slate-100">
                 <table class="w-full text-sm hidden" id="tabela-fotos">
-                    <thead>
+                    <thead class="bg-slate-50">
                         <tr class="border-b border-slate-200 text-left">
-                            <th class="py-2 px-3 font-semibold text-slate-600">Olhar foto</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Data Envio</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Foto</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Escola</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Data Envio</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-fotos-body"></tbody>
                 </table>
             </div>
-            <p id="sem-fotos" class="hidden text-center text-sm text-slate-400 py-6">Nenhuma foto pendente de moderação.</p>
+            <p id="sem-fotos" class="hidden text-center text-sm text-slate-400 py-8">Nenhuma foto pendente de moderação.</p>
         </div>
 
         <!-- Aprovadas -->
         <div id="painel-fotos-aprovadas" class="hidden">
-            <div id="loader-fotos-aprovadas" class="text-center py-6">
+            <div id="loader-fotos-aprovadas" class="text-center py-8">
                 <div class="spinner mx-auto"></div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto rounded-lg border border-slate-100">
                 <table class="w-full text-sm hidden" id="tabela-fotos-aprovadas">
-                    <thead>
+                    <thead class="bg-slate-50">
                         <tr class="border-b border-slate-200 text-left">
-                            <th class="py-2 px-3 font-semibold text-slate-600">Olhar foto</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Data Aprovação</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Foto</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Escola</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Data Aprovação</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-fotos-aprovadas-body"></tbody>
                 </table>
             </div>
-            <p id="sem-fotos-aprovadas" class="hidden text-center text-sm text-slate-400 py-6">Nenhuma foto aprovada.</p>
+            <p id="sem-fotos-aprovadas" class="hidden text-center text-sm text-slate-400 py-8">Nenhuma foto aprovada.</p>
         </div>
     </div>
 
-    <!-- Seção Moderação de Comentários (All-in-One) -->
-    <div class="card mt-8">
-        <div class="flex items-center justify-between mb-4">
+    <!-- Seção Moderação de Comentários -->
+    <div class="card mb-10">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
             <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
                 <i class="ph-fill ph-chat text-primaria"></i> Moderação de Comentários
             </h2>
@@ -210,130 +212,135 @@
         </div>
 
         <!-- Filtros Comentários -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div class="flex flex-col">
-                <label for="filtro-comentario-escola" class="text-[10px] font-bold text-slate-500 mb-1">Escola (INEP)</label>
-                <input type="text" id="filtro-comentario-escola" placeholder="Código INEP..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
-            </div>
-            <div class="flex flex-col">
-                <label for="filtro-comentario-usuario" class="text-[10px] font-bold text-slate-500 mb-1">Autor</label>
-                <input type="text" id="filtro-comentario-usuario" placeholder="Username..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white">
-            </div>
-            <div class="flex flex-col">
-                <label class="text-[10px] font-bold text-slate-500 mb-1">Período</label>
-                <div class="flex items-center gap-1">
-                    <input type="date" id="filtro-comentario-inicio" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
-                    <span class="text-slate-400 text-xs">a</span>
-                    <input type="date" id="filtro-comentario-fim" class="p-1.5 text-xs border border-slate-200 rounded-lg outline-none bg-white w-full">
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5">
+            <div class="flex flex-wrap gap-3">
+                <div class="flex flex-col min-w-[160px] flex-1">
+                    <label for="filtro-comentario-escola" class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Escola (INEP)</label>
+                    <input type="text" id="filtro-comentario-escola" placeholder="Código INEP..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white focus:border-primaria transition-colors">
                 </div>
-            </div>
-            <div class="flex items-end gap-2">
-                <button id="btn-filtro-comentario" class="flex-1 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors">Filtrar</button>
-                <button id="btn-limpar-comentario" class="flex-1 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors">Limpar</button>
+                <div class="flex flex-col min-w-[160px] flex-1">
+                    <label for="filtro-comentario-usuario" class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Autor</label>
+                    <input type="text" id="filtro-comentario-usuario" placeholder="Username..." class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white focus:border-primaria transition-colors">
+                </div>
+                <div class="flex flex-col min-w-[220px] flex-1">
+                    <label class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Período</label>
+                    <div class="flex items-center gap-2">
+                        <input type="date" id="filtro-comentario-inicio" class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white flex-1 focus:border-primaria transition-colors">
+                        <span class="text-slate-400 text-xs font-medium">até</span>
+                        <input type="date" id="filtro-comentario-fim" class="p-2 text-xs border border-slate-200 rounded-lg outline-none bg-white flex-1 focus:border-primaria transition-colors">
+                    </div>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button id="btn-filtro-comentario" class="px-5 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors whitespace-nowrap">Filtrar</button>
+                    <button id="btn-limpar-comentario" class="px-4 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap">Limpar</button>
+                </div>
             </div>
         </div>
 
         <!-- Painel: Todos -->
         <div id="painel-comentarios-todos">
-            <div id="loader-comentarios-todos" class="text-center py-6">
+            <div id="loader-comentarios-todos" class="text-center py-8">
                 <div class="spinner mx-auto"></div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto rounded-lg border border-slate-100">
                 <table class="w-full text-sm hidden" id="tabela-comentarios-todos">
-                    <thead>
+                    <thead class="bg-slate-50">
                         <tr class="border-b border-slate-200 text-left">
-                            <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Escola</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Denúncias</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Comentário</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Autor</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Escola</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Denúncias</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-comentarios-todos-body"></tbody>
                 </table>
             </div>
-            <p id="sem-comentarios-todos" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário registrado no momento.</p>
+            <p id="sem-comentarios-todos" class="hidden text-center text-sm text-slate-400 py-8">Nenhum comentário registrado no momento.</p>
         </div>
 
         <!-- Painel: Denunciados -->
         <div id="painel-comentarios-denunciados" class="hidden">
-            <div id="loader-denuncias" class="text-center py-6">
+            <div id="loader-denuncias" class="text-center py-8">
                 <div class="spinner mx-auto"></div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto rounded-lg border border-slate-100">
                 <table class="w-full text-sm hidden" id="tabela-denuncias">
-                    <thead>
+                    <thead class="bg-slate-50">
                         <tr class="border-b border-slate-200 text-left">
-                            <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Denúncias</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Olhar comentários</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Comentário</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Autor</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Denúncias</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Ver escola</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-denuncias-body"></tbody>
                 </table>
             </div>
-            <p id="sem-denuncias" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário denunciado no momento.</p>
+            <p id="sem-denuncias" class="hidden text-center text-sm text-slate-400 py-8">Nenhum comentário denunciado no momento.</p>
         </div>
 
         <!-- Painel: Removidos -->
         <div id="painel-comentarios-removidos" class="hidden">
-            <div id="loader-removidos" class="text-center py-6">
+            <div id="loader-removidos" class="text-center py-8">
                 <div class="spinner mx-auto"></div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto rounded-lg border border-slate-100">
                 <table class="w-full text-sm hidden" id="tabela-removidos">
-                    <thead>
+                    <thead class="bg-slate-50">
                         <tr class="border-b border-slate-200 text-left">
-                            <th class="py-2 px-3 font-semibold text-slate-600">Comentário</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Autor</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600">Escola</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Removido por</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Data Remoção</th>
-                            <th class="py-2 px-3 font-semibold text-slate-600 text-center">Restaurar</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Comentário</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Autor</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Escola</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Removido por</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Data Remoção</th>
+                            <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Restaurar</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-removidos-body"></tbody>
                 </table>
             </div>
-            <p id="sem-removidos" class="hidden text-center text-sm text-slate-400 py-6">Nenhum comentário removido no histórico.</p>
+            <p id="sem-removidos" class="hidden text-center text-sm text-slate-400 py-8">Nenhum comentário removido no histórico.</p>
         </div>
     </div>
 
     <!-- Seção Usuários -->
-    <div class="card mb-8">
-        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
-            <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
-                <i class="ph-fill ph-users text-primaria"></i> Gerenciamento de Usuários
-            </h2>
-            <div class="flex items-center gap-2 max-w-sm w-full">
-                <input type="text" id="busca-usuarios" placeholder="Buscar por nome, username ou e-mail..." class="flex-grow p-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-primaria transition-colors">
-                <button id="btn-busca-usuarios" class="px-4 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-1">
+    <div class="card mb-10">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5">
+            <div>
+                <h2 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+                    <i class="ph-fill ph-users text-primaria"></i> Gerenciamento de Usuários
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Suspenda ou bloqueie contas da plataforma</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:max-w-sm">
+                <input type="text" id="busca-usuarios" placeholder="Nome, username ou e-mail..." class="flex-grow p-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-primaria transition-colors">
+                <button id="btn-busca-usuarios" class="px-4 py-2 bg-primaria text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-1 whitespace-nowrap">
                     <i class="ph-bold ph-magnifying-glass"></i> Buscar
                 </button>
             </div>
         </div>
 
-        <div id="loader-usuarios" class="text-center py-6 hidden">
+        <div id="loader-usuarios" class="text-center py-8 hidden">
             <div class="spinner mx-auto"></div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto rounded-lg border border-slate-100">
             <table class="w-full text-sm" id="tabela-usuarios">
-                <thead>
+                <thead class="bg-slate-50">
                     <tr class="border-b border-slate-200 text-left">
-                        <th class="py-2 px-3 font-semibold text-slate-600">Usuário / Email</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600">Cargo</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600">Cadastro</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Status</th>
-                        <th class="py-2 px-3 font-semibold text-slate-600 text-center">Ações</th>
+                        <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Usuário / Email</th>
+                        <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Cargo</th>
+                        <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide">Cadastro</th>
+                        <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Status</th>
+                        <th class="py-3 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wide text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-usuarios-body"></tbody>
             </table>
         </div>
-        <p id="sem-usuarios" class="hidden text-center text-sm text-slate-400 py-6">Nenhum usuário cadastrado ou encontrado.</p>
+        <p id="sem-usuarios" class="hidden text-center text-sm text-slate-400 py-8">Nenhum usuário cadastrado ou encontrado.</p>
     </div>
 
 </main>
