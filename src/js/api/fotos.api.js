@@ -3,6 +3,8 @@
  * Responsabilidade: Gestão de upload e consulta de fotos comunitárias no Back4App
  */
 
+import { validarArquivoImagem, RateLimiter, escaparRegex } from '../core/utilitarios.js';
+
 const CLASSE_FOTO = 'SchoolPhoto';
 
 /**
@@ -43,26 +45,41 @@ export async function listarAprovadas(idEscola) {
 }
 
 /**
- * Submete nova foto para moderacao
+ * Submete nova foto para moderacao com validação estrita e rate limiting
  * @param {string} idEscola
  * @param {File} arquivoImagem
  */
 export async function enviarFoto(idEscola, arquivoImagem) {
+  const autor = Parse.User.current();
+  if (!autor) {
+    throw new Error('Você precisa estar autenticado para enviar fotos.');
+  }
+
+  const checagemRateLimit = RateLimiter.verificar('envio_foto', 5, 60000); // 5 uploads por minuto
+  if (!checagemRateLimit.permitido) {
+    throw new Error('Limite de uploads por minuto atingido. Aguarde alguns instantes.');
+  }
+
+  const validacao = validarArquivoImagem(arquivoImagem, 5); // máx 5MB
+  if (!validacao.valido) {
+    throw new Error(validacao.erro);
+  }
+
   try {
-    const parseFile = new Parse.File(arquivoImagem.name, arquivoImagem);
+    // Sanitiza nome do arquivo
+    const extensao = (arquivoImagem.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nomeSeguro = `escola_${String(idEscola)}_${Date.now()}.${extensao}`;
+    const parseFile = new Parse.File(nomeSeguro, arquivoImagem);
     await parseFile.save();
 
     const foto = new Parse.Object(CLASSE_FOTO);
     foto.set('id_escola', String(idEscola));
     foto.set('arquivo', parseFile);
     foto.set('status', 'pending');
-
-    const autor = Parse.User.current();
-    if (autor) {
-      foto.set('autor', autor);
-    }
+    foto.set('autor', autor);
 
     await foto.save();
+    RateLimiter.registrar('envio_foto', 60000);
 
     return foto;
   } catch (erro) {
@@ -85,7 +102,8 @@ export async function listarPendentes(filtros = {}, limite = 50) {
     }
     if (filtros.autor) {
       const innerQuery = new Parse.Query(Parse.User);
-      innerQuery.matches('username', filtros.autor, 'i');
+      const autorEscapado = escaparRegex(String(filtros.autor).trim());
+      innerQuery.matches('username', autorEscapado, 'i');
       query.matchesQuery('autor', innerQuery);
     }
     if (filtros.dataInicio) {
@@ -121,7 +139,8 @@ export async function listarAprovadasAdmin(filtros = {}, limite = 50) {
     }
     if (filtros.autor) {
       const innerQuery = new Parse.Query(Parse.User);
-      innerQuery.matches('username', filtros.autor, 'i');
+      const autorEscapado = escaparRegex(String(filtros.autor).trim());
+      innerQuery.matches('username', autorEscapado, 'i');
       query.matchesQuery('autor', innerQuery);
     }
     if (filtros.dataInicio) {

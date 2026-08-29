@@ -16,29 +16,42 @@ let filtrosFotos = {};
 let filtrosComentarios = {};
 
 async function iniciar() {
-  const admin = await verificarAdmin();
-  document.getElementById('loader-admin')?.classList.add('hidden');
+  const loaderEl = document.getElementById('loader-admin');
+  const semPermissaoEl = document.getElementById('sem-permissao');
+  const conteudoAdminEl = document.getElementById('conteudo-admin');
 
-  if (!admin) {
-    document.getElementById('sem-permissao')?.classList.remove('hidden');
-    return;
+  try {
+    const admin = await verificarAdmin();
+    if (loaderEl) loaderEl.classList.add('hidden');
+
+    if (!admin) {
+      if (semPermissaoEl) semPermissaoEl.classList.remove('hidden');
+      return;
+    }
+
+    if (conteudoAdminEl) conteudoAdminEl.classList.remove('hidden');
+
+    const usuario = Parse.User.current();
+    estado.definir('usuarioAtual', usuario);
+
+    console.log('[ADMIN] Acesso autorizado:', usuario?.get('username'));
+
+    configurarAbasFotos();
+    configurarAbasComentarios();
+    configurarBotaoRecarregar();
+    configurarFiltrosAdmin();
+    configurarAbaUsuarios();
+
+    await Promise.allSettled([
+      carregarFotosPendentes(),
+      carregarTodosComentarios(),
+      carregarUsuarios()
+    ]);
+  } catch (erro) {
+    console.error('[ADMIN] Erro ao inicializar painel admin:', erro);
+    if (loaderEl) loaderEl.classList.add('hidden');
+    if (semPermissaoEl) semPermissaoEl.classList.remove('hidden');
   }
-
-  document.getElementById('conteudo-admin')?.classList.remove('hidden');
-
-  const usuario = Parse.User.current();
-  estado.definir('usuarioAtual', usuario);
-
-  console.log('[ADMIN] Acesso autorizado:', usuario.get('username'));
-
-  configurarAbasFotos();
-  configurarAbasComentarios();
-  configurarBotaoRecarregar();
-  configurarFiltrosAdmin();
-  configurarAbaUsuarios();
-  await carregarFotosPendentes();
-  await carregarTodosComentarios();
-  await carregarUsuarios();
 }
 
 /* --- Abas Fotos --- */
@@ -144,11 +157,11 @@ async function carregarFotosPendentes() {
 
       tr.innerHTML = `
         <td class="py-3 px-3">
-          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="abrirModalFoto('${esc(url)}')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
+          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer btn-abrir-foto" data-foto-url="${esc(url)}" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
-          <a href="escola.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
+          <a href="escola?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
             <i class="ph-bold ph-arrow-square-out"></i> Olhar perfil
           </a>
         </td>
@@ -169,6 +182,13 @@ async function carregarFotosPendentes() {
     if (tbody) {
       tbody.innerHTML = '';
       tbody.appendChild(fragmento);
+
+      tbody.onclick = (e) => {
+        const img = e.target.closest('.btn-abrir-foto');
+        if (img && img.dataset.fotoUrl) {
+          abrirModalFoto(img.dataset.fotoUrl);
+        }
+      };
 
       tbody.querySelectorAll('.btn-aprovar').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -224,11 +244,11 @@ async function carregarFotosAprovadas() {
 
       tr.innerHTML = `
         <td class="py-3 px-3">
-          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer" onclick="abrirModalFoto('${esc(url)}')" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
+          ${url ? `<img src="${esc(url)}" alt="Miniatura" class="w-16 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer btn-abrir-foto" data-foto-url="${esc(url)}" loading="lazy">` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-sm font-medium text-slate-700">
           ${esc(idEscola)}
-          <a href="escola.html?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
+          <a href="escola?id=${esc(idEscola)}" target="_blank" class="block text-xs text-primaria hover:underline mt-0.5">
             <i class="ph-bold ph-arrow-square-out"></i> Olhar perfil
           </a>
         </td>
@@ -244,6 +264,13 @@ async function carregarFotosAprovadas() {
     if (tbody) {
       tbody.innerHTML = '';
       tbody.appendChild(fragmento);
+
+      tbody.onclick = (e) => {
+        const img = e.target.closest('.btn-abrir-foto');
+        if (img && img.dataset.fotoUrl) {
+          abrirModalFoto(img.dataset.fotoUrl);
+        }
+      };
 
       tbody.querySelectorAll('.btn-remover-foto').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -292,7 +319,7 @@ async function carregarTodosComentarios() {
         <td class="py-3 px-3 text-sm text-slate-700 max-w-xs truncate">${esc(c.get('mensagem') || '')}</td>
         <td class="py-3 px-3 text-sm text-slate-500">${esc(c.get('nome') || '--')}</td>
         <td class="py-3 px-3 text-sm text-slate-500">
-          ${idEscola ? `<a href="escola.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
+          ${idEscola ? `<a href="escola?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">${c.get('flags_count') || 0}</span>
@@ -372,7 +399,7 @@ async function carregarDenuncias() {
           <span class="px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-xs font-bold">${d.get('flags_count') || 0}</span>
         </td>
         <td class="py-3 px-3 text-center">
-          ${idEscola ? `<a href="escola.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center justify-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> Olhar comentários</a>` : '<span class="text-xs text-slate-400">--</span>'}
+          ${idEscola ? `<a href="escola?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center justify-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> Olhar comentários</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <div class="flex items-center justify-center gap-2">
@@ -487,7 +514,7 @@ async function carregarComentariosRemovidos() {
         </td>
         <td class="py-3 px-3 text-sm text-slate-500">${esc(d.get('nome') || '--')}</td>
         <td class="py-3 px-3 text-sm text-slate-500">
-          ${idEscola ? `<a href="escola.html?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
+          ${idEscola ? `<a href="escola?id=${esc(idEscola)}" target="_blank" class="text-xs text-primaria hover:underline flex items-center gap-1"><i class="ph-bold ph-arrow-square-out"></i> ${esc(idEscola)}</a>` : '<span class="text-xs text-slate-400">--</span>'}
         </td>
         <td class="py-3 px-3 text-center">
           <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">${esc(removidoPor)}</span>
@@ -716,4 +743,8 @@ async function carregarUsuarios(busca = '') {
   }
 }
 
-document.addEventListener('DOMContentLoaded', iniciar);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciar);
+} else {
+  iniciar();
+}

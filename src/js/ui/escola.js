@@ -8,9 +8,9 @@ import estado from '../core/estado.js';
 import { calcularDistanciaKm, debounce } from '../core/utilitarios.js';
 import * as EscolasAPI from '../api/escolas.api.js';
 import * as FotosAPI from '../api/fotos.api.js';
+import * as MapillaryAPI from '../api/mapillary.api.js';
 import * as FeedbackAPI from '../api/feedback.api.js';
 import * as BrasilAPI from '../api/brasilapi.api.js';
-import { mostrarAlerta, mostrarConfirmacao, mostrarPrompt } from './modal.ui.js';
 import { PARSE_CONFIG } from '../core/constantes.js';
 
 Parse.initialize(PARSE_CONFIG.APP_ID, PARSE_CONFIG.JS_KEY);
@@ -201,14 +201,6 @@ async function carregarImagens() {
   const placeholder = document.getElementById('placeholder-foto');
   const btnAnterior = document.getElementById('btn-foto-anterior');
   const btnProximo = document.getElementById('btn-foto-proximo');
-  const btnEnviarFoto = document.getElementById('btn-enviar-foto');
-
-  /* Mostra o botão de enviar foto se logado */
-  const usuarioAtual = estado.obter('usuarioAtual') || Parse.User.current();
-  if (btnEnviarFoto && usuarioAtual) {
-    btnEnviarFoto.style.display = 'inline-flex';
-    btnEnviarFoto.onclick = () => dispararUploadFoto();
-  }
 
   /* Etapa 1: Back4App */
   const fotosBack4App = await FotosAPI.listarAprovadas(dadosEscola.id_escola);
@@ -216,14 +208,37 @@ async function carregarImagens() {
     renderizarFotos(fotosBack4App.map(f => ({
       url: f.get('arquivo')?.url(),
       fonte: 'Comunidade AcessoEdu',
-      autor: f.get('autor'),
-      moderadoPor: f.get('moderadoPor'),
-      status: f.get('status')
     })));
     return;
   }
 
-  /* Etapa 2: Placeholder */
+  /* Cache de Foto: Verifica se já existe uma URL salva no banco de dados */
+  if (dadosEscola.foto_url) {
+    renderizarFotos([{
+      url: dadosEscola.foto_url,
+      fonte: 'Mapillary (Cache)',
+    }]);
+    return;
+  }
+
+  /* Etapa 2: Mapillary */
+  const resultadoMapillary = await MapillaryAPI.buscarFotosDaEscola(dadosEscola.latitude, dadosEscola.longitude);
+  if (resultadoMapillary.ok) {
+    const fotos = resultadoMapillary.fotos.map(img => ({
+      url: img.thumb_1024_url || img.thumb_512_url || '',
+      fonte: 'Mapillary',
+    }));
+    renderizarFotos(fotos);
+
+    const primeiraFotoUrl = fotos[0]?.url;
+    if (primeiraFotoUrl && dadosEscola.id_parse && dadosEscola.classe) {
+      EscolasAPI.atualizarFotoUrl(dadosEscola.id_parse, dadosEscola.classe, primeiraFotoUrl)
+        .catch(err => console.error('[ESCOLA] Falha ao atualizar cache de foto_url:', err));
+    }
+    return;
+  }
+
+  /* Etapa 3: Placeholder */
   container.innerHTML = '';
   btnAnterior.classList.add('hidden');
   btnProximo.classList.add('hidden');
@@ -237,7 +252,7 @@ async function carregarImagens() {
   document.getElementById('btn-enviar-primeira-foto').addEventListener('click', () => {
     const usuario = estado.obter('usuarioAtual');
     if (!usuario) {
-      window.location.href = 'config.html';
+      window.location.href = 'config';
       return;
     }
     dispararUploadFoto();
@@ -252,48 +267,29 @@ function renderizarFotos(fotos) {
   if (placeholder) placeholder.classList.add('hidden');
   const fragmento = document.createDocumentFragment();
 
-  const usuarioLogado = estado.obter('usuarioAtual');
-  const isAdmin = usuarioLogado?.get('role') === 'admin';
-
-  fotos.forEach((foto, idx) => {
+  fotos.forEach((foto) => {
     const slide = document.createElement('div');
     slide.className = 'flex-shrink-0 w-full sm:w-96 snap-center';
-
-    let legenda = foto.fonte || '';
-    const isPending = foto.status === 'pending';
-    if (isPending) {
-      legenda = 'Pendente de Aprovação';
-    } else if (foto.fonte === 'Comunidade AcessoEdu') {
-      const autorObj = foto.autor;
-      const nomeAutor = autorObj ? (autorObj.get('nomeExibicao') || autorObj.get('username') || 'Usuário') : '';
-      if (nomeAutor) {
-        legenda = `Enviada por: ${nomeAutor}`;
-      } else {
-        legenda = 'Comunidade AcessoEdu';
-      }
-
-      if (isAdmin) {
-        const moderadorObj = foto.moderadoPor;
-        const nomeModerador = moderadorObj ? (moderadorObj.get('nomeExibicao') || moderadorObj.get('username') || 'Admin') : '';
-        if (nomeModerador) {
-          legenda += ` | Aprovada por: ${nomeModerador}`;
-        }
-      }
-    }
-
     slide.innerHTML = `
-      <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3] select-none">
-        <img src="${esc(foto.url)}" alt="" class="w-full h-full object-cover pointer-events-none ${isPending ? 'opacity-60 grayscale-[50%]' : ''}" loading="lazy" style="-webkit-user-drag: none; user-drag: none;"
+      <div class="relative rounded-xl overflow-hidden bg-slate-100 aspect-[4/3]">
+        <img src="${esc(foto.url)}" alt="Foto da escola" class="w-full h-full object-cover cursor-pointer btn-abrir-foto" loading="lazy"
+             data-foto-url="${esc(foto.url)}"
              onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'ph-fill ph-image text-4xl text-slate-300\\'></i></div>'">
-        <div class="absolute inset-0 z-10 cursor-pointer" onclick="abrirModalFoto('${esc(foto.url)}')" oncontextmenu="return false;"></div>
-        ${legenda ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full z-20 pointer-events-none">${esc(legenda)}</span>` : ''}
-        ${isPending ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 z-20 pointer-events-none"><i class="ph-fill ph-clock"></i> Pendente</span>` : ''}
+        ${foto.fonte ? `<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">${esc(foto.fonte)}</span>` : ''}
       </div>`;
     fragmento.appendChild(slide);
   });
 
   container.innerHTML = '';
   container.appendChild(fragmento);
+
+  // Delegação de evento segura para clique na foto
+  container.onclick = (e) => {
+    const img = e.target.closest('.btn-abrir-foto');
+    if (img && img.dataset.fotoUrl) {
+      abrirModalFoto(img.dataset.fotoUrl);
+    }
+  };
 
   if (fotos.length > 1) {
     btnAnterior.classList.remove('hidden');
@@ -307,7 +303,7 @@ function renderizarFotos(fotos) {
 function dispararUploadFoto() {
   const usuario = Parse.User.current();
   if (!usuario) {
-    window.location.href = 'config.html';
+    window.location.href = 'config';
     return;
   }
 
@@ -320,6 +316,7 @@ function dispararUploadFoto() {
     if (files.length === 0) return;
 
     try {
+      // Conta fotos que o usuario ja enviou para esta escola
       const query = new Parse.Query('SchoolPhoto');
       query.equalTo('id_escola', String(dadosEscola.id_escola));
       query.equalTo('autor', usuario);
@@ -340,20 +337,15 @@ function dispararUploadFoto() {
       let enviadas = 0;
       for (const file of arquivosParaEnviar) {
         try {
-          const croppedBlob = await window.mostrarModalEnquadramento(file, false);
-          if (croppedBlob) {
-            const croppedFile = new File([croppedBlob], `escola-${Date.now()}.jpg`, { type: 'image/jpeg' });
-            await FotosAPI.enviarFoto(dadosEscola.id_escola, croppedFile);
-            enviadas++;
-          }
+          await FotosAPI.enviarFoto(dadosEscola.id_escola, file);
+          enviadas++;
         } catch (erro) {
-          console.error('[ESCOLA] Erro ao processar ou enviar foto:', erro);
+          console.error('[ESCOLA] Erro ao enviar foto:', erro);
         }
       }
 
       if (enviadas > 0) {
         await mostrarAlerta(`${enviadas} foto(s) enviada(s) para moderação. Obrigado pela contribuição!`, 'Sucesso');
-        await carregarImagens();
       }
     } catch (erro) {
       console.error('[ESCOLA] Erro ao validar limite de fotos:', erro);
@@ -362,186 +354,6 @@ function dispararUploadFoto() {
   };
   input.click();
 }
-
-window.mostrarModalEnquadramento = function(file, forcarQuadrado = false) {
-  return new Promise((resolve) => {
-    const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-    document.body.appendChild(modal);
-
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.src = objectUrl;
-
-    let proporcaoSelecionada = forcarQuadrado ? '1:1' : '4:3';
-    let zoomVal = 1.0;
-    let offsetValX = 0;
-    let offsetValY = 0;
-    let isDragging = false;
-    let startX = 0, startY = 0;
-
-    modal.innerHTML = `
-      <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col gap-4 select-none" onclick="event.stopPropagation()">
-        <h3 class="font-display font-bold text-lg text-slate-800">Enquadrar e Ajustar Foto</h3>
-        <p class="text-xs text-slate-500">Arraste a foto ou use os controles de zoom/posicionamento para ajustar o corte:</p>
-        
-        <div class="relative w-full aspect-[4/3] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-200 cursor-move" id="container-crop-preview">
-          <canvas id="canvas-crop-preview" class="max-w-full max-h-full object-contain pointer-events-none"></canvas>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <label class="text-xs font-semibold text-slate-600 flex justify-between">Zoom: <span id="txt-zoom">100%</span></label>
-          <input type="range" id="slider-zoom" min="1.0" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primaria">
-        </div>
-
-        <div class="flex gap-2 justify-center ${forcarQuadrado ? 'hidden' : ''}">
-          <button id="btn-prop-1-1" class="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-50 transition-colors">1:1</button>
-          <button id="btn-prop-4-3" class="px-3 py-1.5 rounded-lg border border-primaria bg-primaria/5 text-primaria text-xs font-semibold transition-colors">4:3</button>
-          <button id="btn-prop-16-9" class="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-50 transition-colors">16:9</button>
-          <button id="btn-prop-livre" class="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-50 transition-colors">Manual</button>
-        </div>
-
-        <div class="flex gap-3 justify-end mt-2">
-          <button id="btn-crop-cancelar" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-full transition-colors">Cancelar</button>
-          <button id="btn-crop-confirmar" class="px-5 py-2 bg-primaria text-white rounded-full text-sm font-bold hover:bg-blue-800 transition-colors shadow-md">Confirmar</button>
-        </div>
-      </div>
-    `;
-
-    const previewContainer = modal.querySelector('#container-crop-preview');
-    const canvas = modal.querySelector('#canvas-crop-preview');
-    const ctx = canvas.getContext('2d');
-    const sliderZoom = modal.querySelector('#slider-zoom');
-    const txtZoom = modal.querySelector('#txt-zoom');
-
-    const renderCrop = () => {
-      if (!img.naturalWidth) return;
-      let w = 0, h = 0;
-      let targetW = 0, targetH = 0;
-
-      if (proporcaoSelecionada === '1:1') {
-        const lado = Math.min(img.naturalWidth, img.naturalHeight);
-        w = lado; h = lado;
-        targetW = 600; targetH = 600;
-      } else if (proporcaoSelecionada === '4:3') {
-        if (img.naturalWidth / img.naturalHeight > 4 / 3) {
-          h = img.naturalHeight;
-          w = img.naturalHeight * 4 / 3;
-        } else {
-          w = img.naturalWidth;
-          h = img.naturalWidth * 3 / 4;
-        }
-        targetW = 800; targetH = 600;
-      } else if (proporcaoSelecionada === '16:9') {
-        if (img.naturalWidth / img.naturalHeight > 16 / 9) {
-          h = img.naturalHeight;
-          w = img.naturalHeight * 16 / 9;
-        } else {
-          w = img.naturalWidth;
-          h = img.naturalWidth * 9 / 16;
-        }
-        targetW = 960; targetH = 540;
-      } else {
-        w = img.naturalWidth;
-        h = img.naturalHeight;
-        targetW = img.naturalWidth;
-        targetH = img.naturalHeight;
-      }
-
-      // Aplica o Zoom
-      const cropW = w / zoomVal;
-      const cropH = h / zoomVal;
-
-      // Centralizado + Offset manual
-      const limitX = (w - cropW) / 2;
-      const limitY = (h - cropH) / 2;
-
-      // Limita deslocamento para não sair da imagem original
-      const maxOffsetX = (img.naturalWidth - cropW) / 2;
-      const maxOffsetY = (img.naturalHeight - cropH) / 2;
-      const minOffsetX = -maxOffsetX;
-      const minOffsetY = -maxOffsetY;
-
-      const offsetX = Math.max(minOffsetX, Math.min(maxOffsetX, ((img.naturalWidth - cropW) / 2) + offsetValX));
-      const offsetY = Math.max(minOffsetY, Math.min(maxOffsetY, ((img.naturalHeight - cropH) / 2) + offsetValY));
-
-      canvas.width = targetW;
-      canvas.height = targetH;
-      ctx.clearRect(0, 0, targetW, targetH);
-      ctx.drawImage(img, offsetX, offsetY, cropW, cropH, 0, 0, targetW, targetH);
-    };
-
-    img.onload = renderCrop;
-
-    sliderZoom.oninput = (e) => {
-      zoomVal = parseFloat(e.target.value);
-      txtZoom.textContent = `${Math.round(zoomVal * 100)}%`;
-      renderCrop();
-    };
-
-    // Controle de arraste manual
-    previewContainer.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      startX = e.clientX;
-      startY = e.clientY;
-
-      // Ajusta deslocamento escalonado com o zoom
-      offsetValX -= (dx * (img.naturalWidth / canvas.clientWidth)) / zoomVal;
-      offsetValY -= (dy * (img.naturalHeight / canvas.clientHeight)) / zoomVal;
-      renderCrop();
-    });
-
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
-
-    const updateActiveButton = () => {
-      if (forcarQuadrado) return;
-      const btn1 = modal.querySelector('#btn-prop-1-1');
-      const btn2 = modal.querySelector('#btn-prop-4-3');
-      const btn3 = modal.querySelector('#btn-prop-16-9');
-      const btnL = modal.querySelector('#btn-prop-livre');
-      const activeClass = 'border-primaria bg-primaria/5 text-primaria';
-      const inactiveClass = 'border-slate-200 text-slate-600 hover:bg-slate-50';
-
-      [btn1, btn2, btn3, btnL].forEach(b => { if (b) b.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${inactiveClass}`; });
-
-      if (proporcaoSelecionada === '1:1' && btn1) btn1.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
-      if (proporcaoSelecionada === '4:3' && btn2) btn2.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
-      if (proporcaoSelecionada === '16:9' && btn3) btn3.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
-      if (proporcaoSelecionada === 'livre' && btnL) btnL.className = `px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${activeClass}`;
-    };
-
-    if (!forcarQuadrado) {
-      modal.querySelector('#btn-prop-1-1').onclick = () => { proporcaoSelecionada = '1:1'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
-      modal.querySelector('#btn-prop-4-3').onclick = () => { proporcaoSelecionada = '4:3'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
-      modal.querySelector('#btn-prop-16-9').onclick = () => { proporcaoSelecionada = '16:9'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
-      modal.querySelector('#btn-prop-livre').onclick = () => { proporcaoSelecionada = 'livre'; offsetValX = 0; offsetValY = 0; updateActiveButton(); renderCrop(); };
-    }
-
-    modal.querySelector('#btn-crop-cancelar').onclick = () => {
-      URL.revokeObjectURL(objectUrl);
-      modal.remove();
-      resolve(null);
-    };
-
-    modal.querySelector('#btn-crop-confirmar').onclick = () => {
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(objectUrl);
-        modal.remove();
-        resolve(blob);
-      }, 'image/jpeg', 0.88);
-    };
-  });
-};
 
 /* --- Checklist Comparativo --- */
 function renderizarChecklist() {
@@ -677,48 +489,31 @@ async function renderizarRadar(ano) {
 
   const dadosEscolaArr = INDICADORES.map(ind => dadosAno[ind.chave] === 1 ? 100 : 0);
 
-  /* Estatisticas agregadas via EstatisticasAgregadas (mesma fonte do Dashboard) */
+  /* Estatisticas agregadas (municipio, estado, regiao) */
   const uf = dadosEscola.uf || dadosAno.uf || '';
   const municipio = dadosEscola.cidade || dadosAno.cidade || '';
+  const estatisticas = await EscolasAPI.obterEstatisticas(uf, municipio);
 
-  /* Monta as chaves no formato da tabela EstatisticasAgregadas:
-     - Regiao: "Nordeste"
-     - Estado: "PE"
-     - Municipio: "PE-Recife" */
-  const chaveMunicipio = (uf && municipio) ? `${uf}-${municipio}` : '';
-  const chaveEstado = uf || '';
-  const chaveRegiao = 'Nordeste';
-
-  /* Busca as 3 estatisticas em paralelo */
-  const [estatMunicipio, estatEstado, estatRegiao] = await Promise.all([
-    chaveMunicipio ? EscolasAPI.buscarEstatisticasAgregadas(chaveMunicipio) : Promise.resolve(null),
-    chaveEstado ? EscolasAPI.buscarEstatisticasAgregadas(chaveEstado) : Promise.resolve(null),
-    EscolasAPI.buscarEstatisticasAgregadas(chaveRegiao),
-  ]);
-
-  /* Mapeia os pct_* do ano selecionado para o array de indicadores do radar */
-  const mapearPctParaRadar = (agregado) => {
-    if (!agregado) return INDICADORES.map(() => 0);
-    const dadosDoAno = ano === 2024 ? agregado.dados2024 : agregado.dados2025;
-    if (!dadosDoAno) return INDICADORES.map(() => 0);
+  const mapearIndicadores = (fonte) => {
+    if (!fonte) return INDICADORES.map(() => 0);
     const mapaChaves = {
-      internet: 'pct_internet',
-      laboratorio: 'pct_laboratorio',
-      banheiro_pne: 'pct_banheiro_pne',
-      quadra: 'pct_quadra',
-      rampa_acessibilidade: 'pct_rampa_acessibilidade',
-      agua_potavel: 'pct_agua_potavel',
-      energia_eletrica: 'pct_energia_eletrica',
+      internet: 'internet',
+      laboratorio: 'lab_informatica',
+      banheiro_pne: 'banheiro_acessivel',
+      quadra: 'quadra_esportes',
+      rampa_acessibilidade: 'rampas',
+      agua_potavel: 'agua_potavel',
+      energia_eletrica: 'energia_eletrica'
     };
     return INDICADORES.map(ind => {
-      const chavePct = mapaChaves[ind.chave];
-      return dadosDoAno[chavePct] ?? 0;
+      const chaveFonte = mapaChaves[ind.chave];
+      return fonte[chaveFonte] ?? 0;
     });
   };
 
-  const dadosMunicipio = mapearPctParaRadar(estatMunicipio);
-  const dadosEstado = mapearPctParaRadar(estatEstado);
-  const dadosRegiao = mapearPctParaRadar(estatRegiao);
+  const dadosMunicipio = mapearIndicadores(estatisticas?.municipio);
+  const dadosEstado = mapearIndicadores(estatisticas?.estado);
+  const dadosRegiao = mapearIndicadores(estatisticas?.regiao);
 
   instanciaRadar = new Chart(ctx, {
     type: 'radar',
@@ -1014,45 +809,11 @@ async function carregarFeedbacks() {
 
   try {
     const resultados = await FeedbackAPI.listarPorEscola(dadosEscola.id_escola);
-    atualizarMediaEstrelasCabecalho(resultados);
     if (loader) loader.classList.add('hidden');
 
     if (resultados.length === 0) {
       if (semFb) semFb.classList.remove('hidden');
       return;
-    }
-
-    // Para comentários antigos sem pointer 'usuario', vamos buscar o usuário correspondente pelo nome
-    const nomesParaBuscar = [];
-    resultados.forEach(fb => {
-      if (!fb.get('usuario')) {
-        const nome = fb.get('nome');
-        if (nome) nomesParaBuscar.push(nome);
-      }
-    });
-
-    const mapaUsuariosPorNome = {};
-    if (nomesParaBuscar.length > 0) {
-      try {
-        const queryUsernames = new Parse.Query(Parse.User);
-        queryUsernames.containedIn('username', nomesParaBuscar);
-        
-        const queryNomesExibicao = new Parse.Query(Parse.User);
-        queryNomesExibicao.containedIn('nomeExibicao', nomesParaBuscar);
-        
-        const queryUsers = Parse.Query.or(queryUsernames, queryNomesExibicao);
-        queryUsers.limit(100);
-        const usersEncontrados = await queryUsers.find();
-        
-        usersEncontrados.forEach(u => {
-          const nomeExib = u.get('nomeExibicao');
-          const usrname = u.get('username');
-          if (nomeExib) mapaUsuariosPorNome[nomeExib] = u;
-          if (usrname) mapaUsuariosPorNome[usrname] = u;
-        });
-      } catch (err) {
-        console.error('[ESCOLA] Erro ao buscar usuários correspondentes:', err);
-      }
     }
 
     const fragmento = document.createDocumentFragment();
@@ -1068,28 +829,15 @@ async function carregarFeedbacks() {
         : '';
 
       const estrelasHtml = Array.from({ length: 5 }, (_, i) =>
-          `<i class="ph-fill ph-star text-sm ${i < (fb.get('nota') || 0) ? 'text-acento' : 'text-slate-300'}"></i>`
+        `<i class="ph-fill ph-star text-sm ${i < (fb.get('nota') || 0) ? 'text-acento' : 'text-slate-300'}"></i>`
       ).join('');
 
       const verificado = fb.get('verificado_local')
         ? '<span class="badge-verificado ml-2"><i class="ph-fill ph-map-pin"></i> Local Verificado</span>'
         : '';
 
-      let autorUser = fb.get('usuario');
-      const nomeAutor = fb.get('nome') || '';
-      if (!autorUser && nomeAutor) {
-        autorUser = mapaUsuariosPorNome[nomeAutor];
-      }
-
-      let avatarHtml = '<i class="ph-fill ph-user-circle text-xl text-slate-400"></i>';
-      if (autorUser) {
-        const fotoFile = autorUser.get('profilePhoto');
-        if (fotoFile && fotoFile.url) {
-          avatarHtml = `<img src="${esc(fotoFile.url())}" alt="Avatar" class="w-6 h-6 rounded-full object-cover border border-slate-200">`;
-        }
-      }
-
       const usuarioAtual = estado.obter('usuarioAtual');
+      const nomeAutor = fb.get('nome') || '';
       const nomeUsuario = usuarioAtual?.get('nomeExibicao') || usuarioAtual?.get('username') || '';
       const isAdmin = usuarioAtual?.get('role') === 'admin';
       const isAutor = nomeAutor === nomeUsuario;
@@ -1111,7 +859,7 @@ async function carregarFeedbacks() {
         <div class="flex items-start justify-between gap-3">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
-              ${avatarHtml}
+              <i class="ph-fill ph-user-circle text-xl text-slate-400"></i>
               <span class="font-bold text-sm text-slate-800">${esc(nomeAutor || 'Anônimo')}</span>
               ${verificado}
               <span class="text-xs text-slate-400">${esc(data)}</span>
@@ -1121,7 +869,7 @@ async function carregarFeedbacks() {
             ${respostasHtml}
             <div class="flex items-center gap-4 mt-3 pt-2 border-t border-slate-200">
               <button class="btn-curtir text-xs text-slate-400 hover:text-secundaria transition-colors flex items-center gap-1" data-review-id="${fb.id}">
-                <i class="ph-bold ph-heart"></i> Apoiar (${fb.get('likes_count') || 0})
+                <i class="ph-bold ph-heart"></i> Apoiar
               </button>
               <button class="btn-denunciar text-xs text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1" data-review-id="${fb.id}">
                 <i class="ph-bold ph-flag"></i> Denunciar
@@ -1142,26 +890,11 @@ async function carregarFeedbacks() {
       btn.addEventListener('click', async () => {
         const usuario = estado.obter('usuarioAtual');
         if (!usuario) { await mostrarAlerta('É necessário fazer login.', 'Aviso'); return; }
-
-        const chaveCurtir = `curtiu_${usuario.id}_${btn.dataset.reviewId}`;
-        if (localStorage.getItem(chaveCurtir)) {
-          await mostrarAlerta('Você já apoiou este comentário.', 'Aviso');
-          return;
-        }
-
         try {
           await FeedbackAPI.curtirAvaliacao(btn.dataset.reviewId);
-          localStorage.setItem(chaveCurtir, 'true');
           btn.classList.add('text-secundaria');
           btn.querySelector('i').classList.replace('ph-bold', 'ph-fill');
-        } catch (erro) {
-          if (erro.message && erro.message.includes('já apoiou')) {
-            localStorage.setItem(chaveCurtir, 'true');
-            btn.classList.add('text-secundaria');
-            btn.querySelector('i').classList.replace('ph-bold', 'ph-fill');
-          }
-          await mostrarAlerta(erro.message || 'Erro ao processar apoio.', 'Erro');
-        }
+        } catch (_) { /* Silencia */ }
       });
     });
 
@@ -1170,7 +903,7 @@ async function carregarFeedbacks() {
         const usuario = estado.obter('usuarioAtual');
         if (!usuario) { await mostrarAlerta('É necessário fazer login.', 'Aviso'); return; }
 
-        const chaveDenuncia = `denunciou_${usuario.id}_${btn.dataset.reviewId}`;
+        const chaveDenuncia = 'denunciou_' + btn.dataset.reviewId;
         if (localStorage.getItem(chaveDenuncia)) {
           await mostrarAlerta('Você já enviou uma denúncia para este comentário.', 'Aviso');
           return;
@@ -1181,13 +914,7 @@ async function carregarFeedbacks() {
           await FeedbackAPI.denunciarAvaliacao(btn.dataset.reviewId);
           localStorage.setItem(chaveDenuncia, 'true');
           btn.classList.add('text-red-500');
-        } catch (erro) {
-          if (erro.message && erro.message.includes('já enviou uma denúncia')) {
-            localStorage.setItem(chaveDenuncia, 'true');
-            btn.classList.add('text-red-500');
-          }
-          await mostrarAlerta(erro.message || 'Erro ao processar denúncia.', 'Erro');
-        }
+        } catch (_) { /* Silencia */ }
       });
     });
 
@@ -1246,6 +973,7 @@ function contemTermosOfensivos(texto) {
 }
 
 window.abrirModalFoto = function (url) {
+  if (!url) return;
   let modal = document.getElementById('modal-foto');
   if (!modal) {
     modal = document.createElement('div');
@@ -1254,48 +982,25 @@ window.abrirModalFoto = function (url) {
     modal.addEventListener('click', () => modal.remove());
     document.body.appendChild(modal);
   }
-  modal.innerHTML = `
-    <button style="position:absolute;top:16px;right:16px;color:#fff;background:none;border:none;font-size:32px;cursor:pointer;opacity:0.8;z-index:10000;" onclick="this.parentElement.remove()">
-      <i class="ph-bold ph-x"></i>
-    </button>
-    <div style="position:relative;max-width:90vw;max-height:85vh;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);user-select:none;" onclick="event.stopPropagation()">
-      <img src="${url}" alt="" style="width:100%;height:100%;max-width:90vw;max-height:85vh;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-drag:none;">
-      <div style="position:absolute;inset:0;z-index:9999;cursor:zoom-out;" onclick="this.parentElement.parentElement.remove()" oncontextmenu="return false;"></div>
-    </div>
-  `;
-}
-
-function atualizarMediaEstrelasCabecalho(feedbacks) {
-  const container = document.getElementById('escola-media-estrelas');
-  const estrelasEl = document.getElementById('estrelas-media-container');
-  const txtNota = document.getElementById('txt-media-nota');
-  const txtTotal = document.getElementById('txt-total-avaliacoes');
-  if (!container || !estrelasEl || !txtNota || !txtTotal) return;
-
-  if (!feedbacks || feedbacks.length === 0) {
-    container.classList.add('hidden');
-    return;
-  }
-
-  const soma = feedbacks.reduce((acc, f) => acc + (f.get('nota') || 0), 0);
-  const media = soma / feedbacks.length;
+  modal.innerHTML = '';
   
-  const notaArredondada = Math.round(media * 2) / 2;
-  let estrelasHtml = '';
-  for (let i = 1; i <= 5; i++) {
-    if (i <= notaArredondada) {
-      estrelasHtml += '<i class="ph-fill ph-star text-amber-500 text-sm"></i>';
-    } else if (i - 0.5 === notaArredondada) {
-      estrelasHtml += '<i class="ph-fill ph-star-half text-amber-500 text-sm"></i>';
-    } else {
-      estrelasHtml += '<i class="ph-bold ph-star text-slate-300 text-sm"></i>';
-    }
-  }
+  const btnClose = document.createElement('button');
+  btnClose.style.cssText = 'position:absolute;top:16px;right:16px;color:#fff;background:none;border:none;font-size:32px;cursor:pointer;opacity:0.8;';
+  btnClose.innerHTML = '<i class="ph-bold ph-x"></i>';
+  btnClose.onclick = () => modal.remove();
 
-  estrelasEl.innerHTML = estrelasHtml;
-  txtNota.textContent = media.toFixed(1);
-  txtTotal.textContent = `(${feedbacks.length} ${feedbacks.length === 1 ? 'avaliação' : 'avaliações'})`;
-  container.classList.remove('hidden');
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = 'Foto ampliada';
+  img.style.cssText = 'max-width:90vw;max-height:85vh;object-fit:contain;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);';
+  img.onclick = (e) => e.stopPropagation();
+
+  modal.appendChild(btnClose);
+  modal.appendChild(img);
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciar);
+} else {
+  iniciar();
 }
-
-document.addEventListener('DOMContentLoaded', iniciar);

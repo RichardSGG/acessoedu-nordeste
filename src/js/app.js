@@ -5,17 +5,10 @@
 
 import estado from './core/estado.js';
 import * as EscolasAPI from './api/escolas.api.js';
+import { PARSE_CONFIG } from './core/constantes.js';
 
-// Consumindo estritamente via variáveis configuradas no escopo global do ambiente
-const APP_ID = window.ENV?.BACK4APP_APP_ID; 
-const JS_KEY = window.ENV?.BACK4APP_JS_KEY;
-
-if (!APP_ID || !JS_KEY) {
-    console.error("[ERRO] Chaves do Back4App nao encontradas no escopo de variaveis globais.");
-} else {
-    Parse.initialize(APP_ID, JS_KEY);
-    Parse.serverURL = 'https://parseapi.back4app.com/parse/';
-}
+Parse.initialize(PARSE_CONFIG.APP_ID, PARSE_CONFIG.JS_KEY);
+Parse.serverURL = PARSE_CONFIG.SERVER_URL;
 
 async function iniciarApp() {
     console.log("[INFO] Iniciando AcessoEdu Nordeste...");

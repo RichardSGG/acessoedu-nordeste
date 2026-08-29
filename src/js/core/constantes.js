@@ -24,11 +24,13 @@ export const STATUS_FOTO = {
     REJEITADA: 'rejected'
 };
 
-/* Credenciais Parse/Back4App — apenas App ID e JS Key (sem Master Key no frontend) */
+import { ENV_CONFIG } from './config.env.js';
+
+/* Credenciais Parse/Back4App — carregadas dinamicamente via build-env.js / .env com fallback de produção */
 export const PARSE_CONFIG = {
-    APP_ID: 'pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj',
-    JS_KEY: 'nfwa3q9x6QEJlFOwwNZtFFI54lwU8chbBYyzJKxN',
-    SERVER_URL: 'https://parseapi.back4app.com/parse/',
+    APP_ID: ENV_CONFIG?.APP_ID || 'pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj',
+    JS_KEY: ENV_CONFIG?.JS_KEY || 'IqdU5hv1lyC9WN6vFqtuvIga2sehMrRyFPjXExdo',
+    SERVER_URL: ENV_CONFIG?.SERVER_URL || 'https://parseapi.back4app.com/parse/',
 };
 
 export const CONFIGURACOES = {

@@ -402,3 +402,45 @@ body {
   transform: translateY(0);
   pointer-events: auto;
 }
+
+/* --- Proteção de Header (Não selecionável, não copiável, não arrastável) --- */
+header,
+.nav-header,
+#menu-mobile,
+#container-auth,
+header a,
+header span,
+header button,
+header i {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+/* --- Anti-Flicker Instantâneo do Header (Sincronização 0ms) --- */
+html.auth-logged #btn-login {
+  display: none !important;
+}
+html.auth-logged #avatar-usuario {
+  display: flex !important;
+}
+html.auth-logged #nome-usuario-header {
+  display: inline-block !important;
+}
+html.auth-logged #btn-logout-header {
+  display: flex !important;
+}
+html.auth-logged #btn-logout-mobile {
+  display: flex !important;
+}
+html.auth-admin #nav-admin-link {
+  display: inline-block !important;
+}
+html.auth-admin #nav-admin-link-mobile {
+  display: block !important;
+}
+
+

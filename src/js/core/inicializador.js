@@ -1,38 +1,48 @@
 /**
  * src/js/core/inicializador.js
- * Responsabilidade: Bootstrap da aplicação — auth UI global
+ * Responsabilidade: Bootstrap da aplicação — auth UI global com sincronização instantânea (anti-flicker)
  */
 
 import estado from './estado.js';
 import { verificarAdmin, verificarStatusUsuario } from '../api/auth.api.js';
 import { PARSE_CONFIG } from './constantes.js';
 
-/* Inicializa o Parse SDK globalmente para todas as páginas (inclui documentacao.html) */
+/* Inicializa o Parse SDK globalmente */
 if (!Parse.applicationId) {
   Parse.initialize(PARSE_CONFIG.APP_ID, PARSE_CONFIG.JS_KEY);
   Parse.serverURL = PARSE_CONFIG.SERVER_URL;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+/* Executa sincronização visual IMEDIATAMENTE na carga do script para evitar qualquer piscar */
+_sincronizarUIRapida();
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _inicializarApp);
+} else {
+  _inicializarApp();
+}
+
+function _inicializarApp() {
   console.log('[CORE] AcessoEdu Nordeste inicializado.');
-
-  /* Destaca link ativo no header desktop e mobile */
-  _marcarNavAtivo();
-
-  /* Auth UI global */
+  _sincronizarUIRapida();
   configurarAuthGlobal();
-});
+}
 
-/* Marca o link da página atual com cor de destaque */
+/* Marca o link da página atual com cor de destaque de forma instantânea */
 function _marcarNavAtivo() {
-  const pagina = window.location.pathname.split('/').pop() || 'index.html';
+  const rawPath = window.location.pathname.replace(/\/$/, '') || '/';
+  const paginaAtual = (rawPath.split('/').pop() || 'index').replace(/\.html$/, '');
 
   /* Header desktop */
   document.querySelectorAll('.nav-header a').forEach(link => {
-    const href = link.getAttribute('href');
-    if (href === pagina || (pagina === '' && href === 'index.html')) {
+    const href = (link.getAttribute('href') || '').replace(/^\//, '').replace(/\.html$/, '');
+    const isHome = (href === '' || href === 'index') && (paginaAtual === '' || paginaAtual === 'index');
+    if (href === paginaAtual || isHome) {
       link.classList.remove('text-slate-600', 'font-medium');
       link.classList.add('text-primaria', 'font-bold');
+    } else {
+      link.classList.remove('text-primaria', 'font-bold');
+      link.classList.add('text-slate-600', 'font-medium');
     }
   });
 
@@ -40,8 +50,9 @@ function _marcarNavAtivo() {
   const menuMobile = document.getElementById('menu-mobile');
   if (menuMobile) {
     menuMobile.querySelectorAll('a').forEach(link => {
-      const href = link.getAttribute('href');
-      if (href === pagina || (pagina === '' && href === 'index.html')) {
+      const href = (link.getAttribute('href') || '').replace(/^\//, '').replace(/\.html$/, '');
+      const isHome = (href === '' || href === 'index') && (paginaAtual === '' || paginaAtual === 'index');
+      if (href === paginaAtual || isHome) {
         link.classList.remove('text-slate-600', 'font-medium');
         link.classList.add('text-primaria', 'font-bold');
       } else {
@@ -52,15 +63,44 @@ function _marcarNavAtivo() {
   }
 }
 
+/* Remove .html da barra de endereço de forma limpa sem causar recarregamento ou erro de 404 */
+function _limparExtensaoUrl() {
+  try {
+    if (window.location.pathname.endsWith('.html')) {
+      const cleanPath = window.location.pathname.replace(/\.html$/, '') + window.location.search + window.location.hash;
+      window.history.replaceState(null, '', cleanPath);
+    }
+  } catch (_) {}
+}
+
+/* Aplicação instantânea de dados em cache para eliminar flicker visual no header */
+function _sincronizarUIRapida() {
+  _limparExtensaoUrl();
+  _marcarNavAtivo();
+
+  try {
+    const usuario = Parse.User.current();
+    if (usuario) {
+      const nomeCache = localStorage.getItem('acessoedu:user:nome') || usuario.get('nomeExibicao') || usuario.get('username') || '';
+      const fotoUrlCache = localStorage.getItem('acessoedu:user:avatar') || (usuario.get('profilePhoto')?.url ? usuario.get('profilePhoto').url() : '');
+      const isAdminCache = localStorage.getItem('acessoedu:isAdmin') === '1' || (usuario.get('role') || '').toLowerCase() === 'admin' || usuario.get('isAdmin') === true;
+
+      _renderizarHeaderLogado({ nome: nomeCache, fotoUrl: fotoUrlCache, isAdmin: isAdminCache });
+    } else {
+      _aplicarUIDeslogado();
+    }
+  } catch (_) { /* Silencioso */ }
+}
+
 function configurarAuthGlobal() {
   try {
     const usuario = Parse.User.current();
     if (usuario) {
       estado.definir('usuarioAtual', usuario);
 
-      /* Aplica imediatamente do cache local — sem esperar fetch — para evitar flicker */
-      _aplicarUILogado(usuario, _lerCacheAdmin());
+      _sincronizarUIRapida();
 
+      /* Atualiza dados do usuário em background */
       usuario.fetch().then(async (u) => {
         estado.definir('usuarioAtual', u);
         const isAdmin = await _verificarECachearAdmin();
@@ -69,17 +109,17 @@ function configurarAuthGlobal() {
         console.error('[CORE] Erro ao sincronizar usuario:', err);
       });
     } else {
-      _limparCacheAdmin();
+      _limparCacheUsuario();
       _aplicarUIDeslogado();
     }
-  } catch (_) { /* Parse pode nao estar carregado ainda */ }
+  } catch (_) { /* Silencioso */ }
 
   estado.assinar('mudanca:usuarioAtual', async (u) => {
     if (u) {
       const isAdmin = await _verificarECachearAdmin();
       _aplicarUILogado(u, isAdmin);
     } else {
-      _limparCacheAdmin();
+      _limparCacheUsuario();
       _aplicarUIDeslogado();
     }
   });
@@ -89,9 +129,10 @@ function configurarAuthGlobal() {
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
       try {
+        _limparCacheUsuario();
         await Parse.User.logOut();
         estado.definir('usuarioAtual', null);
-        window.location.href = 'index.html';
+        window.location.href = '/';
       } catch (_) { /* Silencia */ }
     });
   }
@@ -101,9 +142,10 @@ function configurarAuthGlobal() {
   if (btnLogoutMobile) {
     btnLogoutMobile.addEventListener('click', async () => {
       try {
+        _limparCacheUsuario();
         await Parse.User.logOut();
         estado.definir('usuarioAtual', null);
-        window.location.href = 'index.html';
+        window.location.href = '/';
       } catch (_) { /* Silencia */ }
     });
   }
@@ -131,14 +173,18 @@ function configurarAuthGlobal() {
   }
 }
 
-/* ─── Cache de admin no localStorage para link Admin sem piscar ─── */
+/* ─── Cache no localStorage para eliminação de flicker ─── */
 
 function _lerCacheAdmin() {
   try { return localStorage.getItem('acessoedu:isAdmin') === '1'; } catch (_) { return false; }
 }
 
-function _limparCacheAdmin() {
-  try { localStorage.removeItem('acessoedu:isAdmin'); } catch (_) {}
+function _limparCacheUsuario() {
+  try {
+    localStorage.removeItem('acessoedu:isAdmin');
+    localStorage.removeItem('acessoedu:user:nome');
+    localStorage.removeItem('acessoedu:user:avatar');
+  } catch (_) {}
 }
 
 async function _verificarECachearAdmin() {
@@ -153,7 +199,7 @@ async function _verificarECachearAdmin() {
 
 /* ─── Funções de UI ─── */
 
-function _aplicarUILogado(usuario, isAdmin) {
+function _renderizarHeaderLogado({ nome, fotoUrl, isAdmin }) {
   const btnLogin         = document.getElementById('btn-login');
   const avatarContainer  = document.getElementById('avatar-usuario');
   const linkAdmin        = document.getElementById('nav-admin-link') || document.getElementById('link-admin');
@@ -162,33 +208,20 @@ function _aplicarUILogado(usuario, isAdmin) {
   const btnLogoutMobile  = document.getElementById('btn-logout-mobile');
   const nomeUsuario      = document.getElementById('nome-usuario-header');
 
-  /* Verificar suspensão/bloqueio em background */
-  verificarStatusUsuario(usuario).then(async (status) => {
-    if (status === 'suspended' || status === 'blocked') {
-      await Parse.User.logOut();
-      estado.definir('usuarioAtual', null);
-      alert(status === 'blocked'
-        ? 'Esta conta foi bloqueada por um administrador.'
-        : 'Esta conta está temporariamente suspensa.');
-      window.location.href = 'index.html';
-    }
-  });
-
   if (btnLogin) btnLogin.classList.add('hidden');
 
   if (avatarContainer) {
     avatarContainer.classList.remove('hidden');
-    const foto = usuario.get('profilePhoto');
-    if (foto && foto.url) {
-      avatarContainer.innerHTML = `<img src="${foto.url()}" alt="" class="w-full h-full object-cover pointer-events-none select-none" style="-webkit-user-drag: none; user-drag: none;" oncontextmenu="return false;">`;
+    if (fotoUrl) {
+      avatarContainer.innerHTML = `<img src="${fotoUrl}" alt="" class="w-full h-full object-cover pointer-events-none select-none" style="-webkit-user-drag: none; user-drag: none;" oncontextmenu="return false;">`;
     } else {
       avatarContainer.innerHTML = `<i class="ph-fill ph-user text-xl text-slate-500"></i>`;
     }
-    avatarContainer.title = usuario.get('nomeExibicao') || usuario.get('username') || '';
+    avatarContainer.title = nome;
   }
 
   if (nomeUsuario) {
-    nomeUsuario.textContent = usuario.get('nomeExibicao') || usuario.get('username') || '';
+    nomeUsuario.textContent = nome;
     nomeUsuario.classList.remove('hidden');
     nomeUsuario.classList.add('hidden', 'lg:inline-block');
   }
@@ -200,9 +233,34 @@ function _aplicarUILogado(usuario, isAdmin) {
 
   if (btnLogoutMobile) btnLogoutMobile.classList.remove('hidden');
 
-  /* Admin — já disponível do cache, atualiza silenciosamente */
   if (linkAdmin)       linkAdmin.style.display       = isAdmin ? 'inline-block' : 'none';
   if (linkAdminMobile) linkAdminMobile.style.display = isAdmin ? 'block'        : 'none';
+}
+
+function _aplicarUILogado(usuario, isAdmin) {
+  const nome = usuario.get('nomeExibicao') || usuario.get('username') || '';
+  const foto = usuario.get('profilePhoto');
+  const fotoUrl = foto && foto.url ? foto.url() : '';
+
+  try {
+    localStorage.setItem('acessoedu:user:nome', nome);
+    if (fotoUrl) localStorage.setItem('acessoedu:user:avatar', fotoUrl);
+  } catch (_) {}
+
+  _renderizarHeaderLogado({ nome, fotoUrl, isAdmin });
+
+  /* Verificar suspensão/bloqueio em background */
+  verificarStatusUsuario(usuario).then(async (status) => {
+    if (status === 'suspended' || status === 'blocked') {
+      await Parse.User.logOut();
+      _limparCacheUsuario();
+      estado.definir('usuarioAtual', null);
+      alert(status === 'blocked'
+        ? 'Esta conta foi bloqueada por um administrador.'
+        : 'Esta conta está temporariamente suspensa.');
+      window.location.href = '/';
+    }
+  });
 }
 
 function _aplicarUIDeslogado() {

@@ -59,7 +59,7 @@ function configurarLogin() {
     try {
       const usuario = await AuthAPI.login(email, senha);
       erroEl.classList.add('hidden');
-      window.location.href = 'index.html';
+      window.location.href = '/';
     } catch (erro) {
       erroEl.textContent = erro.message || 'Email ou senha inválidos.';
       erroEl.classList.remove('hidden');
@@ -89,7 +89,7 @@ function configurarRegisto() {
       sucessoEl.classList.remove('hidden');
       setTimeout(() => {
         sucessoEl.classList.add('hidden');
-        window.location.href = 'index.html';
+        window.location.href = '/';
       }, 1500);
     } catch (erro) {
       erroEl.textContent = erro.message || 'Erro ao criar conta.';

@@ -3,7 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análise Comparativa | AcessoEdu Nordeste</title>
+    <title>Análise Comparativa 2024 vs 2025 | AcessoEdu Nordeste</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.svg">
+    <script>
+        (function() {
+            try {
+                var nome = localStorage.getItem('acessoedu:user:nome') || '';
+                var fotoUrl = localStorage.getItem('acessoedu:user:avatar') || '';
+                try { if (window.location.pathname.endsWith('.html')) window.history.replaceState(null, '', window.location.pathname.replace(/\.html$/, '') + window.location.search + window.location.hash); } catch(e) {}
+                var isLogged = !!nome || !!localStorage.getItem('Parse/pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj/currentUser');
+                var isAdmin = localStorage.getItem('acessoedu:isAdmin') === '1';
+                if (isLogged) document.documentElement.classList.add('auth-logged');
+                if (isAdmin) document.documentElement.classList.add('auth-admin');
+                
+                var observer = new MutationObserver(function() {
+                    var elNome = document.getElementById('nome-usuario-header');
+                    var elAvatar = document.getElementById('avatar-usuario');
+                    if (elNome && nome && !elNome.textContent) elNome.textContent = nome;
+                    if (elAvatar && fotoUrl && !elAvatar.querySelector('img')) {
+                        elAvatar.innerHTML = '<img src="' + fotoUrl + '" alt="" class="w-full h-full object-cover pointer-events-none select-none" style="-webkit-user-drag:none;user-drag:none;">';
+                    }
+                    if (elNome && elAvatar) observer.disconnect();
+                });
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+            } catch(e) {}
+        })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,7 +73,7 @@
         </a>
         <nav class="nav-header hidden lg:flex items-center gap-6">
             <a href="ranking.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Ranking</a>
-            <a href="analise.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors">Análise</a>
+            <a href="analise.html" class="text-sm font-bold text-primaria transition-colors">Análise</a>
             <a href="config.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="link-config">Configurações</a>
             <a href="admin.html" class="text-sm font-medium text-slate-600 hover:text-primaria transition-colors" id="nav-admin-link" style="display: none;">Painel Admin</a>
         </nav>

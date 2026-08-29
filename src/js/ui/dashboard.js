@@ -539,7 +539,6 @@ function exibirToast(mensagem, tipo = 'sucesso') {
     toastEl.classList.remove('visivel');
   }, 3000);
 }
-
 function normalizar(texto) {
   if (!texto) return '';
   return texto
@@ -554,6 +553,8 @@ function configurarBotaoCep() {
   const btnBuscar = document.getElementById('btnBuscarDentroModal');
   const modal = document.getElementById('modalBuscaCep');
   const inputCep = document.getElementById('inputModalCep');
+  const selEstado = document.getElementById('filtro-estado');
+  const selMunicipio = document.getElementById('filtro-municipio');
 
   if (!btnAbrir || !btnFechar || !btnBuscar || !modal || !inputCep) return;
 
@@ -607,8 +608,12 @@ function configurarBotaoCep() {
       const dataCep = await respCep.json();
       
       const uf = (dataCep?.state || '').toUpperCase();
-      const estadosNordeste = ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'];
-      if (!estadosNordeste.includes(uf)) {
+      const estadosNordeste = {
+        'AL': 'Alagoas', 'BA': 'Bahia', 'CE': 'Ceará', 'MA': 'Maranhão',
+        'PB': 'Paraíba', 'PE': 'Pernambuco', 'PI': 'Piauí', 'RN': 'Rio Grande do Norte', 'SE': 'Sergipe'
+      };
+
+      if (!estadosNordeste[uf]) {
         exibirToast('O CEP informado não é da Região Nordeste', 'erro');
         estado.definir('mensagemVazia', 'O AcessoEdu atende apenas a escolas da Região Nordeste.');
         estado.definir('escolas', []);
@@ -617,9 +622,7 @@ function configurarBotaoCep() {
       }
 
       const cidadeCru = dataCep?.city || '';
-      const cidadeNormalizada = normalizar(cidadeCru);
-
-      if (!cidadeNormalizada) {
+      if (!cidadeCru) {
         exibirToast('Cidade não identificada', 'erro');
         estado.definir('mensagemVazia', 'Não foi possível identificar o município para este CEP.');
         estado.definir('escolas', []);
@@ -627,28 +630,51 @@ function configurarBotaoCep() {
         return;
       }
 
-      exibirToast(`Município: ${cidadeCru}`, 'sucesso');
+      exibirToast(`Município: ${cidadeCru} - ${uf}`, 'sucesso');
 
-      const query = new Parse.Query('Escolas2025');
-      query.matches('municipio', new RegExp('^' + cidadeNormalizada + '$', 'i'));
-      query.limit(200);
-      const resultados = await query.find();
+      // 1. Atualiza visual dos filtros
+      _labelFiltroAtual = cidadeCru;
+      if (selEstado) selEstado.value = estadosNordeste[uf] || uf;
+      if (selMunicipio) {
+        selMunicipio.disabled = false;
+        selMunicipio.value = cidadeCru;
+        selMunicipio.placeholder = 'Digite ou selecione o município';
+      }
 
-      if (resultados.length > 0) {
-        const escolas = resultados.map(r => {
-          const dados = r.toJSON();
-          return {
-            ...dados,
-            id_parse: r.id,
-            classe: 'Escolas2025',
-            cidade: dados.municipio || dados.cidade || '',
-          };
-        });
-        estado.definir('escolas', escolas);
-      } else {
-        exibirToast('Nenhuma escola encontrada', 'aviso');
-        estado.definir('mensagemVazia', `Nenhuma escola encontrada no município de ${cidadeCru}`);
-        estado.definir('escolas', []);
+      // 2. Carrega lista de municípios do estado em segundo plano para manter sugestões ativas
+      _carregarMunicipios(uf);
+
+      // 3. Atualiza estado de filtros e busca escolas
+      estado.definir('filtros', { uf, municipio: cidadeCru, ano: anoAtual });
+      const resultados = await EscolasAPI.listar({ uf, municipio: cidadeCru, ano: anoAtual }, 0, false);
+
+      // 4. Atualiza KPIs e gráficos com base no município
+      chaveAtual = `${uf}-${cidadeCru}`;
+      let agregados = await EscolasAPI.buscarEstatisticasAgregadas(chaveAtual);
+      if (!agregados) {
+        agregados = await EscolasAPI.buscarEstatisticasAgregadas(cidadeCru);
+      }
+
+      if (!agregados && resultados && resultados.length > 0) {
+        const total = resultados.length;
+        const internet = resultados.filter(e => e.internet === 1).length;
+        const lab = resultados.filter(e => e.laboratorio === 1).length;
+        const banheiro = resultados.filter(e => e.banheiro_pne === 1 || e.banheiro_acessivel === 1).length;
+        const quadra = resultados.filter(e => e.quadra === 1).length;
+        const rampa = resultados.filter(e => e.rampa_acessibilidade === 1).length;
+        const agua = resultados.filter(e => e.agua_potavel === 1).length;
+        const energia = resultados.filter(e => e.energia_eletrica === 1).length;
+
+        agregados = {
+          chave: cidadeCru,
+          nivel: 'municipio',
+          dados2024: { total, internet, laboratorio: lab, banheiro_pne: banheiro, quadra, rampa_acessibilidade: rampa, agua_potavel: agua, energia_eletrica: energia },
+          dados2025: { total, internet, laboratorio: lab, banheiro_pne: banheiro, quadra, rampa_acessibilidade: rampa, agua_potavel: agua, energia_eletrica: energia }
+        };
+      }
+
+      if (agregados) {
+        _aplicarDados(agregados);
       }
 
       fecharModal();
@@ -703,8 +729,10 @@ function renderizarLista(escolas) {
       const termo = inputBusca ? inputBusca.value.trim() : '';
       if (termo && termo.length >= 2) {
         elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} correspondente${total === 1 ? '' : 's'} a "${termo}" no Nordeste`;
+      } else if (_labelFiltroAtual && _labelFiltroAtual !== 'Nordeste') {
+        elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} no município de ${_labelFiltroAtual}`;
       } else {
-        elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} em ${_labelFiltroAtual}`;
+        elContagem.textContent = `Exibindo ${total} ${total === 1 ? 'escola' : 'escolas'} no Nordeste`;
       }
       elContagem.classList.remove('hidden');
     }
@@ -787,7 +815,7 @@ function renderizarLista(escolas) {
     `;
 
     card.addEventListener('click', () => {
-      window.location.href = `escola.html?id=${escola.id_escola}`;
+      window.location.href = `escola?id=${escola.id_escola}`;
     });
 
     fragmento.appendChild(card);
@@ -938,4 +966,8 @@ function renderizarRoscaInternet(d24, d25) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', iniciar);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciar);
+} else {
+  iniciar();
+}

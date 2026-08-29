@@ -5,6 +5,7 @@
 
 import estado from '../core/estado.js';
 import { PAPEIS_USUARIO } from '../core/constantes.js';
+import { escaparRegex, RateLimiter, validarArquivoImagem } from '../core/utilitarios.js';
 
 const ERROS_PT = {
   'Invalid username/password.': 'Usuário ou senha inválidos.',
@@ -57,14 +58,22 @@ export async function inicializarSessao() {
 }
 
 /**
- * Login com email e senha
+ * Login com email e senha com proteção contra força bruta
  */
 export async function login(email, senha) {
+  const checagemRateLimit = RateLimiter.verificar('login', 5, 300000); // 5 tentativas por 5 minutos
+  if (!checagemRateLimit.permitido) {
+    const segundosRestantes = Math.ceil(checagemRateLimit.tempoRestanteMs / 1000);
+    throw new Error(`Muitas tentativas falhas. Por segurança, aguarde ${segundosRestantes} segundos antes de tentar novamente.`);
+  }
+
   try {
-    const usuario = await Parse.User.logIn(email, senha);
+    const usuario = await Parse.User.logIn(email.trim(), senha);
+    RateLimiter.limpar('login');
     estado.definir('usuarioAtual', usuario);
     return usuario;
   } catch (erro) {
+    RateLimiter.registrar('login', 300000);
     console.error('[auth.api] Erro no login:', erro);
     throw traduzirErro(erro);
   }
@@ -88,17 +97,23 @@ export async function loginGoogle(token) {
 }
 
 /**
- * Registo de novo usuario
+ * Registo de novo usuario com rate limit
  */
 export async function registar(email, senha, nomeExibicao) {
+  const checagemRateLimit = RateLimiter.verificar('cadastro', 3, 60000);
+  if (!checagemRateLimit.permitido) {
+    throw new Error('Muitas tentativas de cadastro recentes. Aguarde 1 minuto.');
+  }
+
   try {
     const usuario = new Parse.User();
-    usuario.set('username', email);
-    usuario.set('email', email);
+    usuario.set('username', email.trim());
+    usuario.set('email', email.trim());
     usuario.set('password', senha);
-    usuario.set('nomeExibicao', nomeExibicao);
+    usuario.set('nomeExibicao', (nomeExibicao || '').trim());
     usuario.set('role', PAPEIS_USUARIO.USUARIO);
     await usuario.signUp();
+    RateLimiter.registrar('cadastro', 60000);
     estado.definir('usuarioAtual', usuario);
     return usuario;
   } catch (erro) {
@@ -120,9 +135,9 @@ export async function logout() {
 }
 
 /**
- * Verifica se o usuario atual pertence a role 'admin' via Parse.Role.
- * Diferente de isAdmin(), esta funcao consulta o servidor e valida
- * membership real na Role, nao apenas o campo 'role' no objeto usuario.
+ * Verifica se o usuario atual possui perfil de administrador.
+ * Valida a coluna 'role', 'isAdmin', 'tipo' diretamente no _User e
+ * faz fallback para a tabela Parse.Role com timeout de segurança.
  * @returns {Promise<boolean>}
  */
 export async function verificarAdmin() {
@@ -130,24 +145,54 @@ export async function verificarAdmin() {
     const usuario = Parse.User.current();
     if (!usuario) return false;
 
-    /* Garante sessao valida */
-    await usuario.fetch();
+    /* 1. Checagem direta e imediata nos atributos do objeto _User */
+    const roleAttr = (usuario.get('role') || '').toLowerCase();
+    const tipoAttr = (usuario.get('tipo') || '').toLowerCase();
+    const isAdminAttr = usuario.get('isAdmin') === true || usuario.get('admin') === true;
 
-    /* Query na tabela interna de roles do Parse */
-    const roleQuery = new Parse.Query(Parse.Role);
-    roleQuery.equalTo('name', 'admin');
-    roleQuery.equalTo('users', usuario);
+    if (roleAttr === 'admin' || roleAttr === PAPEIS_USUARIO.ADMIN || tipoAttr === 'admin' || isAdminAttr) {
+      return true;
+    }
 
-    const role = await roleQuery.first({ useMasterKey: false });
-    return !!role;
+    /* 2. Tenta sincronizar os atributos do servidor caso tenha sido alterado recentemente */
+    try {
+      await Promise.race([
+        usuario.fetch(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      ]);
+      const roleAtualizada = (usuario.get('role') || '').toLowerCase();
+      const tipoAtualizado = (usuario.get('tipo') || '').toLowerCase();
+      const isAdminAtualizado = usuario.get('isAdmin') === true || usuario.get('admin') === true;
+
+      if (roleAtualizada === 'admin' || roleAtualizada === PAPEIS_USUARIO.ADMIN || tipoAtualizado === 'admin' || isAdminAtualizado) {
+        return true;
+      }
+    } catch (_) { /* Timeout ou falha de rede silenciosa */ }
+
+    /* 3. Checagem na tabela Parse.Role com timeout */
+    try {
+      const roleQuery = new Parse.Query(Parse.Role);
+      roleQuery.equalTo('name', 'admin');
+      roleQuery.equalTo('users', usuario);
+
+      const role = await Promise.race([
+        roleQuery.first({ useMasterKey: false }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      ]);
+      return !!role;
+    } catch (_) {
+      return false;
+    }
   } catch (erro) {
-    console.error('[auth.api] Erro ao verificar admin via Parse.Role:', erro);
+    console.error('[auth.api] Erro ao verificar admin:', erro);
+    const u = Parse.User.current();
+    if (u && (u.get('role') === 'admin' || u.get('isAdmin') === true)) return true;
     return false;
   }
 }
 
 /**
- * Solicita redefinicao de senha via email.
+ * Solicita redefinicao de senha via email com cooldown contra spam de e-mails.
  * @param {string} email - Email da conta a recuperar
  * @returns {Promise<{sucesso: boolean, mensagem: string}>}
  */
@@ -156,8 +201,15 @@ export async function solicitarRedefinicaoSenha(email) {
     return { sucesso: false, mensagem: 'Informe um endereço de email válido.' };
   }
 
+  const checagemRateLimit = RateLimiter.verificar('reset_senha', 1, 60000);
+  if (!checagemRateLimit.permitido) {
+    const segundos = Math.ceil(checagemRateLimit.tempoRestanteMs / 1000);
+    return { sucesso: false, mensagem: `Aguarde ${segundos}s antes de solicitar outro email de redefinição.` };
+  }
+
   try {
     await Parse.User.requestPasswordReset(email.trim());
+    RateLimiter.registrar('reset_senha', 60000);
     return {
       sucesso: true,
       mensagem: 'Email de redefinição enviado. Verifique sua caixa de entrada e spam.',
@@ -172,13 +224,21 @@ export async function solicitarRedefinicaoSenha(email) {
 }
 
 /**
- * Atualiza avatar do usuario
+ * Atualiza avatar do usuario com validação estrita de imagem
  */
-export async function atualizarAvatar(parseFile) {
+export async function atualizarAvatar(arquivo) {
   const usuario = estado.obter('usuarioAtual');
   if (!usuario) throw new Error('Usuário não autenticado');
 
+  if (arquivo instanceof File) {
+    const validacao = validarArquivoImagem(arquivo, 2); // max 2MB
+    if (!validacao.valido) {
+      throw new Error(validacao.erro);
+    }
+  }
+
   try {
+    const parseFile = arquivo instanceof Parse.File ? arquivo : new Parse.File('avatar.jpg', arquivo);
     await parseFile.save();
     usuario.set('profilePhoto', parseFile);
     await usuario.save();
@@ -209,7 +269,7 @@ export async function removerAvatar() {
 }
 
 /**
- * Lista usuarios do Parse com suporte a busca
+ * Lista usuarios do Parse com suporte a busca segura contra ReDoS
  */
 export async function listarUsuarios(busca = '', limite = 500) {
   try {
@@ -217,14 +277,15 @@ export async function listarUsuarios(busca = '', limite = 500) {
     const opts = usuarioAtual ? { sessionToken: usuarioAtual.getSessionToken() } : {};
 
     if (busca) {
+      const termoEscapado = escaparRegex(busca.trim());
       const queryUsername = new Parse.Query(Parse.User);
-      queryUsername.matches('username', new RegExp(busca, 'i'));
+      queryUsername.matches('username', new RegExp(termoEscapado, 'i'));
 
       const queryEmail = new Parse.Query(Parse.User);
-      queryEmail.matches('email', new RegExp(busca, 'i'));
+      queryEmail.matches('email', new RegExp(termoEscapado, 'i'));
 
       const queryNome = new Parse.Query(Parse.User);
-      queryNome.matches('nomeExibicao', new RegExp(busca, 'i'));
+      queryNome.matches('nomeExibicao', new RegExp(termoEscapado, 'i'));
 
       const mainQuery = Parse.Query.or(queryUsername, queryEmail, queryNome);
       mainQuery.descending('createdAt');
