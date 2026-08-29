@@ -3,6 +3,12 @@
 .env.local
 .env.production
 *.env
+.env*
+src/js/core/config.env.js
+testes/
+strix_runs/
+
+
 
 # Dependencias
 node_modules/
