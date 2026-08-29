@@ -45,10 +45,14 @@ Thumbs.db
 # JSONs de saida pesados do pipeline (28MB+ cada)
 pipeline_dados/saida/complementos_*.json
 
+# Testes e relatórios de segurança
+testes/
+strix_runs/
+src/js/core/config.env.js
+
 # Documentos markdown (README.md e ARQUITETURA.md vao ao repo)
 *.md
 !README.md
 !ARQUITETURA.md
 !PLAN.MD
 !PLAN.md
-!SKILLS.md

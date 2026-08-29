@@ -1,6 +1,11 @@
-# AcessoEdu Nordeste 🌵
+<div align="center">
+  <img src="favicon.svg" alt="AcessoEdu Nordeste Logo" width="96" height="96">
+  <h1>AcessoEdu Nordeste 🌵</h1>
+  <p><strong>Plataforma de transparência e auditoria cidadã para infraestrutura escolar do Nordeste brasileiro. ☀️</strong></p>
+</div>
 
-Plataforma de transparência e auditoria cidadã para infraestrutura escolar do Nordeste brasileiro. ☀️
+---
+
 
 ## Missão 📚
 

@@ -4,6 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Política de Privacidade | AcessoEdu Nordeste</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.svg">
+    <script>
+        (function() {
+            try {
+                var nome = localStorage.getItem('acessoedu:user:nome') || '';
+                var fotoUrl = localStorage.getItem('acessoedu:user:avatar') || '';
+                try { if (window.location.pathname.endsWith('.html')) window.history.replaceState(null, '', window.location.pathname.replace(/\.html$/, '') + window.location.search + window.location.hash); } catch(e) {}
+                var isLogged = !!nome || !!localStorage.getItem('Parse/pvFVnLmPwAzA0S9RG8rGmLJs5nOkus8FBfVSCOEj/currentUser');
+                var isAdmin = localStorage.getItem('acessoedu:isAdmin') === '1';
+                if (isLogged) document.documentElement.classList.add('auth-logged');
+                if (isAdmin) document.documentElement.classList.add('auth-admin');
+                
+                var observer = new MutationObserver(function() {
+                    var elNome = document.getElementById('nome-usuario-header');
+                    var elAvatar = document.getElementById('avatar-usuario');
+                    if (elNome && nome && !elNome.textContent) elNome.textContent = nome;
+                    if (elAvatar && fotoUrl && !elAvatar.querySelector('img')) {
+                        elAvatar.innerHTML = '<img src="' + fotoUrl + '" alt="" class="w-full h-full object-cover pointer-events-none select-none" style="-webkit-user-drag:none;user-drag:none;">';
+                    }
+                    if (elNome && elAvatar) observer.disconnect();
+                });
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+            } catch(e) {}
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">

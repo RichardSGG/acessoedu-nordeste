@@ -171,7 +171,7 @@ function renderizarLista(escolas) {
       <span class="font-display font-black text-lg text-primaria">${escola.notaExcelencia}</span>`;
 
     item.addEventListener('click', () => {
-      window.location.href = `escola.html?id=${escola.id_escola}`;
+      window.location.href = `escola?id=${escola.id_escola}`;
     });
 
     fragmento.appendChild(item);
@@ -195,4 +195,8 @@ function esc(texto) {
   return div.innerHTML;
 }
 
-document.addEventListener('DOMContentLoaded', iniciar);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciar);
+} else {
+  iniciar();
+}

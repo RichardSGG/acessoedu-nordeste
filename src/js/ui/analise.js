@@ -305,4 +305,8 @@ function renderizarDeltaRadar(d24, d25) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', iniciar);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciar);
+} else {
+  iniciar();
+}

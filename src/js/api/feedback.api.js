@@ -4,23 +4,29 @@
  */
 
 import estado from '../core/estado.js';
+import { RateLimiter, escaparRegex } from '../core/utilitarios.js';
 
 const CLASSE_AVALIACOES = 'Avaliacoes';
 const CLASSE_INTERACAO = 'AvaliacaoInteracao';
 
 /**
- * Envia uma avaliacao com verificacao de local
+ * Envia uma avaliacao com verificacao de local e rate limiting
  */
 export async function enviarAvaliacao({ idEscola, nota, comentario, latitude, longitude, verificadoLocal }) {
   const usuario = estado.obter('usuarioAtual');
-  if (!usuario) throw new Error('Usuario nao autenticado');
+  if (!usuario) throw new Error('Usuário não autenticado.');
+
+  const checagemRateLimit = RateLimiter.verificar('enviar_avaliacao', 3, 60000);
+  if (!checagemRateLimit.permitido) {
+    throw new Error('Limite de envio de avaliações atingido. Aguarde 1 minuto.');
+  }
 
   try {
     const review = new Parse.Object(CLASSE_AVALIACOES);
-    review.set('id_escola', idEscola);
+    review.set('id_escola', String(idEscola));
     review.set('nome', usuario.get('nomeExibicao') || usuario.get('username'));
-    review.set('nota', nota);
-    review.set('mensagem', comentario);
+    review.set('nota', Number(nota));
+    review.set('mensagem', String(comentario || '').trim());
     review.set('verificado_local', !!verificadoLocal);
     review.set('respostas', []);
     review.set('flags_count', 0);
@@ -32,6 +38,7 @@ export async function enviarAvaliacao({ idEscola, nota, comentario, latitude, lo
     }
 
     await review.save();
+    RateLimiter.registrar('enviar_avaliacao', 60000);
     return review;
   } catch (erro) {
     console.error('[feedback.api] Erro ao enviar avaliacao:', erro);
@@ -45,7 +52,7 @@ export async function enviarAvaliacao({ idEscola, nota, comentario, latitude, lo
 export async function listarPorEscola(idEscola) {
   try {
     const query = new Parse.Query(CLASSE_AVALIACOES);
-    query.equalTo('id_escola', idEscola);
+    query.equalTo('id_escola', String(idEscola));
     query.notEqualTo('removido', true);
     query.include('usuario');
     query.descending('createdAt');
@@ -65,10 +72,17 @@ export async function verificarAvaliacaoExistente(idEscola) {
   if (!usuario) return null;
 
   try {
-    const query = new Parse.Query(CLASSE_AVALIACOES);
-    query.equalTo('id_escola', idEscola);
-    query.equalTo('nome', usuario.get('nomeExibicao') || usuario.get('username'));
-    return await query.first();
+    const queryPorUser = new Parse.Query(CLASSE_AVALIACOES);
+    queryPorUser.equalTo('id_escola', String(idEscola));
+    queryPorUser.equalTo('usuario', usuario);
+
+    const queryPorNome = new Parse.Query(CLASSE_AVALIACOES);
+    queryPorNome.equalTo('id_escola', String(idEscola));
+    queryPorNome.equalTo('nome', usuario.get('nomeExibicao') || usuario.get('username'));
+
+    const mainQuery = Parse.Query.or(queryPorUser, queryPorNome);
+    mainQuery.notEqualTo('removido', true);
+    return await mainQuery.first();
   } catch (erro) {
     console.error('[feedback.api] Erro ao verificar avaliacao:', erro);
     return null;
@@ -182,7 +196,8 @@ export async function listarRemovidos(filtros = {}, limite = 100) {
     }
     if (filtros.autor) {
       const innerQuery = new Parse.Query(Parse.User);
-      innerQuery.matches('username', filtros.autor, 'i');
+      const autorEscapado = escaparRegex(String(filtros.autor).trim());
+      innerQuery.matches('username', autorEscapado, 'i');
       query.matchesQuery('autor', innerQuery);
     }
     if (filtros.dataInicio) {
@@ -258,7 +273,8 @@ export async function listarDenunciadas(filtros = {}, limite = 50) {
     }
     if (filtros.autor) {
       const innerQuery = new Parse.Query(Parse.User);
-      innerQuery.matches('username', filtros.autor, 'i');
+      const autorEscapado = escaparRegex(String(filtros.autor).trim());
+      innerQuery.matches('username', autorEscapado, 'i');
       query.matchesQuery('autor', innerQuery);
     }
     if (filtros.dataInicio) {
@@ -293,7 +309,8 @@ export async function listarTodos(filtros = {}, limite = 100) {
     }
     if (filtros.autor) {
       const innerQuery = new Parse.Query(Parse.User);
-      innerQuery.matches('username', filtros.autor, 'i');
+      const autorEscapado = escaparRegex(String(filtros.autor).trim());
+      innerQuery.matches('username', autorEscapado, 'i');
       query.matchesQuery('autor', innerQuery);
     }
     if (filtros.dataInicio) {

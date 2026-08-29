@@ -15,11 +15,12 @@
 
 O AcessoEdu Nordeste é uma Single Page Application (SPA) de auditoria cidadã e
 inteligência educacional que mapeia, contrasta e expõe de forma pública e transparente
-os indicadores de infraestrutura e acessibilidade para pessoas com deficiência (PCD)
-das escolas da região Nordeste do Brasil. O sistema opera exclusivamente sobre dados
-reais e abertos do Censo Escolar do Instituto Nacional de Estudos e Pesquisas
-Educacionais Anísio Teixeira (INEP) dos anos de 2024 e 2025, com foco absoluto na
-evolução da infraestrutura física e digital das escolas entre estes dois anos.
+os indicadores de infraestrutura, acessibilidade para pessoas com deficiência (PCD) e
+desempenho acadêmico das escolas públicas da região Nordeste do Brasil. O sistema opera
+sobre dados reais e abertos do Censo Escolar do Instituto Nacional de Estudos e Pesquisas
+Educacionais Anísio Teixeira (INEP) dos anos de 2024 e 2025, enriquecidos com as notas
+do Índice de Desenvolvimento da Educação Básica (IDEB) e com as premiações da Olimpíada
+Brasileira de Matemática das Escolas Públicas (OBMEP).
 
 O produto tem caráter acadêmico e cívico simultâneos. Academicamente, demonstra o
 domínio de tecnologias modernas de desenvolvimento web sem o uso de frameworks
@@ -97,7 +98,7 @@ que um framework ofereceria, a arquitetura adota três pilares:
 A estrutura de diretórios reflete a separação estrita de responsabilidades:
 
 **Camada `/src/js/api/` — Serviços de Dados:**
-Esta camada é a única que conhece o Back4App, o Mapillary e o Nominatim.
+Esta camada é a única que conhece o Back4App, o ViaCEP, o Mapillary e o Nominatim.
 Ela é responsável por fazer requisições HTTP/WebSocket, tratar erros de rede,
 normalizar a resposta para o formato interno da aplicação e chamar `estado.definir()`
 para publicar os dados recebidos. Esta camada **não conhece o DOM** e jamais
@@ -205,12 +206,14 @@ Os microdados brutos do INEP para o Censo Escolar chegam em arquivos CSV com mai
 4. Realiza o merge dos dois DataFrames usando `CO_ENTIDADE` (código INEP da escola)
    como chave de junção. Escolas presentes apenas em um dos anos recebem os campos
    do outro ano preenchidos com `NaN`, depois convertidos para `null`.
-5. Calcula o campo `delta_infraestrutura`: a diferença entre a soma dos indicadores
+5. Carrega o arquivo do IDEB e faz um segundo merge por `CO_ENTIDADE`.
+6. Carrega o arquivo de premiações da OBMEP e faz um terceiro merge.
+7. Calcula o campo `delta_infraestrutura`: a diferença entre a soma dos indicadores
    binários de 2025 e a soma dos indicadores binários de 2024, dividida pelo número
    total de indicadores, resultando em um percentual decimal.
-6. Calcula o campo `notaExcelencia` conforme a fórmula do Ranking de Excelência.
-7. Determina o campo `badge` com base nos intervalos de `notaExcelencia`.
-8. Exporta o resultado como `escolas_bruto.json` (input do geocoder).
+8. Calcula o campo `notaExcelencia` conforme a fórmula do Ranking de Excelência.
+9. Determina o campo `badge` com base nos intervalos de `notaExcelencia`.
+10. Exporta o resultado como `escolas_bruto.json` (input do geocoder).
 
 **`etl/geocodificar.py` — Etapa de Geocoding Offline:**
 
@@ -349,11 +352,10 @@ representa um indicador de infraestrutura. Cada linha exibe:
 banco. Cada badge é um elemento `<span>` com `rounded-full`, cor de fundo correspondente,
 ícone Phosphor e texto descritivo.
 
-**Gráfico Radar (Chart.js):** Um gráfico de radar com 7 eixos representando os
-indicadores de infraestrutura da escola (Internet, Biblioteca, Lab. Informática,
-Banheiro Acessível, Quadra Esportes, Rampas, Água Potável). O dataset exibe os
-valores da escola atual e um segundo dataset sobreposto com a média do município
-para comparação.
+**Gráfico Radar (Chart.js):** Um gráfico de radar com 5 eixos representando as
+dimensões de avaliação da escola (Infraestrutura, Desempenho IDEB, Acessibilidade PCD,
+Engajamento Comunitário, Evolução). O dataset exibe os valores da escola atual e um
+segundo dataset sobreposto com a média do município para comparação.
 
 **Formulário de Avaliação:** Visível apenas para usuários autenticados. Exibe 5
 estrelas clicáveis (implementadas com ícones `ph-star` e `ph-star-fill` do Phosphor),
@@ -404,7 +406,11 @@ Eixo Y: porcentagem de escolas com o indicador (0% a 100%).
 Dois grupos de barras por categoria: barra azul para 2024, barra verde para 2025.
 Este gráfico é o mais crítico para o paradigma comparativo da plataforma.
 
-**Gráfico 2 — Donut (Conectividade à Internet):**
+**Gráfico 2 — Linhas (Evolução do IDEB ao longo do tempo):**
+Exibe a série histórica do IDEB médio do Nordeste, com uma linha por nível de ensino
+(Anos Iniciais, Anos Finais). Permite visualizar a tendência de evolução ou estagnação.
+
+**Gráfico 3 — Donut (Conectividade à Internet):**
 Exibe a distribuição das escolas em quatro segmentos: "Com internet 2025", "Sem internet
 2025", "Ganhou internet (estava sem em 2024)", "Perdeu internet (tinha em 2024)".
 
@@ -735,7 +741,7 @@ Todas as decisões de design devem respeitar as seguintes diretrizes:
 | 4    | index.html: header, KPIs, filtros, toggle, mapa Leaflet             | 2 dias     |
 | 5    | detalhes.html: cascata de imagens, checklist, gráfico radar         | 2 dias     |
 | 6    | ranking.html: pódio, lista com Fragment, modal algorítmico           | 1 dia      |
-| 7    | analise.html: 2 gráficos Chart.js, exportação PDF                   | 1 dia      |
+| 7    | analise.html: 3 gráficos Chart.js, exportação PDF                   | 1 dia      |
 | 8    | admin.html: moderação de fotos e comentários                         | 1 dia      |
 | 9    | config.html: Pica.js, karma, modo escuro                            | 1 dia      |
 | 10   | Google OAuth, testes de fluxo de autenticação, revisão final        | 1 dia      |

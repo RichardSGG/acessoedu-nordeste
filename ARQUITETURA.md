@@ -10,12 +10,9 @@ garante testabilidade, manutenibilidade e escalabilidade sem a necessidade de fr
 
 ---
 
-## 2. Estrutura de Diretórios
-
-```
-acesso-edu-nordeste/
+## 2. Estrutura de Diretóriosacesso-edu-nordeste/
 │
-├── index.html                  # Dashboard principal
+├── index.html                  # Dashboard principal com mapa
 ├── detalhes.html               # Perfil detalhado de escola
 ├── ranking.html                # Ranking de Excelência gamificado
 ├── analise.html                # Relatórios comparativos 2024 vs 2025
@@ -33,11 +30,13 @@ acesso-edu-nordeste/
 │   └── js/
 │       ├── api/                # Camada de acesso a dados (serviços externos)
 │       │   ├── escolas.api.js  # CRUD de escolas no Back4App
-│       │   ├── feedback.api.js # CRUD de avaliações e interações
-│       │   ├── fotos.api.js    # Upload e listagem de fotos
-│       │   ├── auth.api.js     # Autenticação Parse
-│       │   ├── brasilapi.api.js # Integração CEP via BrasilAPI
-│       │   └── mapillary.api.js # Integração Mapillary API
+│       │   ├── avaliacoes.api.js
+│       │   ├── fotos.api.js
+│       │   ├── notificacoes.api.js
+│       │   ├── auth.api.js     # Autenticação Parse + Google OAuth
+│       │   ├── viacep.api.js
+│       │   ├── mapillary.api.js
+│       │   └── nominatim.api.js
 │       │
 │       ├── core/               # Lógica central e infraestrutura do SPA
 │       │   ├── estado.js       # Event Bus global (Pub/Sub)
@@ -47,6 +46,7 @@ acesso-edu-nordeste/
 │       │   └── inicializador.js # Bootstrap: verifica sessão, inicia listeners
 │       │
 │       └── ui/                 # Controladores de interface (uma UI por tela)
+│           ├── mapa.ui.js      # Leaflet, marcadores, filtros geográficos
 │           ├── ranking.ui.js   # Renderização do pódio e lista com Fragment
 │           ├── detalhes.ui.js  # Carrossel, checklist, gráfico radar
 │           ├── analise.ui.js   # Chart.js: barras, linhas, donut, exportação PDF
@@ -59,22 +59,20 @@ acesso-edu-nordeste/
 │   │   └── placeholder-escola.svg  # SVG local para fallback de imagem
 │   └── fontes/                     # Fontes auto-hospedadas (opcional)
 │
-├── pipeline_dados/             # Scripts Python de ETL e geração de agregados
-│   ├── extrair_complementos.py # Extrai dependência, número e telefone dos CSVs
-│   ├── patch_back4app.js       # Atualiza dados complementares no Back4App (PATCH)
-│   ├── gerar_estaticos.js      # Gera estatísticas agregadas locais
-│   └── enviar_estaticos.js     # Envia estatísticas para o Back4App
+├── etl/                        # Pipeline Python (fora do bundle do front-end)
+│   ├── processar_censos.py
+│   ├── geocodificar.py
+│   └── escolas_limpo.json      # Saída final do ETL (input do seeder)
 │
-├── seeder/                     # Script Node.js de carga no Back4App (Clean Slate)
-│   ├── seed.mjs                # Upload de dados das escolas
-│   └── modelo_avaliacao.js     # Geração de dados de avaliações fictícias
+├── seeder/                     # Script Node.js de carga no Back4App
+│   ├── seed.js
+│   └── package.json
 │
 ├── .env.exemplo                # Template de variáveis de ambiente
 ├── .gitignore
 ├── AI_CONTEXT.md
 ├── ARQUITETURA.md
 └── PLAN.MD
-```
 
 ---
 
@@ -93,11 +91,11 @@ ou API externa)
 │
 (emit 'escolasCarregadas')
 │
-┌──────────────────────┐
-▼                      ▼
-[ranking.ui.js]        [analise.ui.js]
-(re-renderiza          (re-renderiza
-lista/pódio)           gráficos)
+┌──────────────────────┼──────────────────────┐
+▼                      ▼                      ▼
+[mapa.ui.js]         [ranking.ui.js]        [analise.ui.js]
+(re-renderiza         (re-renderiza          (re-renderiza
+marcadores)           lista/pódio)           gráficos)
 
 **Regra inviolável:** Nenhum módulo de UI importa diretamente um módulo de API.
 A comunicação entre UI e serviços ocorre **exclusivamente** através de eventos emitidos
@@ -140,10 +138,10 @@ _ouvintes[evento] = _ouvintes[evento].filter((cb) => cb !== callback);
 
 | Evento                        | Emitido por         | Consumido por                     |
 |-------------------------------|---------------------|-----------------------------------|
-| `mudanca:escolas`             | escolas.api.js      | ranking.ui.js                     |
-| `mudanca:escolaSelecionada`   | dashboard.js        | escola.js                         |
+| `mudanca:escolas`             | escolas.api.js      | mapa.ui.js, ranking.ui.js         |
+| `mudanca:escolaSelecionada`   | mapa.ui.js          | detalhes.ui.js                    |
 | `mudanca:usuarioAtual`        | auth.api.js         | Todos os módulos de UI (permissão)|
-| `mudanca:filtros`             | dashboard.js        | escolas.api.js (nova query)       |
+| `mudanca:filtros`             | mapa.ui.js          | escolas.api.js (nova query)       |
 | `mudanca:carregando`          | Qualquer serviço    | Componente de loading global      |
 | `mudanca:modoEscuro`          | config.ui.js        | temas.css (via classe no `<html>`)|
 | `notificacao:nova`            | notificacoes.api.js | Componente de toast global        |
@@ -185,7 +183,7 @@ return function (...args) {
 clearTimeout(temporizador);
 temporizador = setTimeout(() => funcao.apply(this, args), espera);
 };
-}// Uso em dashboard.js
+}// Uso em mapa.ui.js
 import { debounce } from '../core/utilitarios.js';const buscarComDebounce = debounce((termo) => {
 escolas.api.buscarPorNome(termo);
 }, 400);document.getElementById('input-busca').addEventListener('input', (e) => {
@@ -194,7 +192,7 @@ buscarComDebounce(e.target.value);
 
 ### 5.3 Throttle para Eventos de Alta Frequência
 
-Eventos de scroll e resize devem ser interceptados por `throttle`:
+Eventos de scroll, resize e drag no mapa Leaflet devem ser interceptados por `throttle`:
 
 ```javascript// src/js/core/utilitarios.js
 export function throttle(funcao, limite = 200) {
@@ -210,8 +208,19 @@ funcao.apply(this, args);
 
 ### 5.4 Lazy Loading com IntersectionObserver
 
-O Chart.js é pesado. Ele não deve ser inicializado no carregamento
-da página, mas apenas quando a `<div>` que o contém entra no viewport:
+O Leaflet.js e o Chart.js são pesados. Eles não devem ser inicializados no carregamento
+da página, mas apenas quando a `<div>` que os contém entra no viewport:
+
+```javascript// src/js/core/inicializador.js
+const observadorMapa = new IntersectionObserver(
+(entradas) => {
+if (entradas[0].isIntersecting) {
+import('../ui/mapa.ui.js').then((modulo) => modulo.inicializar());
+observadorMapa.disconnect(); // Inicializa uma única vez
+}
+},
+{ threshold: 0.1 }
+);observadorMapa.observe(document.getElementById('container-mapa'));
 
 ---
 
@@ -263,7 +272,7 @@ renderizarPlaceholder();
 
 | Ação                             | Visitante | Usuário Autenticado | Admin |
 |----------------------------------|-----------|---------------------|-------|
-| Visualizar dashboard e dados     | Sim       | Sim                 | Sim   |
+| Visualizar mapa e dados          | Sim       | Sim                 | Sim   |
 | Enviar avaliação (estrelas)      | Não       | Sim                 | Sim   |
 | Fazer denúncia                   | Não       | Sim                 | Sim   |
 | Enviar foto de fachada           | Não       | Sim                 | Sim   |
@@ -289,166 +298,139 @@ window.location.href = '/index.html';
 
 ## 8. Coleções do Banco de Dados (Back4App / MongoDB)
 
-### 8.1 Coleções: Escolas2024 e Escolas2025
+### 8.1 Coleção: School
 
-Representam os dados de infraestrutura escolar coletados no Censo INEP para os respectivos anos.
-
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `id_escola` | String | Código INEP único da escola (chave de negócio) |
-| `nome` | String | Nome completo da instituição |
-| `municipio` | String | Município de localização |
-| `uf` | String | Sigla do estado (ex: PE, BA, CE) |
-| `regiao` | String | Região (sempre 'Nordeste') |
-| `cep` | String | CEP da escola |
-| `internet` | Number | Indicador (1 = Possui, 0 = Não possui) |
-| `laboratorio` | Number | Indicador de laboratório de informática (1/0) |
-| `quadra` | Number | Indicador de quadra de esportes (1/0) |
-| `rampa_acessibilidade`| Number | Indicador de rampa de acessibilidade (1/0) |
-| `banheiro_pne` | Number | Indicador de banheiro acessível PNE (1/0) |
-| `agua_potavel` | Number | Indicador de água potável (1/0) |
-| `energia_eletrica` | Number | Indicador de energia elétrica (1/0) |
-| `dependencia` | String | Tipo de administração (Federal, Estadual, Municipal ou Privada) |
-| `telefone` | String | Contato telefônico da escola |
-| `numero` | String | Número do logradouro |
-| `posicao_geografica` | GeoPoint | Coordenadas do Parse para buscas espaciais |
-| `foto_url` | String | URL em cache de imagem externa ou de fachada |
-| `indicador_geral` | Number | Média de excelência de infraestrutura calculada no ETL |
+| Campo                        | Tipo      | Descrição                                           |
+|------------------------------|-----------|-----------------------------------------------------|
+| `coInep`                     | String    | Código INEP único da escola (chave de negócio)      |
+| `nomeEscola`                 | String    | Nome completo da instituição                        |
+| `municipio`                  | String    | Município de localização                            |
+| `uf`                         | String    | Sigla do estado (ex: PE, BA, CE)                    |
+| `latitude`                   | Number    | Coordenada gerada no ETL via Nominatim              |
+| `longitude`                  | Number    | Coordenada gerada no ETL via Nominatim              |
+| `localizacao`                | GeoPoint  | Objeto GeoPoint do Parse para queries geoespaciais  |
+| `ideb2023`                   | Number    | Nota IDEB mais recente disponível                   |
+| `premiacao_obmep`            | Boolean   | Se a escola possui premiação OBMEP                  |
+| `notaExcelencia`             | Number    | Nota 0-10 calculada no ETL (não recalculada no UI)  |
+| `badge`                      | String    | 'ouro' \| 'prata' \| 'bronze' \| null               |
+| `censo24_agua_potavel`       | Boolean   | Dado do Censo 2024                                  |
+| `censo24_energia_eletrica`   | Boolean   | Dado do Censo 2024                                  |
+| `censo24_esgoto`             | Boolean   | Dado do Censo 2024                                  |
+| `censo24_internet`           | Boolean   | Dado do Censo 2024                                  |
+| `censo24_acessibilidade_pcd` | Boolean   | Dado do Censo 2024                                  |
+| `censo25_agua_potavel`       | Boolean   | Dado do Censo 2025                                  |
+| `censo25_energia_eletrica`   | Boolean   | Dado do Censo 2025                                  |
+| `censo25_esgoto`             | Boolean   | Dado do Censo 2025                                  |
+| `censo25_internet`           | Boolean   | Dado do Censo 2025                                  |
+| `censo25_acessibilidade_pcd` | Boolean   | Dado do Censo 2025                                  |
+| `delta_infraestrutura`       | Number    | Diferença percentual de indicadores 25 vs 24        |
+| `mediaAvaliacoes`            | Number    | Média das avaliações de 1-5 estrelas                |
+| `totalAvaliacoes`            | Number    | Contagem de avaliações recebidas                    |
 
 ### 8.2 Coleção: _User (Parse Built-in)
 
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `username` | String | E-mail do usuário (identificador único) |
-| `email` | String | E-mail associado |
-| `role` | String | `'admin'` \| `'user'` |
-| `karmaPoints` | Number | Pontuação de engajamento do usuário |
-| `profilePhoto` | File | Avatar de perfil do usuário |
-| `nomeExibicao` | String | Nome para ser exibido nas avaliações |
+| Campo           | Tipo   | Descrição                                         |
+|-----------------|--------|---------------------------------------------------|
+| `username`      | String | Identificador único (email normalmente)           |
+| `email`         | String | E-mail do usuário                                 |
+| `role`          | String | `'admin'` \| `'user'`                             |
+| `karmaPoints`   | Number | Pontuação acumulada de colaborações               |
+| `profilePhoto`  | File   | Avatar 256x256px processado pelo Pica.js          |
+| `nomeExibicao`  | String | Nome público exibido nos comentários              |
 
-### 8.3 Coleção: Avaliacoes
+### 8.3 Coleção: Review
 
-Armazena as avaliações feitas pela comunidade sobre a infraestrutura escolar.
+| Campo            | Tipo      | Descrição                                        |
+|------------------|-----------|--------------------------------------------------|
+| `escola`         | Pointer   | Referência à coleção School                      |
+| `autor`          | Pointer   | Referência à coleção _User                       |
+| `nota`           | Number    | Avaliação de 1 a 5                               |
+| `comentario`     | String    | Texto da avaliação (máx. 500 caracteres)         |
+| `flags_count`    | Number    | Contador de denúncias recebidas                  |
+| `verificado_local` | Boolean | Se o GPS confirmou a presença na escola         |
+| `latitude_envio` | Number    | Capturada via navigator.geolocation              |
+| `longitude_envio`| Number    | Capturada via navigator.geolocation              |
 
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `id_escola` | String | Código INEP da escola avaliada |
-| `nome` | String | Nome de exibição do autor |
-| `nota` | Number | Avaliação de 1 a 5 |
-| `mensagem` | String | Comentário escrito pelo cidadão |
-| `flags_count` | Number | Contador de denúncias recebidas |
-| `verificado_local` | Boolean | Sinaliza se foi enviado com geolocalização ativa |
-| `latitude_envio` | Number | Latitude capturada no momento do envio |
-| `longitude_envio` | Number | Longitude capturada no momento do envio |
-| `respostas` | Array | Respostas adicionadas pela moderação (Admin) |
+### 8.4 Coleção: ReviewInteraction
 
-### 8.4 Coleção: AvaliacaoInteracao
+| Campo     | Tipo    | Descrição                                                    |
+|-----------|---------|--------------------------------------------------------------|
+| `review`  | Pointer | Referência à Review                                          |
+| `usuario` | Pointer | Referência ao _User                                          |
+| `tipo`    | String  | `'like'` \| `'flag'`                                         |
 
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `review_id` | String | ID da avaliação associada |
-| `usuario_id` | String | ID do usuário autor da ação |
-| `tipo` | String | `'like'` \| `'flag'` (curtida ou denúncia) |
-
-A unicidade do par `(review_id, usuario_id, tipo)` previne duplicidades.
+A unicidade do par `(review, usuario, tipo)` é garantida por índice único no MongoDB,
+prevenindo duplicidade de likes e múltiplas denúncias pelo mesmo usuário.
 
 ### 8.5 Coleção: SchoolPhoto
 
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `id_escola` | String | Código INEP da escola associada |
-| `arquivo` | File | Arquivo de imagem enviado |
-| `status` | String | `'pending'` \| `'approved'` \| `'rejected'` |
+| Campo      | Tipo    | Descrição                                                   |
+|------------|---------|-------------------------------------------------------------|
+| `escola`   | Pointer | Referência à School                                         |
+| `autor`    | Pointer | Referência ao _User                                         |
+| `arquivo`  | File    | Imagem armazenada no File Storage do Back4App               |
+| `status`   | String  | `'pending'` \| `'approved'` \| `'rejected'`                 |
 
-### 8.6 Coleção: EstatisticasGeograficas
+### 8.6 Coleção: Notification
 
-Estatísticas agregadas por município, estado e região a partir do Censo 2025.
+| Campo       | Tipo    | Descrição                                                  |
+|-------------|---------|------------------------------------------------------------|
+| `usuario`   | Pointer | Destinatário da notificação                                |
+| `tipo`      | String  | `'karma'` \| `'foto_aprovada'` \| `'denuncia_validada'`    |
+| `mensagem`  | String  | Texto da notificação                                       |
+| `lida`      | Boolean | Se o usuário já visualizou                                 |
 
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `nivel` | String | `'municipio'` \| `'estado'` \| `'regiao'` |
-| `uf` | String | Sigla do estado correspondente |
-| `municipio` | String | Nome do município correspondente |
-| `total_escolas` | Number | Quantidade total de escolas |
-| `internet` | Number | Percentual de escolas com internet |
-| `biblioteca` | Number | Percentual de escolas com biblioteca |
-| `lab_informatica` | Number | Percentual com laboratório de informática |
-| `quadra_esportes` | Number | Percentual com quadra de esportes |
-| `rampas` | Number | Percentual com rampas de acessibilidade |
-| `banheiro_acessivel`| Number | Percentual com banheiro acessível |
-| `agua_potavel` | Number | Percentual com água potável |
-
-### 8.7 Coleção: EstatisticasAgregadas
-
-Armazena os deltas temporais 2024 vs 2025 para exibição nos painéis e gráficos comparativos.
-
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `chave` | String | ID de busca da estatística (ex: `'Nordeste'`, `'PE'`, `'PE-Recife'`) |
-| `nivel` | String | Nível geográfico ('regiao', 'estado', 'municipio') |
-| `dados_2024` | Object | Dados de infraestrutura agregados de 2024 |
-| `dados_2025` | Object | Dados de infraestrutura agregados de 2025 |
+As notificações são entregues em tempo real via **Live Queries (WebSocket)** do
+Parse Server, sem necessidade de polling.
 
 ---
 
-## 9. ETL Local — Pipeline de Dados
-
-O processamento e a sanitização dos dados são realizados localmente utilizando Python e Node.js:
-
-```
-[CSV Censo INEP 2024] ──┐
-[CSV Censo INEP 2025] ──┼─► Python (extrair_complementos.py)
-                        │   Lê CSVs, extrai telefones, dependência, etc.
-                        ▼
-                 [JSONs Locais]
-                        │
-                        ▼
-                 [Node.js Scripts]
-         ├── patch_back4app.js   (Atualização dos metadados das escolas)
-         ├── gerar_estaticos.js  (Calcula as médias agregadas temporais)
-         └── enviar_estaticos.js (Carrega EstatisticasAgregadas/Geograficas no banco)
-```
+## 9. ETL Local — Pipeline Python[INEP Censo 2024 .csv]  ─┐
+[INEP Censo 2025 .csv]  ─┼─► processar_censos.py
+[IDEB .xlsx]            ─┤       │
+[OBMEP .csv]            ─┘       │
+▼
+Merge por CO_ENTIDADE (coInep)
+Remoção de ~500 colunas irrelevantes
+Filtragem: uf IN ['AL','BA','CE','MA',
+'PB','PE','PI','RN','SE']
+Cálculo de delta_infraestrutura
+Cálculo de notaExcelencia
+Definição de badge
+│
+▼
+geocodificar.py
+Nominatim API (OSM) — batch único
+Grava latitude e longitude por escola
+│
+▼
+escolas_limpo.json
+(input do seeder)
 
 ---
 
 ## 10. Seeder Node.js — Carga no Back4App
 
-O seeder realiza a carga inicial (*Clean Slate*) no banco de dados a partir dos dados limpos, enviando em lotes de 100 registros para otimizar os requests.
-
-```javascript
-// seeder/seed.mjs (Estrutura lógica simplificada)
+```javascript// seeder/seed.js (pseudocódigo estrutural)
 import Parse from 'parse/node.js';
-import fs from 'fs';
-
-// Configura SDK do Parse Server
-Parse.initialize(APP_ID, JS_KEY, MASTER_KEY);
-Parse.serverURL = 'https://parseapi.back4app.com';
-
-async function rodarSeeder() {
-  const dados = JSON.parse(fs.readFileSync('./seeder/escolas_limpo.json'));
-  
-  // Envio em blocos de 100
-  const lotes = chunkArray(dados, 100);
-  for (const lote of lotes) {
-    const objetos = lote.map(escola => {
-      const obj = new Parse.Object('Escolas2025');
-      obj.set('id_escola', String(escola.id_escola));
-      obj.set('nome', String(escola.nome));
-      obj.set('municipio', String(escola.municipio));
-      obj.set('uf', String(escola.uf));
-      
-      // Indicadores int
-      obj.set('internet', parseInt(escola.internet));
-      obj.set('banheiro_pne', parseInt(escola.banheiro_pne));
-      // ...
-      
-      if (escola.latitude && escola.longitude) {
-        obj.set('posicao_geografica', new Parse.GeoPoint(escola.latitude, escola.longitude));
-      }
-      return obj;
-    });
-    
-    await Parse.Object.saveAll(objetos, { useMasterKey: true });
-  }
+import dados from './escolas_limpo.json' assert { type: 'json' };Parse.initialize(APP_ID, JS_KEY, MASTER_KEY);
+Parse.serverURL = 'https://parseapi.back4app.com';async function executarSeed() {
+// 1. Limpar a coleção existente
+const query = new Parse.Query('School');
+const existentes = await query.find({ useMasterKey: true });
+await Parse.Object.destroyAll(existentes, { useMasterKey: true });// 2. Inserir em lotes de 100 objetos (limite da API)
+const lotes = chunk(dados, 100);
+for (const lote of lotes) {
+const objetos = lote.map((escola) => {
+const obj = new Parse.Object('School');
+obj.set('coInep', escola.CO_ENTIDADE);
+obj.set('nomeEscola', escola.NO_ENTIDADE);
+// ... demais campos
+const ponto = new Parse.GeoPoint(escola.latitude, escola.longitude);
+obj.set('localizacao', ponto);
+return obj;
+});
+await Parse.Object.saveAll(objetos, { useMasterKey: true });
+console.log(Lote inserido: ${lotes.indexOf(lote) + 1}/${lotes.length});
 }
-```
+}

@@ -1,4 +1,10 @@
 {
+  "type": "module",
+  "scripts": {
+    "build": "node build-env.js",
+    "build:staging": "node build-env.js --staging",
+    "start": "npx serve . -l 3000"
+  },
   "dependencies": {
     "dotenv": "^17.4.2",
     "fast-csv": "^5.0.7",
